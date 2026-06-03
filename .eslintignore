@@ -1,0 +1,8 @@
+node_modules/
+quarantine/
+release/
+deleted/
+**/GeoLite2-Country.mmdb
+.dry-run-output/
+.dry-run-output-test/
+*.log
