@@ -1,0 +1,35 @@
+{
+  "name": "mail-pickup-agent",
+  "version": "1.0.0",
+  "description": "A Node.js executable that acts as a mail pickup agent for MailEnable, intercepting emails and routing them to quarantine or release.",
+  "main": "index.js",
+  "bin": {
+    "mailpickup": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "keywords": [
+    "mail",
+    "email",
+    "mailenable",
+    "pickup",
+    "agent",
+    "quarantine",
+    "release"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "mailparser": "^3.6.4",
+    "mmdb-reader": "^1.2.0",
+    "nodemailer": "^8.0.10",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.4.1"
+  }
+}
