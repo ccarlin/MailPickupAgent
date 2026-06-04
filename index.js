@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const fs = require('fs');
 const path = require('path');
 const net = require('net');
@@ -579,15 +577,28 @@ async function deleteEmail(controlFilePath, messagePath, destMessageName) {
 function printUsage() {
   console.log('Usage: node index.js <messageID> <queue-type>');
   console.log('Usage: node index.js --test [good|quarantine|blacklist]');
+  console.log('Usage: node server.js (to start the web server)');
   console.log('--test : Send a test email to verify configuration (defaults to good)');
   console.log('--help : Show this help message');
   console.log('Example: node index.js "B935428C1B4A4B8FADC12BC6A4358875.MAI" "SMTP"');
   console.log('Example: node index.js --test quarantine');
 }
 
-// Main Processing begins here
-// Expects two arguments: the message file name and the queue type. 
-const args = process.argv.slice(2);
+// Export functions for use by server and other modules
+module.exports = {
+  processEmail,
+  loadRules,
+  buildAllTestEmails,
+  updateEmailHeaders,
+  extractOriginatingIp,
+  deleteEmail,
+  quarantineEmail
+};
+
+// Main Processing begins here - only run if this file is executed directly, not when imported as a module
+if (require.main === module) {
+  // Expects two arguments: the message file name and the queue type. 
+  const args = process.argv.slice(2);
 const testArgIndex = args.findIndex(arg => arg === '--test' || arg.startsWith('--test='));
 let testType = null;
 
@@ -659,4 +670,5 @@ else
     // Normal processing of the email with all checks and potential quarantine or deletion based on rules and AI/spam checks.
     processEmail(controlFilePath, messagePath).then(() => process.exit(0));
   }
+}
 }
