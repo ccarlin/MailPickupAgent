@@ -29,8 +29,10 @@
     "express": "^5.2.1",
     "mailparser": "^3.6.4",
     "mmdb-reader": "^1.2.0",
+    "moment": "^2.30.1",
     "nodemailer": "^8.0.10",
-    "pug": "^3.0.4"
+    "pug": "^3.0.4",
+    "xss": "^1.0.15"
   },
   "devDependencies": {
     "eslint": "^10.4.1"

@@ -1,0 +1,591 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    link(rel='stylesheet' href='/css/style.css')
+    link(rel='apple-touch-icon' href='/img/admin.png')
+    meta(name='description', content='Admin Dashboard for CCarlin.com')
+    meta(name='keywords', content='admin, dashboard, CCarlin.com, management, tools')
+    title Admin Dashboard
+    // Font Awesome for icons
+    link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css')
+    block css
+
+    style.
+      /* Basic styles for the body and overall layout */
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%; /* Ensure html and body take full viewport height */
+        display: flex; /* Use flexbox for the main layout */
+        flex-direction: column; /* Stack elements vertically (banner on top, content below) */
+        background-color: #e2e8f0; /* Light background for the whole page */
+        box-sizing: border-box; /* Include padding and border in the element's total width and height */
+      }
+
+      /* Sticky Top Banner styling */
+      .top-banner {
+        background-color: #334155; /* Dark background for the banner */
+        color: white;
+        padding: 0.4rem;
+        text-align: center;
+        position: sticky; /* Makes the banner sticky */
+        top: 0; /* Sticks to the top of the viewport */
+        z-index: 1000; /* Ensures it stays on top of other content */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        border-bottom-left-radius: 12px; /* Rounded corners for the bottom */
+        border-bottom-right-radius: 12px;
+        flex-shrink: 0; /* Prevent the banner from shrinking */
+      }
+
+      .top-banner h1 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+      }
+
+      /* Main content area containing left and right columns */
+      .main-content {
+        display: flex; /* Use flexbox for side-by-side columns */
+        flex: 1; /* Allows this container to grow and fill available vertical space */
+        overflow: hidden; /* Important for containing scrolling children without main scrollbar */
+        padding: 1rem; /* Padding around the columns */
+        gap: 1rem; /* Space between the columns */
+        min-height: 0; /* Important for flex items within a flex container */
+        box-sizing: border-box; /* Include padding and border in the element's total width and height */
+      }
+
+      /* Left Column (Menu) styling */
+      .left-column {
+        width: 250px; /* Fixed width for the menu column */
+        background-color: #f8fafc; /* Light background for the menu */
+        padding: 0.5rem 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Shadow for depth */
+        border-radius: 12px; /* Rounded corners for the left column */
+        overflow-y: auto; /* Enables vertical scrolling within this column if content exceeds height */
+        -webkit-overflow-scrolling: touch; /* Enhances scrolling on touch devices */
+        flex-shrink: 0; /* Prevents it from shrinking on smaller screens unnecessarily */
+        height: 100%; /* Make it take 100% of the main-content's height */
+        box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        transition: width 0.3s ease-out, padding 0.3s ease-out; /* Add transition for width and padding */
+        position: relative; /* Needed for positioning toggle-container */
+        overflow-x: hidden;
+      }
+
+      /* Container for the hamburger toggle button */
+      .left-column-toggle-container {
+        position: absolute;
+        right: -15px; /* Half of its width to center it outside the column (container width 30px) */
+        top: 50%; /* Center vertically */
+        transform: translateY(-50%) rotate(90deg); /* Adjust for perfect vertical centering + initial 90deg rotation */
+        width: 30px; /* Smaller width of the toggle button area */
+        height: 30px; /* Smaller height of the toggle button area */
+        background-color: #e2e8f0; /* Match banner background or a contrasting color */
+        border-radius: 50%; /* Make it circular */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        z-index: 10; /* Ensure it's above other content */
+        transition: background-color 0.2s ease, transform 0.3s ease, right 0.3s ease;
+      }
+
+      .left-column-toggle-container:hover {
+        background-color: #d1e5f4; /* Darker on hover */
+      }
+
+      .left-column-toggle-container .left-column-toggle {
+        font-size: 1rem; /* Smaller icon size */
+        color: white; /* Icon color */
+        /* No rotation needed here, as the container is doing the rotation */
+      }
+
+      /* Styles for when the entire left column is collapsed */
+      .left-column.collapsed {
+        width: 60px; /* Collapsed width, adjust as needed, still enough for the button to be visible */
+        padding: 0.5rem; /* Reduce padding when collapsed */
+        overflow: hidden; /* Hide overflow content */
+      }
+
+      /* Move the toggle button to the outside of the collapsed column */
+      .left-column.collapsed .left-column-toggle-container {
+        right: -15px; /* Keep it outside the collapsed column, maintaining half its width */
+        transform: translateY(-50%) rotate(0deg); /* Rotate back to 0deg (hamburger upright) when collapsed */
+      }
+
+      /* Hide content within the left column when it's collapsed */
+      .left-column.collapsed h2,
+      .left-column.collapsed .collapsible-section .collapsible-header > :not(img) {
+        display: none; /* Hide H2 text and collapsible header text */
+      }
+
+      .left-column.collapsed .collapsible-content {
+        max-height: fit-content; /* Allow content to fit */
+        padding: 0; /* Remove padding */
+        display: flex; /* Use flexbox for horizontal layout */
+        flex-direction: column; /* Stack icons vertically */
+        align-items: center; /* Center icons horizontally */
+      }
+
+      .left-column.collapsed .collapsible-content ul {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Center icons */
+        gap: 0.5rem; /* Space between icons */
+        padding-top: 0;
+      }
+
+      .left-column.collapsed li.menu-item {
+        padding: 0.4rem;
+        display: flex; /* Use flex to align icon and text */
+        justify-content: center; /* Center content when collapsed */
+        align-items: center;
+        margin-bottom: 0.2rem; /* Reduce bottom margin for tighter icon spacing */
+      }
+
+      .left-column.collapsed li.menu-item img {
+        margin-right: 0; /* Remove margin from image when text is hidden */
+      }
+
+      .left-column.collapsed li.menu-item a {
+        display: flex;
+        justify-content: center; /* Center icons within the link */
+        align-items: center;
+        width: 100%;
+        height: 100%;
+      }
+
+      .left-column.collapsed li.menu-item a > :not(img) {
+        display: none; /* Hide text inside menu items */
+      }
+
+      /* Ensure the hamburger toggle container is visible */
+      .left-column.collapsed .left-column-toggle-container {
+        display: flex; /* Make sure it's visible */
+      }
+
+      .left-column.no-transition {
+        transition: none !important;
+      }
+
+      .left-column h2 {
+        margin-top: 0;
+        color: #1e293b;
+        font-size: 1.5rem;
+        border-bottom: 2px solid #cbd5e1;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .left-column ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      /* Collapsible Section Header (for sub-sections) */
+      .collapsible-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem 0.6rem;
+        background-color: #e2e8f0; /* Slightly different background for headers */
+        color: #1e293b;
+        font-weight: 700;
+        cursor: pointer;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: background-color 0.2s ease;
+      }
+
+      .collapsible-header:hover {
+        background-color: #d1e5f4; /* Lighter blue on hover */
+      }
+
+      .collapsible-header .icon {
+        transition: transform 0.2s ease;
+      }
+
+      .collapsible-header.collapsed .icon {
+        transform: rotate(-90deg); /* Rotate icon when collapsed */
+      }
+      .collapsible-header.expanded .icon {
+        transform: rotate(0deg); /* Default rotation for expanded */
+      }
+
+
+      /* Collapsible Content (the actual menu items) */
+      .collapsible-content {
+        max-height: 0; /* Hidden when collapsed */
+        overflow: hidden;
+        transition: max-height 0.3s ease-out, padding 0.3s ease-out; /* Smooth transition */
+        padding: 0 1rem; /* Adjust padding for items within collapsed section */
+      }
+
+      .collapsible-content.expanded {
+        max-height: 500px; /* Arbitrary large height to reveal content */
+        padding-bottom: 1rem; /* Add padding when expanded */
+      }
+      .collapsible-content ul {
+        padding-top: 0.5rem;
+      }
+
+      .left-column li.menu-item {
+        padding: 0.4rem;
+        cursor: pointer;
+        color: #475569;
+        font-weight: 500;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+        border-radius: 8px; /* Slightly rounded corners for menu items */
+        margin-bottom: 0.5rem;
+        display: flex; /* Enable flexbox for icon and text alignment */
+        align-items: center; /* Vertically align items */
+      }
+
+      .left-column li.menu-item:hover {
+        background-color: #e0f2fe; /* Light blue on hover */
+        color: #0284c7; /* Darker blue text on hover */
+        transform: translateX(5px); /* Slight movement on hover */
+      }
+
+      /* Right Column (Main Content Panel) styling */
+      .right-column {
+        flex-grow: 1; /* Allows this column to take all available remaining horizontal space */
+        background-color: #ffffff; /* White background for the main content */
+        padding: 0.5rem 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Shadow for depth */
+        border-radius: 12px; /* Rounded corners for the right column */
+        overflow-y: auto; /* Enables vertical scrolling for the right column too */
+        height: 100%; /* Make it take 100% of the main-content's height */
+        box-sizing: border-box; /* Include padding and border in the element's total width and height */
+      }
+
+      .right-column h2 {
+        margin-top: 0;
+        color: #1e293b;
+        font-size: 1.8rem;
+        border-bottom: 2px solid #cbd5e1;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .right-column p {
+        color: #475569;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+      }
+
+      /* Make all menu links black and remove underline, even on hover/active/visited */
+      .left-column a,
+      .left-column a:visited,
+      .left-column a:active,
+      .left-column a:hover,
+      .left-column a:focus {
+        color: #111 !important;
+        text-decoration: none !important;
+      }
+
+      /* Responsive adjustments for smaller screens (e.g., tablets and mobile) */
+      @media (max-width: 768px) {
+        .main-content {
+          flex-direction: column; /* Stack columns vertically on small screens */
+          padding: 0.5rem; /* Reduce padding on smaller screens */
+          gap: 0.5rem; /* Reduce gap */
+          overflow-y: auto; /* Allow main content to scroll on smaller screens if columns overflow */
+        }
+
+        .left-column {
+          width: auto; /* Allow left column to take full width */
+          max-height: 250px; /* Limit height to prevent it from taking too much screen space */
+          margin-bottom: 0.5rem; /* Space between stacked columns */
+          height: auto; /* Reset height for stacked layout */
+          transition: none; /* Disable width transition on small screens */
+          flex-direction: row; /* Stack content horizontally in collapsed state on mobile */
+          justify-content: space-between; /* Push toggle to right */
+          align-items: center; /* Vertically align items */
+          padding: 0.5rem 1rem; /* Restore padding to normal */
+          overflow-x: hidden;
+        }
+
+        .left-column.no-transition {
+          transition: none !important;
+        }
+
+        .left-column.collapsed {
+          width: auto; /* Reset width for collapsed state on small screens */
+          max-height: 60px; /* Only show header and toggle on collapse for small screens */
+          padding: 0.5rem 1rem; /* Maintain padding on small screens */
+        }
+
+        /* Show admin menu title and image when collapsed on small screens */
+        .left-column.collapsed h2 {
+          display: flex;
+          align-items: center;
+          border-bottom: none;
+          padding-bottom: 0;
+          margin-bottom: 0;
+        }
+
+        /* Hide sub-sections when collapsed on small screens */
+        .left-column.collapsed .collapsible-section {
+          display: none;
+        }
+
+        /* Adjust hamburger position on small screens */
+        .left-column-toggle-container {
+          position: static; /* Remove absolute positioning */
+          order: 2; /* Place it after the h2 */
+          margin-left: auto; /* Push it to the right */
+          top: auto; /* Reset top */
+          transform: none; /* Reset transform */
+          width: auto; /* Reset width/height */
+          height: auto;
+          background-color: transparent; /* Remove background */
+          box-shadow: none; /* Remove shadow */
+          border-radius: 0; /* Remove border-radius */
+        }
+        .left-column-toggle-container .left-column-toggle {
+          font-size: 1.5rem; /* Restore normal size for mobile */
+          color: #64748b; /* Restore original color */
+          transform: none; /* Reset icon rotation */
+        }
+      }
+    block scripts
+
+  body
+    .top-banner
+      block header
+      h1 #{title}
+    .main-content
+      .left-column.no-transition#main-left-column
+        // Container for the hamburger toggle button
+        .left-column-toggle-container#leftColumnToggleContainer
+          i.fas.fa-bars.left-column-toggle
+
+        h2
+          img(src="/img/admin.png" alt="Admin" title="Admin Menu" style="width:28px; height:28px; vertical-align:middle; margin-right:8px;")
+          | Admin Menu
+
+        // All existing collapsible sections remain as they were
+        .collapsible-section
+          .collapsible-header.expanded(data-target='logfiles-menu')
+            img(src="/img/logfiles.png" alt="Log Files" title="Log Files Menu"  style="width:22px; height:22px; vertical-align:middle;")
+            span Log Files
+            i.fas.fa-chevron-down.icon
+          .collapsible-content.expanded#logfiles-menu
+            ul
+              li.menu-item
+                a(href='/logviewer')
+                  img(src="/img/logviewer.png" 
+                    alt="Log Viewer" 
+                    title="Log Viewer" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/logviewer', '_blank'); return false;"
+                  )
+                  span Log Viewer
+              li.menu-item
+                a(href='/firewalllog' target="_blank")
+                  img.menu-icon(
+                    src="/img/firewall.png"
+                    alt="Firewall"
+                    title="Firewall Log"
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
+                    onclick="window.open('/firewalllog', '_blank'); return false;"
+                  )
+                  span Firewall Log
+              li.menu-item
+                a(href='/blacklist')
+                  img(src="/img/blacklist.png" 
+                    alt="Blacklist" 
+                    title="Blacklist" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/blacklist', '_blank'); return false;"
+                  )
+                  span Blacklist
+              li.menu-item
+                a(href='/media')
+                  img(src="/img/doorbell.png" 
+                    alt="Media" 
+                    title="Reolink Doorbell Media" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/media', '_blank'); return false;"
+                  )
+                  span Media
+        .collapsible-section
+          .collapsible-header.expanded(data-target='email-menu')
+            img(src="/img/emailMenu.png" alt="Email" title="Email Menu" style="width:22px; height:22px; vertical-align:middle;")
+            span Email
+            i.fas.fa-chevron-down.icon
+          .collapsible-content.expanded#email-menu
+            ul
+              li.menu-item
+                a(href='/mailq')
+                  img(src="/img/mailqueue.gif" 
+                    alt="Mail Queue" 
+                    title="Mail Queue" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/mailq', '_blank'); return false;"
+                  )
+                  span Mail Queue
+              li.menu-item
+                a(href='/smtplog?today=true' target="_blank")
+                  img.menu-icon(
+                    src="/img/smtplog.png"
+                    alt="SMTP"
+                    title="SMTP Log"
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
+                    onclick="window.open('/smtplog?today=true', '_blank'); return false;"
+                  )
+                  span SMTP Log
+              li.menu-item
+                a(href='/spamlog?today=true')
+                  img(src="/img/spamlog.png" 
+                    alt="Email Log" 
+                    title="Email Log" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/spamlog?today=true', '_blank'); return false;"
+                  )
+                  span SPAM Log
+              li.menu-item
+                a(href='/maillog?range=Today')
+                  img(src="/img/email.png" 
+                    alt="Queue Log" 
+                    title="Queue Log" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/maillog?range=Today', '_blank'); return false;"
+                  )
+                  span Mail Log
+        .collapsible-section
+          .collapsible-header(data-target='misc-menu')
+            img(src="/img/Misc.png" alt="Misc" title="Misc Menu Items" style="width:22px; height:22px; vertical-align:middle;")
+            span Misc
+            i.fas.fa-chevron-down.icon
+          .collapsible-content#misc-menu
+            ul
+              li.menu-item
+                a(href='/controlpanel')
+                  img(src="/img/controlpanel.png" 
+                    alt="Control Panel" 
+                    title="Control Panel" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/controlpanel', '_blank'); return false;"
+                  )
+                  span Control Panel
+              li.menu-item
+                a(href='/IPInfo')
+                  img(src="/img/IPInfo.jpg" 
+                    alt="IP Information" 
+                    title="IP Information" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/IPInfo', '_blank'); return false;"
+                  )
+                  span IP Info
+              li.menu-item
+                a(href='/localai')
+                  img(src="/img/ai.png" 
+                    alt="Local AI" 
+                    title="Local AI" 
+                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                    onclick="window.open('/localai', '_blank'); return false;"
+                  )
+                  span Local AI
+      .right-column
+        block content
+
+    script.
+      document.addEventListener('DOMContentLoaded', function() {
+        const leftColumn = document.getElementById('main-left-column');
+        const leftColumnToggleContainer = document.getElementById('leftColumnToggleContainer');
+
+        // Function to set the initial state based on screen size
+        function setInitialColumnState() {
+          if (window.innerWidth <= 768) {
+            // On small screens, start collapsed (vertical collapse)
+            leftColumn.classList.add('collapsed');
+            // Ensure the individual collapsible sections are also collapsed if they were expanded
+            document.querySelectorAll('.collapsible-content.expanded').forEach(content => {
+              content.classList.remove('expanded');
+            });
+            document.querySelectorAll('.collapsible-header.expanded').forEach(header => {
+              header.classList.remove('expanded');
+              const icon = header.querySelector('.icon');
+              if (icon) icon.style.transform = 'rotate(-90deg)';
+            });
+
+          } else {
+            // Restore state from localStorage
+            if (localStorage.getItem('leftColumnCollapsed') === 'true') {
+              leftColumn.classList.add('collapsed');
+            }
+            else 
+              leftColumn.classList.remove('collapsed');
+            // Ensure individual collapsible sections are expanded as initially intended
+            document.querySelectorAll('.collapsible-content').forEach(content => {
+              if (content.id === 'logfiles-menu' || content.id === 'email-menu') { // Based on your initial Pug
+                content.classList.add('expanded');
+              }
+            });
+            document.querySelectorAll('.collapsible-header').forEach(header => {
+              if (header.dataset.target === 'logfiles-menu' || header.dataset.target === 'email-menu') {
+                header.classList.add('expanded');
+                const icon = header.querySelector('.icon');
+                if (icon) icon.style.transform = 'rotate(0deg)';
+              }
+            });
+          }
+        }
+
+        // Set initial state on load
+        setInitialColumnState();
+
+        // Force reflow, then remove no-transition so future toggles animate
+        setTimeout(() => { leftColumn.classList.remove('no-transition'); }, 0);
+
+        // Listen for window resize to adjust column state
+        window.addEventListener('resize', setInitialColumnState);
+
+
+        // Handle the main left column collapse/expand via hamburger
+        leftColumnToggleContainer.addEventListener('click', function() {
+          leftColumn.classList.toggle('collapsed');
+          localStorage.setItem('leftColumnCollapsed', leftColumn.classList.contains('collapsed'));
+        });
+
+        // Existing script for internal collapsible sections
+        const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+
+        collapsibleHeaders.forEach(header => {
+          // Set initial state for icon rotation based on 'expanded' class
+          const icon = header.querySelector('.icon');
+          if (header.classList.contains('expanded')) {
+            icon.style.transform = 'rotate(0deg)';
+          } else {
+            icon.style.transform = 'rotate(-90deg)';
+          }
+
+          header.addEventListener('click', function() {
+            // Only allow inner collapsibles to function if the main column is not collapsed horizontally
+            // or if on small screens (where collapse is vertical)
+            if (!leftColumn.classList.contains('collapsed') || window.innerWidth <= 768) {
+              const targetId = this.dataset.target;
+              const content = document.getElementById(targetId);
+              const icon = this.querySelector('.icon');
+
+              if (content) {
+                this.classList.toggle('expanded');
+                content.classList.toggle('expanded');
+
+                if (this.classList.contains('expanded')) {
+                  icon.style.transform = 'rotate(0deg)';
+                } else {
+                  icon.style.transform = 'rotate(-90deg)';
+                }
+              } else {
+                console.error('Collapsible content target not found:', targetId);
+              }
+            }
+          });
+        });
+      });

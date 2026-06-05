@@ -1,0 +1,371 @@
+extends adminLayout
+
+block css
+    link(rel="stylesheet", href="https://unpkg.com/swiper/swiper-bundle.min.css")
+    link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
+    style.
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .swiper-container {
+            width: 100%;
+            height: 80vh;           
+        }
+        .swiper-slide {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* ensure right-column is a positioning context for the timestamp */
+        .right-column {
+            position: relative;
+        }
+        .email-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 24px;
+            width: 80%;
+            max-width: 500px;
+            transition: transform 0.2s;
+        }
+        .email-card:hover {
+            transform: translateY(-5px);
+        }
+        .email-header, .email-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .email-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #333;
+        }
+        .email-body p {
+            margin: 0px !important;
+            font-weight: bold;
+            color: #555;
+        }
+        .email-body p span {
+            font-weight: normal;
+            white-space: normal !important;    /* allow wrapping */
+            overflow-wrap: anywhere;           /* break long sequences anywhere if needed */
+            word-break: break-word;            /* fallback for some browsers */
+            hyphens: auto;                     /* allow hyphenation where supported */
+        }
+        .email-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap; /* allow buttons to wrap onto multiple rows */
+        }
+        .email-actions .btn {
+            flex: 0 0 auto;
+        }
+        .btn {
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .email-footer {
+            margin-top: 12px;
+            margin-bottom: 12px;
+            border-top: 1px solid black;
+            border-bottom: 1px solid black;
+        }
+        .email-footer p {
+            font-size: small;
+            font-weight: bold;
+            color: #555;
+        }        
+        .btn-release { background-color: #28a745; color: white; }
+        .btn-delete { background-color: #dc3545; color: white; }
+        .btn-ai-check { background-color: #007bff; color: white; }
+        .btn-preview { background-color: #6c757d; color: white; }
+        .btn-blacklist { background-color: black; color: white; }     
+        .btn-whitelist { background-color: #17a2b8; color: white; }   
+        .left-column {
+            display: none !important;
+        }
+        /* hide reason text by default and style the toggle button */
+        .reason-text { 
+            font-weight: normal;
+            font-size: small;
+            display: none;
+            max-width: 100%;
+            white-space: normal !important;    /* allow wrapping */
+            overflow-wrap: anywhere;           /* break long sequences anywhere if needed */
+            word-break: break-word;            /* fallback for some browsers */
+            hyphens: auto;                     /* allow hyphenation where supported */
+            margin: 8px;
+        }
+        .btn-show-reason {
+          background: transparent;
+          border: 1px dashed #6c757d;
+          color: #6c757d;
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-size: 0.9rem;
+          cursor: pointer;
+          margin: 12px;
+        }
+        .btn-show-reason[aria-expanded="true"] {
+          background: #6c757d;
+          color: #fff;
+          border-style: solid;
+        }
+        /* local time badge anchored to top-right of the right-column panel */
+        .last-updated {
+            position: absolute;      /* position inside right-column */
+            top: 10px;
+            right: 12px;
+            transform: none;
+            z-index: 20;
+            font-size: 0.85rem;
+            color: #444;
+            background: rgba(0,0,0,0.06); /* slightly darker for contrast */
+            padding: 6px 10px;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .last-updated {
+                top: 8px;
+                right: 8px;
+                font-size: 0.75rem;
+                padding: 4px 8px;
+            }
+            /* Make action buttons form up to two columns on small screens */
+            .email-actions {
+                justify-content: space-between;
+                gap: 8px;
+            }
+            .email-actions .btn {
+                flex: 1 1 calc(50% - 8px); /* two buttons per row */
+                min-width: 120px;         /* avoid buttons becoming too small */
+            }
+            .email-card {
+                width: 94%;
+                max-width: 100%;
+            }
+        }
+
+block scripts
+    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
+    script(src="https://unpkg.com/swiper/swiper-bundle.min.js")
+    script.    
+        document.addEventListener('DOMContentLoaded', function () {
+            var timeout = setTimeout("location.reload(true);", 600000);
+            var swiper = new Swiper('.swiper-container', {
+                loop: true,
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+            });
+            var now = new Date().toLocaleString();
+            var text = 'Updated: ' + now;
+            document.querySelectorAll('.last-updated').forEach(function(el) {
+                el.textContent = text;
+            });
+        });
+
+        function performAction(action, filepath, el) {
+            const form = document.getElementById('actionForm');
+            form.action.value = action;
+            // Clear previous filepaths
+            $('.form-filepath').remove();
+            // Add the new filepath
+            $('<input>').attr({ type: 'hidden', name: `filePath`, value: filepath }).appendTo(form);        
+            
+            // For single actions, we also need to add the hidden fields for the email details
+            const actionList=['release', 'delete', 'whitelist', 'blacklist'];
+            if (actionList.includes(action)) {
+                // use the passed element when available (reliable)
+                let $btn = el ? $(el) : $(`button[onclick="performAction('${action}', '${filepath}')"]`);
+                // fallback: try to find by data-mailkey (some buttons encode the filepath there)
+                if (!$btn || $btn.length === 0) {
+                    $btn = $(`button[data-mailkey="${encodeURIComponent(filepath)}"]`).first();
+                }
+                const emailData = $btn.closest('.email-card');                        
+                $('<input>').attr({ type: 'hidden', name: `subject`, value: emailData.find('h3').text().replace('Subject: ', '').trim() }).appendTo(form);
+                $('<input>').attr({ type: 'hidden', name: `sender`, value: emailData.find('.email-body p:nth-child(2) span').text().replace('From: ', '') }).appendTo(form);
+                $('<input>').attr({ type: 'hidden', name: `recipients`, value: emailData.find('.email-body p:nth-child(3) span').text().replace('To: ', '') }).appendTo(form);
+                $('<input>').attr({ type: 'hidden', name: `spamScore`, value: emailData.find('.email-body p:nth-child(5) span').text().replace('Score: ', '') }).appendTo(form);
+                $('<input>').attr({ type: 'hidden', name: `antiSpam`, value: emailData.find('.email-footer div').text() }).appendTo(form);
+                $('<input>').attr({ type: 'hidden', name: `clientip`, value: '' }).appendTo(form);
+                $('<input>').attr({ type: 'hidden', name: `datetime`, value: emailData.find('.email-body p:nth-child(4) span').text().trim() }).appendTo(form);
+                $('<input>').attr({ type: 'hidden', name: `dkim`, value: emailData.find('.email-body p:nth-child(6) span').text().trim() }).appendTo(form);
+                $('<input>').attr({ type: 'hidden', name: `aiCheck`, value: '' }).appendTo(form);
+            }
+            form.submit();
+        }
+
+        function performAICheck(filepath) {
+            $('#aiCheckModal').show();
+            const resultElement = document.getElementById('aiCheckResult');
+            resultElement.textContent = 'Loading...';
+            $.post('/mailq/performAICheck', { filepath: filepath }, function (data) {
+                if (data.success) {
+                    resultElement.textContent = `AI Check Result: ${data.result}`;
+                } else {
+                    resultElement.textContent = 'Failed to perform AI check. Please try again.';
+                }
+            }).fail(function () {
+                resultElement.textContent = 'An error occurred while performing the AI check.';
+            });
+        }
+
+        function closeAICheckModal() {
+            $('#aiCheckModal').hide();
+        }
+
+        // delegated click handler for preview buttons — ensures filepath is read from data attribute
+        $(document).on('click', '.btn-preview', function (e) {
+            var $btn = $(this);
+            // data-mailkey is encoded on output; decode here to recover original filepath safely
+            var raw = $btn.attr('data-mailkey') || '';
+            var key = raw ? decodeURIComponent(raw) : '';
+            var safe = ($btn.attr('data-safe') === 'true' || $btn.attr('data-safe') === true);
+            if (!key) return;
+            var url = safe ? 'mailPreview?view=HTML&mailKey=' + encodeURIComponent(key) : 'mailPreview?mailKey=' + encodeURIComponent(key);
+            window.open(url, '_blank');
+        });
+
+        // show reason once; after revealing remove the "Show Reason" button so it cannot be hidden again
+        $(document).on('click', '.btn-show-reason', function (e) {
+            var $btn = $(this);
+            var $card = $btn.closest('.email-card');
+            var $reason = $card.find('.reason-text');
+            // reveal reason
+            $reason.slideDown(150);
+            // remove the button after showing (no hide option required)
+            $btn.remove();
+        });
+
+        // handle unsubscribe action invoked from the UI
+        function handleUnsubscribe(btn) {
+            var $btn = $(btn);
+            var rawUrl = $btn.attr('data-unsubscribe') || '';
+            var url = rawUrl ? decodeURIComponent(rawUrl) : '';
+            var rawKey = $btn.attr('data-mailkey') || '';
+            var filepath = rawKey ? decodeURIComponent(rawKey) : '';
+
+            if (!url) {
+                alert('No unsubscribe link available for this message.');
+                return;
+            }
+
+            // mailto links - open mail client
+            if (url.toLowerCase().startsWith('mailto:')) {
+                if (!confirm('This unsubscribe method requires sending an email from your mail client. Open mail client now?')) return;
+                window.location.href = url;
+                return;
+            }
+
+            if (!confirm('Send unsubscribe request for this message?')) return;
+
+            $btn.prop('disabled', true).text('Unsubscribing...');
+            $.post('/mailq/unsubscribe', { filepath: filepath, url: url }, function (data) {
+                if (data && data.success) {
+                    alert('Unsubscribe request sent successfully.');
+                    $btn.text('Unsubscribed');
+                    $btn.prop('disabled', true);
+                } else if (data && data.message === 'mailto' && data.info) {
+                    // server indicates mailto, open mail client
+                    window.location.href = data.info;
+                } else {
+                    alert('Unsubscribe failed: ' + (data && data.message ? data.message : 'Unknown error'));
+                    $btn.prop('disabled', false).text('Unsubscribe');
+                }
+            }).fail(function () {
+                alert('Error contacting server to send unsubscribe request.');
+                $btn.prop('disabled', false).text('Unsubscribe');
+            });
+        }
+
+        function handleListing(btn) {
+            var $btn = $(btn);
+            var action = $btn.hasClass('btn-blacklist') ? 'blacklist' : 'whitelist';
+            var rawKey = $btn.attr('data-mailkey') || '';
+            var filepath = rawKey ? decodeURIComponent(rawKey) : '';
+
+            var msg = action === 'blacklist' ? 
+                'Are you sure you want to blacklist the sender of this message? This will add the sender to the blacklist and future messages from this sender will be automatically deleted.' : 
+                'Are you sure you want to whitelist the sender of this message? This will add the sender to the whitelist and future messages from this sender will bypass quarantine.';
+            if (!confirm(msg)) return;
+
+            performAction(action, filepath, btn);
+        }
+
+block content
+    // local time display (client-side)
+    .last-updated#lastUpdated Local time:
+    if emails && emails.length > 0
+        .swiper-container
+            .swiper-wrapper
+                each email, idx in emails
+                    .swiper-slide
+                        .email-card
+                            .email-header
+                                h3 Subject: #{email.subject}                            
+                            .email-body
+                                p(style="font-size: small;") Sender: 
+                                    span #{email.sender}
+                                p From: 
+                                    span #{email.from}
+                                p To: 
+                                    span #{email.recipients}
+                                p Date: 
+                                    span #{email.date}   
+                                p Score: 
+                                    span #{email.spamScore} 
+                                p DKIM: 
+                                    span #{email.dkim}                                                             
+                            .email-footer                            
+                                p
+                                    strong Reason:
+                                        button.btn-show-reason(type="button" aria-expanded="false" style="margin-left:8px;") Show Reason
+                                    .reason-text
+                                        | #{email.antiSpam}
+                            .email-actions                            
+                                // encode the filepath into the attribute to avoid breaking HTML when it contains special chars
+                                button.btn.btn-preview(title="View Email" data-mailkey=email.filepath data-safe=(email.safe ? 'true' : 'false'))
+                                    i.material-icons visibility
+                                button.btn.btn-release(title="Send Email" onclick=`performAction('release', '${email.filepath}', this)`) 
+                                    i.material-icons send
+                                button.btn.btn-delete(onclick=`performAction('delete', '${email.filepath}', this)` title="Delete Email")
+                                    i.material-icons delete                            
+                                // show Unsubscribe button if unsubscribe URL was discovered
+                                if email.unsubscribe                                                               
+                                    button.btn(title="Unsubscribe" data-mailkey=encodeURIComponent(email.filepath) data-unsubscribe=encodeURIComponent(email.unsubscribe) onclick="handleUnsubscribe(this)")
+                                        i.material-icons unsubscribe
+                                button.btn.btn-blacklist(title="Blacklist Sender" onclick=`handleListing(this)` data-mailkey=encodeURIComponent(email.filepath)) 
+                                    i.material-icons block
+                                button.btn.btn-whitelist(title="Whitelist Sender" onclick=`handleListing(this)` data-mailkey=encodeURIComponent(email.filepath)) 
+                                    i.material-icons check_circle
+                                button.btn.btn-ai-check(title="AI Review" onclick=`performAICheck("${email.filepath}")`) 
+                                    i.material-icons smart_toy
+            .swiper-button-next
+            .swiper-button-prev
+    else
+        .no-emails-message(style="text-align:center; padding:40px; color:#666;")
+            h4 No messages in quarantine
+            p There are currently no messages to review.
+
+    form#actionForm(action='/mailqCard/action', method="POST" style="display:none;")
+        input(type='hidden' name='action')
+
+    
+    #aiCheckModal(style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:100;")
+        div(style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border-radius:10px;")
+            h2 AI Check Result
+            p#aiCheckResult Loading...
+            button.myButton(onclick="closeAICheckModal()") Close

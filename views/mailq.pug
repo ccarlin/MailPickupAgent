@@ -1,0 +1,244 @@
+extends adminLayout
+
+block css
+    link(href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css" rel="stylesheet" integrity="sha384-lidBvvi7oLJ2j9e3nFlBSXfo+giBJ9L7QnUdgjc3AvLiynS0HdKEEEZtvZ4izE46" crossorigin="anonymous")
+    link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
+    style.
+       body {
+            background-color: white;
+        }    
+        .myMiniButton {
+            margin-left: 5px;
+        }        
+
+    link(id="favicon" rel="icon" href="/img/email.png" type="image/png" sizes="16x16")
+block scripts
+    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
+    script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
+    script(src='scripts/ellipsis.min.js')
+    script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
+    
+block content
+    script.    
+        $(document).ready(function ()
+        {     
+            var timeout = setTimeout("location.reload(true);", 600000);
+            $('#chkSelectAll').click(function ()
+            {
+                $('input:checkbox').not(this).prop('checked', this.checked);
+            });
+            changeIcon();
+            var table = $('#GridView1').DataTable({
+                 order: [[ 6, "asc" ]],  
+                 paging: false,
+                 info: false,
+                 responsive: true,
+                 language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."}, 
+                 columnDefs: [ 
+                    { targets: 2, render: $.fn.dataTable.render.ellipsis(40, true)},
+                    { targets: 3, render: $.fn.dataTable.render.ellipsis(30, true)},
+                    { targets: 5, render: $.fn.dataTable.render.ellipsis(30, true)}
+                ] 
+            });             
+        });      
+
+        function ConfirmFunction(action)
+        {
+            if (action == 'wipe')
+            {
+                var msg = "Are you sure you wish to clear the mail log file?";
+                return confirm(msg);
+            }           
+
+            if (action == 'clear')
+            {
+               $('#chkSelectAll').click();
+               action = 'remove';
+            }
+
+            var selectCount = $("table[id*=GridView1] input[type=checkbox][id*=chkItem]:checked").length;
+            if (selectCount > 0)
+            {
+                var msg = "Are you sure you wish to " + action + " " + selectCount + " email(s)?";
+                return confirm(msg);
+            }            
+            else
+            {
+                alert("Please select one or more messages.");
+                return false;
+            }
+        };
+       
+        function changeIcon()
+        { 
+            var emailCount = $("table[id*=GridView1] input[type=checkbox]").length - 1;        
+            //Reset to normal if no emails..
+            if (emailCount < 1)
+            {            
+                var link = document.createElement('link');
+                var oldLink = document.getElementById('favicon');
+                link.id = 'favicon';
+                link.rel = 'shortcut icon';
+                link.href = 'img/email.png';
+                if (oldLink)
+                    document.head.removeChild(oldLink);            
+                document.head.appendChild(link);
+                                 
+                return;
+            }
+
+            var favicon = document.getElementById('favicon');
+            var faviconSize = 16;
+
+            var canvas = document.createElement('canvas');
+            canvas.width = faviconSize;
+            canvas.height = faviconSize;
+
+            var context = canvas.getContext('2d');
+            var img = document.createElement('img');
+            img.src = favicon.href;
+
+            img.onload = () => {
+                // Draw Original Favicon as Background
+                context.drawImage(img, 0, 0, faviconSize, faviconSize);
+                        
+                // Draw Notification Circle
+                context.beginPath();
+                context.arc( canvas.width - faviconSize / 3 , faviconSize / 3, faviconSize / 3, 0, 2*Math.PI);
+                context.fillStyle = '#FF0000';
+                context.fill();
+
+                // Draw Notification Number
+                context.font = '10px "helvetica", sans-serif';
+                context.textAlign = "center";
+                context.textBaseline = "middle";
+                context.fillStyle = '#FFFFFF';
+                context.fillText(emailCount, canvas.width - faviconSize / 3, faviconSize / 3);
+
+                // Replace favicon
+                favicon.href = canvas.toDataURL('image/png');           
+            };
+        }
+
+        function performAICheck(filepath) {
+            // Show the modal and set the loading message
+            $('#aiCheckModal').show();
+            const resultElement = document.getElementById('aiCheckResult');
+            resultElement.innerHTML = 'Loading...';
+
+            // Perform the AI check
+            $.post('/mailq/performAICheck', { filepath: filepath }, function (data) {
+                if (data.success) {
+                    try {
+                        const result = JSON.parse(data.result);
+                        let color = '';
+                        if (result.spamLikelihood === 'High') {
+                            color = 'red';
+                        } else if (result.spamLikelihood === 'Medium') {
+                            color = 'orange';
+                        } else if (result.spamLikelihood === 'Low') {
+                            color = 'green';
+                        }
+                        
+                        let html = `<div style="margin-bottom: 10px;"><strong>Spam Likelihood:</strong> <span style="color: ${color}; font-weight: bold;">${result.spamLikelihood}</span></div>`;
+                        html += `<div style="margin-bottom: 10px;"><strong>Reasoning:</strong> ${result.reasoning}</div>`;
+                        if (result.notes) {
+                            html += `<div style="margin-bottom: 10px;"><strong>Notes:</strong> ${result.notes}</div>`;
+                        }
+                        resultElement.innerHTML = html;
+                    } catch (e) {
+                        resultElement.textContent = `AI Check Result: ${data.result}`;
+                    }
+                } else {
+                    resultElement.textContent = 'Failed to perform AI check. Please try again.';
+                }
+            }).fail(function () {
+                resultElement.textContent = 'An error occurred while performing the AI check.';
+            });
+        }
+
+        function closeAICheckModal() {
+            $('#aiCheckModal').hide();
+            return false;
+        }
+        
+    form(action='/mailq', method="POST")        
+        table(style='width: 100%')
+            tr
+                td(align="left")
+                    input#butDeleteAll(type='submit' name='action' value='Delete All' onclick="return ConfirmFunction('clear');" class="myMiniButton")
+                    input#butDelete(type='submit' name='action' value='Delete' onclick="return ConfirmFunction('remove');" class="myMiniButton")
+                    input#butRelease(type='submit' name='action' value='Release' onclick="return ConfirmFunction('release');" class="myMiniButton")  
+                    input#butClearLog(type='submit' name='action' value='Clear' onclick="return ConfirmFunction('wipe');" class="myMiniButton")
+                    input(type='button' name='action' value='Spam Log' onclick="window.open('/mailLog?range=Today')" class="myMiniButton")
+                    input(type='button' name='action' value='Email Log' onclick="window.open('/spamLog?today=true')" class="myMiniButton")
+                    // Clear filter button: shown when server indicates a filter is active
+                    if filterUser
+                        input(type='submit' name='action' value='Filter Clear' class='myMiniButton' onclick="return confirm('Clear MailQ user filter?');")
+                td(align="right")                
+                    | #{currentTime}        
+        div
+            table#GridView1(class="row-border compact order-column hover stripe nowrap" style='width: 100%; font-size: small')
+                thead
+                    th(scope='col')
+                        input#chkSelectAll(type='checkbox')
+                    th(scope='col') Recipients
+                    th(scope='col') Sender
+                    th(scope='col') Subject
+                    th(scope='col') Score 
+                    th(scope='col') Reason
+                    th(scope='col') Date/Time
+                    th(scope='col') ClientIP
+                    th(scope='col') DKIM
+                    th(scope='col') AI Check
+                    th(scope='col') Preview
+                each email, idx in emails
+                    tr(title=email.clientipinfo)
+                        td
+                            // Use a unique id for each checkbox
+                            - var uniqueId = 'GridView1_chkItem_' + idx;
+                            input(type='checkbox' id=uniqueId name=email.filepath)                           
+                        td(style='white-space:nowrap;') #{email.recipients}                            
+                        if email.safe 
+                            td #{email.sender}                                
+                        else 
+                            td(style='color: red;font-weight:bold;') #{email.sender}
+                        td #{email.subject}
+                        td #{email.spamScore}                            
+                        td #{email.antiSpam}
+                        td(style='white-space:nowrap;') #{email.date}
+                        td(style='white-space:nowrap;') 
+                            a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}  
+                        td #{email.dkim}  
+                        td
+                            input.myMiniButton(type="button" onclick=`performAICheck("${email.filepath}")` value='AI Check')
+                        td(style='white-space:nowrap;') 
+                            a(target="_blank" href="mailPreview?mailKey=" + email.filepath) safe
+                            if (email.safe)
+                                | 
+                                a(target="_blank" href="mailPreview?view=HTML&mailKey=" + email.filepath) html          
+                            input(type='hidden' name=email.filepath+'subject' value=email.subject)
+                            input(type='hidden' name=email.filepath+'sender' value=email.sender)
+                            input(type='hidden' name=email.filepath+'recipients' value=email.recipients)
+                            input(type='hidden' name=email.filepath+'spamScore' value=email.spamScore)
+                            input(type='hidden' name=email.filepath+'antiSpam' value=email.antiSpam)
+                            input(type='hidden' name=email.filepath+'clientip' value=email.clientip)
+                            input(type='hidden' name=email.filepath+'datetime' value=email.date)
+                            input(type='hidden' name=email.filepath+'dkim' value=email.dkim)
+                            input(type='hidden' name=email.filepath+'aiCheck' value=email.aiCheck)
+        br
+        div
+            p#myFile !{mailLog}
+        div#aiCheckModal(
+            style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(31,41,55,0.75); z-index:1050;"
+        )
+            div(
+                style="background:#fff; padding:32px; border-radius:8px; box-shadow:0 4px 24px rgba(0,0,0,0.2); max-width:700px; width:100%; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);"
+            )
+                h2(style="font-size:1.25rem; font-weight:bold; margin-bottom:16px;") AI SPAM Check Result
+                p#aiCheckResult(style="margin-bottom:16px;") Loading...
+                button(
+                    type="button"
+                    style="background:#2563eb; color:#fff; padding:8px 24px; border:none; border-radius:4px; box-shadow:0 2px 6px rgba(0,0,0,0.08); cursor:pointer;"
+                    onclick="closeAICheckModal(); return false;"
+                ) Close
