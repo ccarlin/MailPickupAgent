@@ -5,9 +5,20 @@ const { buildAllTestEmails, processEmail } = require('./index.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const rulesEditRouter = require('./routes/rulesEditor');
+
+// View engine setup
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, 'views'));
 
 // Middleware to parse incoming JSON request bodies
 app.use(express.json());
+app.use('/rulesEditor', rulesEditRouter);
+
+// GET route for the rules editor page
+app.get('/rulesEditor', (req, res) => {
+  res.render('rulesEditor');
+});
 
 // Helper function to build file paths from messageID and queueType
 function buildFilePaths(messageID, queueType) {

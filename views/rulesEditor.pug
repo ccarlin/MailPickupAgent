@@ -1,0 +1,523 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    title Rules Editor
+    style.
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
+      .container { max-width: 1200px; margin: 0 auto; }
+      h1 { margin-bottom: 8px; }
+      .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+      .header-bar h1 { margin: 0; }
+      .btn { display: inline-block; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; }
+      .btn-primary { background: #1a73e8; color: #fff; }
+      .btn-primary:hover { background: #1557b0; }
+      .btn-success { background: #0d9e4e; color: #fff; }
+      .btn-success:hover { background: #0a7e3e; }
+      .btn-danger { background: #d93025; color: #fff; }
+      .btn-danger:hover { background: #b3261e; }
+      .btn-sm { padding: 4px 10px; font-size: 12px; }
+      .btn-outline { background: transparent; border: 1px solid #ccc; color: #333; }
+      .btn-outline:hover { background: #eee; }
+      .section { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+      .section-header { background: #f0f4f8; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; cursor: pointer; }
+      .section-header h2 { font-size: 16px; margin: 0; }
+      .section-header .count { font-size: 13px; color: #666; margin-left: 8px; }
+      .section-header .actions { display: flex; gap: 8px; align-items: center; }
+      .section-body { padding: 12px 16px; }
+      .section-body.collapsed { display: none; }
+      .subsection { margin-bottom: 16px; }
+      .subsection:last-child { margin-bottom: 0; }
+      .subsection-title { font-size: 14px; font-weight: 600; color: #444; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+      .list { list-style: none; }
+      .list-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 13px; font-family: 'Consolas', 'Courier New', monospace; }
+      .list-item:last-child { border-bottom: none; }
+      .list-item .value { flex: 1; word-break: break-all; padding-right: 12px; }
+      .list-item .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+      .list-item:hover { background: #f8f9fa; }
+      .combo-grid { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .combo-grid th { background: #f0f4f8; padding: 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+      .combo-grid td { padding: 6px 8px; border-bottom: 1px solid #eee; font-family: 'Consolas', 'Courier New', monospace; }
+      .combo-grid tr:hover td { background: #f8f9fa; }
+      .combo-grid .cell-actions { display: flex; gap: 4px; }
+      .empty-state { color: #999; font-style: italic; padding: 12px 0; font-size: 13px; text-align: center; }
+      .inline-form { display: flex; gap: 8px; padding: 6px 0; flex-wrap: wrap; align-items: center; }
+      .inline-form input, .inline-form select, .inline-form textarea { padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: 'Consolas', 'Courier New', monospace; }
+      .inline-form input:focus, .inline-form select:focus, .inline-form textarea:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+      .inline-form .btn { padding: 6px 12px; font-size: 13px; }
+      .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 6px; color: #fff; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+      .toast.show { opacity: 1; }
+      .toast.success { background: #0d9e4e; }
+      .toast.error { background: #d93025; }
+      .toast.info { background: #1a73e8; }
+      .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
+      .modal { background: #fff; border-radius: 8px; padding: 24px; min-width: 400px; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+      .modal h3 { margin-bottom: 16px; }
+      .modal .field { margin-bottom: 12px; }
+      .modal .field label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #555; }
+      .modal .field input, .modal .field select, .modal .field textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: 'Consolas', 'Courier New', monospace; }
+      .modal .field textarea { min-height: 60px; resize: vertical; }
+      .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+      .toggle-icon { font-size: 12px; margin-right: 6px; }
+
+  body
+    .container
+      .header-bar
+        h1 Manage Rules
+        div
+          span#lastSaved(style='font-size:13px;color:#888;margin-right:12px;')
+          button#saveButton.btn.btn-primary Save Changes
+
+      #sectionsContainer
+
+    script(type='text/javascript').
+      let rulesData = null;
+      let collapsedSections = {};
+      let collapsedSubsections = {};
+
+      function showToast(message, type) {
+        const existing = document.querySelector('.toast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2500);
+      }
+
+      function createButton(text, className, onClick) {
+        const btn = document.createElement('button');
+        btn.className = 'btn ' + className;
+        btn.textContent = text;
+        btn.addEventListener('click', onClick);
+        return btn;
+      }
+
+      function confirmDelete(name) {
+        return confirm('Delete "' + name + '"?');
+      }
+
+      // --- Modal helpers ---
+      function showModal(title, fields, onSave) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        let html = '<h3>' + title + '</h3>';
+        fields.forEach(f => {
+          html += '<div class="field"><label>' + f.label + '</label>';
+          if (f.type === 'textarea') {
+            html += '<textarea name="' + f.name + '">' + (f.value || '') + '</textarea>';
+          } else if (f.type === 'select') {
+            html += '<select name="' + f.name + '">';
+            (f.options || []).forEach(o => {
+              html += '<option value="' + o.value + '"' + (o.value === f.value ? ' selected' : '') + '>' + o.label + '</option>';
+            });
+            html += '</select>';
+          } else {
+            html += '<input type="' + (f.type || 'text') + '" name="' + f.name + '" value="' + (f.value || '') + '" placeholder="' + (f.placeholder || '') + '">';
+          }
+          html += '</div>';
+        });
+        html += '<div class="modal-actions"><button class="btn btn-outline" id="modalCancelBtn">Cancel</button><button class="btn btn-primary" id="modalSaveBtn">Save</button></div>';
+        modal.innerHTML = html;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        modal.querySelector('#modalCancelBtn').addEventListener('click', () => overlay.remove());
+        modal.querySelector('#modalSaveBtn').addEventListener('click', () => {
+          const values = {};
+          fields.forEach(f => {
+            const el = modal.querySelector('[name="' + f.name + '"]');
+            values[f.name] = el ? el.value : '';
+          });
+          onSave(values);
+          overlay.remove();
+        });
+        modal.querySelector('input, textarea, select')?.focus();
+      }
+
+      // --- Render sections ---
+      function renderAllSections() {
+        const container = document.getElementById('sectionsContainer');
+        container.innerHTML = '';
+
+        if (!rulesData) return;
+
+        renderSection(container, 'Whitelist', 'whitelist', [
+          { key: 'senders', label: 'Senders', type: 'string-array', parent: 'whitelist' },
+          { key: 'ipRanges', label: 'IP Ranges', type: 'string-array', parent: 'whitelist' }
+        ]);
+
+        renderSection(container, 'Blacklist', 'blacklist', [
+          { key: 'senders', label: 'Senders', type: 'string-array', parent: 'blacklist' },
+          { key: 'subjects', label: 'Subjects', type: 'string-array', parent: 'blacklist' },
+          { key: 'ipRanges', label: 'IP Ranges', type: 'string-array', parent: 'blacklist' },
+          { key: 'countries', label: 'Countries', type: 'string-array', parent: 'blacklist' },
+          { key: 'combos', label: 'Combos', type: 'combos', parent: 'blacklist' },
+          { key: 'keywordFilters', label: 'Keyword Filters', type: 'keywordFilters', parent: 'blacklist' }
+        ]);
+
+        renderSection(container, 'Allowed TLDs', 'allowedTLDs', [
+          { key: 'allowedTLDs', label: 'TLDs', type: 'string-array', parent: null }
+        ]);
+      }
+
+      function renderSection(container, title, sectionKey, subsections) {
+        const section = document.createElement('div');
+        section.className = 'section';
+
+        const isCollapsed = collapsedSections[sectionKey];
+        let totalCount = 0;
+        subsections.forEach(ss => {
+          const arr = ss.parent ? (rulesData[ss.parent]?.[ss.key]) : rulesData[ss.key];
+          if (Array.isArray(arr)) totalCount += arr.length;
+        });
+
+        const header = document.createElement('div');
+        header.className = 'section-header';
+        header.innerHTML = '<h2><span class="toggle-icon">' + (isCollapsed ? '&#9654;' : '&#9660;') + '</span>' + title + ' <span class="count">(' + totalCount + ' entries)</span></h2>';
+        header.addEventListener('click', (e) => {
+          if (e.target.closest('.actions')) return;
+          collapsedSections[sectionKey] = !collapsedSections[sectionKey];
+          renderAllSections();
+        });
+
+        const body = document.createElement('div');
+        body.className = 'section-body' + (isCollapsed ? ' collapsed' : '');
+
+        subsections.forEach(ss => {
+          const subDiv = document.createElement('div');
+          subDiv.className = 'subsection';
+          const subKey = (ss.parent ? ss.parent + '.' : '') + ss.key;
+          const arr = ss.parent ? (rulesData[ss.parent]?.[ss.key]) : rulesData[ss.key];
+          const count = Array.isArray(arr) ? arr.length : 0;
+          const subCollapsed = collapsedSubsections[subKey];
+
+          const subTitle = document.createElement('div');
+          subTitle.className = 'subsection-title';
+          subTitle.style.cursor = 'pointer';
+          subTitle.innerHTML = '<span><span class="toggle-icon">' + (subCollapsed ? '&#9654;' : '&#9660;') + '</span>' + ss.label + ' (' + count + ')</span>';
+
+          const addBtn = createButton('+ Add', 'btn-success btn-sm', (e) => {
+            e.stopPropagation();
+            if (ss.type === 'combos') addComboItem(ss.parent, ss.key);
+            else if (ss.type === 'keywordFilters') addKeywordFilter(ss.parent, ss.key);
+            else addStringItem(ss.parent, ss.key);
+          });
+          const actionsDiv = document.createElement('div');
+          actionsDiv.appendChild(addBtn);
+          subTitle.appendChild(actionsDiv);
+
+          subTitle.addEventListener('click', (e) => {
+            if (e.target.closest('.btn')) return;
+            collapsedSubsections[subKey] = !collapsedSubsections[subKey];
+            renderAllSections();
+          });
+
+          subDiv.appendChild(subTitle);
+
+          if (!subCollapsed) {
+            if (!Array.isArray(arr) || arr.length === 0) {
+              const empty = document.createElement('div');
+              empty.className = 'empty-state';
+              empty.textContent = 'No entries';
+              subDiv.appendChild(empty);
+            } else {
+              if (ss.type === 'combos') {
+                subDiv.appendChild(renderComboList(arr, ss.parent, ss.key));
+              } else if (ss.type === 'keywordFilters') {
+                subDiv.appendChild(renderKeywordFilterList(arr, ss.parent, ss.key));
+              } else {
+                subDiv.appendChild(renderStringList(arr, ss.parent, ss.key));
+              }
+            }
+          }
+
+          body.appendChild(subDiv);
+        });
+
+        section.appendChild(header);
+        section.appendChild(body);
+        container.appendChild(section);
+      }
+
+      // --- String array rendering ---
+      function renderStringList(arr, parent, key) {
+        const list = document.createElement('ul');
+        list.className = 'list';
+        arr.forEach((item, index) => {
+          const li = document.createElement('li');
+          li.className = 'list-item';
+          const valSpan = document.createElement('span');
+          valSpan.className = 'value';
+          valSpan.textContent = item;
+          li.appendChild(valSpan);
+
+          const actions = document.createElement('div');
+          actions.className = 'item-actions';
+
+          const editBtn = createButton('Edit', 'btn-outline btn-sm', () => {
+            editStringItem(parent, key, index, item);
+          });
+          const delBtn = createButton('Del', 'btn-danger btn-sm', () => {
+            if (confirmDelete(item)) {
+              arr.splice(index, 1);
+              renderAllSections();
+              markUnsaved();
+            }
+          });
+          actions.appendChild(editBtn);
+          actions.appendChild(delBtn);
+          li.appendChild(actions);
+          list.appendChild(li);
+        });
+        return list;
+      }
+
+      function addStringItem(parent, key) {
+        const arr = parent ? rulesData[parent][key] : rulesData[key];
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        showModal('Add ' + label.slice(0, -1), [
+          { name: 'value', label: 'Value', type: 'text', value: '', placeholder: 'Enter value' }
+        ], (values) => {
+          if (!values.value.trim()) return;
+          arr.push(values.value.trim());
+          renderAllSections();
+          markUnsaved();
+          showToast('Added successfully', 'success');
+        });
+      }
+
+      function editStringItem(parent, key, index, currentValue) {
+        const arr = parent ? rulesData[parent][key] : rulesData[key];
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        showModal('Edit ' + label.slice(0, -1), [
+          { name: 'value', label: 'Value', type: 'text', value: currentValue, placeholder: 'Enter value' }
+        ], (values) => {
+          if (!values.value.trim()) return;
+          arr[index] = values.value.trim();
+          renderAllSections();
+          markUnsaved();
+          showToast('Updated successfully', 'success');
+        });
+      }
+
+      // --- Combo rendering ---
+      function renderComboList(arr, parent, key) {
+        const table = document.createElement('table');
+        table.className = 'combo-grid';
+        const thead = document.createElement('thead');
+        thead.innerHTML = '<tr><th>Recipient</th><th>Sender</th><th>IP Address</th><th></th></tr>';
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        arr.forEach((item, index) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + (item.recipient || '') + '</td><td>' + (item.sender || '') + '</td><td>' + (item.ipAddress || '') + '</td>';
+          const tdActions = document.createElement('td');
+          tdActions.className = 'cell-actions';
+          const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editComboItem(parent, key, index, item));
+          const delBtn = createButton('Del', 'btn-danger btn-sm', () => {
+            if (confirmDelete(JSON.stringify(item))) {
+              arr.splice(index, 1);
+              renderAllSections();
+              markUnsaved();
+            }
+          });
+          tdActions.appendChild(editBtn);
+          tdActions.appendChild(delBtn);
+          tr.appendChild(tdActions);
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        return table;
+      }
+
+      function addComboItem(parent, key) {
+        showModal('Add Combo', [
+          { name: 'recipient', label: 'Recipient', type: 'text', value: '', placeholder: 'e.g. CHUCK, AMY, or empty for all' },
+          { name: 'sender', label: 'Sender', type: 'text', value: '', placeholder: 'e.g. example.com (leave empty if using IP)' },
+          { name: 'ipAddress', label: 'IP Address', type: 'text', value: '', placeholder: 'e.g. 10.0.0.0/8 (leave empty if using Sender)' }
+        ], (values) => {
+          const obj = {};
+          if (values.recipient.trim()) obj.recipient = values.recipient.trim();
+          if (values.sender.trim()) obj.sender = values.sender.trim();
+          if (values.ipAddress.trim()) obj.ipAddress = values.ipAddress.trim();
+          if (!obj.recipient && (!obj.sender && !obj.ipAddress)) { showToast('Need at least recipient or sender/IP', 'error'); return; }
+          rulesData[parent][key].push(obj);
+          renderAllSections();
+          markUnsaved();
+          showToast('Combo added', 'success');
+        });
+      }
+
+      function editComboItem(parent, key, index, item) {
+        showModal('Edit Combo', [
+          { name: 'recipient', label: 'Recipient', type: 'text', value: item.recipient || '', placeholder: 'e.g. CHUCK' },
+          { name: 'sender', label: 'Sender', type: 'text', value: item.sender || '', placeholder: 'e.g. example.com' },
+          { name: 'ipAddress', label: 'IP Address', type: 'text', value: item.ipAddress || '', placeholder: 'e.g. 10.0.0.0/8' }
+        ], (values) => {
+          const arr = rulesData[parent][key];
+          const obj = {};
+          if (values.recipient.trim()) obj.recipient = values.recipient.trim();
+          if (values.sender.trim()) obj.sender = values.sender.trim();
+          if (values.ipAddress.trim()) obj.ipAddress = values.ipAddress.trim();
+          arr[index] = obj;
+          renderAllSections();
+          markUnsaved();
+          showToast('Combo updated', 'success');
+        });
+      }
+
+      // --- Keyword filter rendering ---
+      function renderKeywordFilterList(arr, parent, key) {
+        const table = document.createElement('table');
+        table.className = 'combo-grid';
+        const thead = document.createElement('thead');
+        thead.innerHTML = '<tr><th>Name</th><th>Expression</th><th>Score</th><th>Scope</th><th>Comment</th><th></th></tr>';
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        arr.forEach((item, index) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + (item.Comment || '') + '</td>';
+          const tdActions = document.createElement('td');
+          tdActions.className = 'cell-actions';
+          const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editKeywordFilter(parent, key, index, item));
+          const delBtn = createButton('Del', 'btn-danger btn-sm', () => {
+            if (confirmDelete(item.FilterName || 'filter')) {
+              arr.splice(index, 1);
+              renderAllSections();
+              markUnsaved();
+            }
+          });
+          tdActions.appendChild(editBtn);
+          tdActions.appendChild(delBtn);
+          tr.appendChild(tdActions);
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        return table;
+      }
+
+      function scopeLabel(scope) {
+        const map = { '0': 'Body', '1': 'Subject', '2': 'Headers', '3': 'Full' };
+        return map[scope] || scope || 'Unknown';
+      }
+
+      function filterTypeLabel(t) {
+        return t === '0' ? 'Regex' : t === '1' ? 'Plain' : t || 'Unknown';
+      }
+
+      function addKeywordFilter(parent, key) {
+        showModal('Add Keyword Filter', [
+          { name: 'FilterName', label: 'Filter Name', type: 'text', value: '', placeholder: 'e.g. MY_FILTER' },
+          { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: '', placeholder: 'Regex or plain text' },
+          { name: 'Score', label: 'Score', type: 'text', value: '1', placeholder: 'Numeric score' },
+          { name: 'FilterType', label: 'Filter Type', type: 'select', value: '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
+          { name: 'SearchScope', label: 'Search Scope', type: 'select', value: '1', options: [{ value: '0', label: 'Body' }, { value: '1', label: 'Subject' }, { value: '2', label: 'Headers' }, { value: '3', label: 'Full' }] },
+          { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: '0', options: [{ value: '0', label: 'Any match' }] },
+          { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
+          { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: '0', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
+          { name: 'Comment', label: 'Comment', type: 'text', value: '', placeholder: 'Optional comment' }
+        ], (values) => {
+          if (!values.FilterName.trim()) { showToast('Filter name is required', 'error'); return; }
+          if (!values.FilterExpression.trim()) { showToast('Expression is required', 'error'); return; }
+          const filter = {
+            FilterName: values.FilterName.trim(),
+            FilterType: values.FilterType,
+            SearchScope: values.SearchScope,
+            FilterExpression: values.FilterExpression,
+            FilterExpressionType: values.FilterExpressionType,
+            FilterMatchType: values.FilterMatchType,
+            FilterCaseSensitive: values.FilterCaseSensitive,
+            Score: values.Score
+          };
+          if (values.Comment.trim()) filter.Comment = values.Comment.trim();
+          rulesData[parent][key].push(filter);
+          renderAllSections();
+          markUnsaved();
+          showToast('Filter added', 'success');
+        });
+      }
+
+      function editKeywordFilter(parent, key, index, item) {
+        showModal('Edit Keyword Filter', [
+          { name: 'FilterName', label: 'Filter Name', type: 'text', value: item.FilterName || '', placeholder: 'e.g. MY_FILTER' },
+          { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: item.FilterExpression || '', placeholder: 'Regex or plain text' },
+          { name: 'Score', label: 'Score', type: 'text', value: item.Score || '1', placeholder: 'Numeric score' },
+          { name: 'FilterType', label: 'Filter Type', type: 'select', value: item.FilterType || '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
+          { name: 'SearchScope', label: 'Search Scope', type: 'select', value: item.SearchScope || '1', options: [{ value: '0', label: 'Body' }, { value: '1', label: 'Subject' }, { value: '2', label: 'Headers' }, { value: '3', label: 'Full' }] },
+          { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: item.FilterMatchType || '0', options: [{ value: '0', label: 'Any match' }] },
+          { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: item.FilterCaseSensitive || '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
+          { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: item.FilterExpressionType || '0', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
+          { name: 'Comment', label: 'Comment', type: 'text', value: item.Comment || '', placeholder: 'Optional comment' }
+        ], (values) => {
+          if (!values.FilterName.trim()) { showToast('Filter name is required', 'error'); return; }
+          if (!values.FilterExpression.trim()) { showToast('Expression is required', 'error'); return; }
+          const arr = rulesData[parent][key];
+          arr[index] = {
+            FilterName: values.FilterName.trim(),
+            FilterType: values.FilterType,
+            SearchScope: values.SearchScope,
+            FilterExpression: values.FilterExpression,
+            FilterExpressionType: values.FilterExpressionType,
+            FilterMatchType: values.FilterMatchType,
+            FilterCaseSensitive: values.FilterCaseSensitive,
+            Score: values.Score
+          };
+          if (values.Comment.trim()) arr[index].Comment = values.Comment.trim();
+          renderAllSections();
+          markUnsaved();
+          showToast('Filter updated', 'success');
+        });
+      }
+
+      // --- Save / Load ---
+      let unsaved = false;
+
+      function markUnsaved() {
+        unsaved = true;
+        document.getElementById('lastSaved').textContent = '(unsaved changes)';
+      }
+
+      async function fetchRules() {
+        try {
+          const response = await fetch('/rulesEditor/api/rules');
+          if (!response.ok) throw new Error('Failed to fetch rules');
+          rulesData = await response.json();
+          renderAllSections();
+          document.getElementById('lastSaved').textContent = 'Loaded';
+        } catch (error) {
+          console.error('Error fetching rules:', error);
+          showToast('Could not load rules', 'error');
+        }
+      }
+
+      async function saveRules() {
+        try {
+          const response = await fetch('/rulesEditor/api/rules/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rules: JSON.stringify(rulesData) })
+          });
+          if (!response.ok) throw new Error('Save failed');
+          unsaved = false;
+          document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
+          showToast('Rules saved successfully!', 'success');
+        } catch (error) {
+          console.error('Error saving rules:', error);
+          showToast('Failed to save rules', 'error');
+        }
+      }
+
+      document.getElementById('saveButton').addEventListener('click', saveRules);
+
+      window.addEventListener('beforeunload', (e) => {
+        if (unsaved) { e.preventDefault(); e.returnValue = ''; }
+      });
+
+      fetchRules();
