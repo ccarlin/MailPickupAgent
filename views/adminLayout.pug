@@ -369,12 +369,6 @@ html(lang='en')
           | Admin Menu
 
         // All existing collapsible sections remain as they were
-        .collapsible-section
-          .collapsible-header.expanded(data-target='logfiles-menu')
-            img(src="/img/logfiles.png" alt="Log Files" title="Log Files Menu"  style="width:22px; height:22px; vertical-align:middle;")
-            span Log Files
-            i.fas.fa-chevron-down.icon
-          .collapsible-content.expanded#logfiles-menu
             ul
               li.menu-item
                 a(href='/logviewer')
@@ -457,40 +451,15 @@ html(lang='en')
                     onclick="window.open('/maillog?range=Today', '_blank'); return false;"
                   )
                   span Mail Log
-        .collapsible-section
-          .collapsible-header(data-target='misc-menu')
-            img(src="/img/Misc.png" alt="Misc" title="Misc Menu Items" style="width:22px; height:22px; vertical-align:middle;")
-            span Misc
-            i.fas.fa-chevron-down.icon
-          .collapsible-content#misc-menu
-            ul
               li.menu-item
-                a(href='/controlpanel')
-                  img(src="/img/controlpanel.png" 
-                    alt="Control Panel" 
-                    title="Control Panel" 
+                a(href='/rulesEditor')
+                  img(src="/img/rules.png" 
+                    alt="Rules Editor" 
+                    title="Rules Editor" 
                     style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/controlpanel', '_blank'); return false;"
+                    onclick="window.open('/rulesEditor', '_blank'); return false;"
                   )
-                  span Control Panel
-              li.menu-item
-                a(href='/IPInfo')
-                  img(src="/img/IPInfo.jpg" 
-                    alt="IP Information" 
-                    title="IP Information" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/IPInfo', '_blank'); return false;"
-                  )
-                  span IP Info
-              li.menu-item
-                a(href='/localai')
-                  img(src="/img/ai.png" 
-                    alt="Local AI" 
-                    title="Local AI" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/localai', '_blank'); return false;"
-                  )
-                  span Local AI
+                  span Rules Editor
       .right-column
         block content
 

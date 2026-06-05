@@ -364,7 +364,6 @@ function findFirstBlacklistCountry(countries) {
 }
 
 // buildTestEmail removed — testEmails.js provides test case builders via buildAllTestEmails()
-
 async function sendTestEmail(subject, msg, from, headers = {}) {
   try {
     await transporter.sendMail({
@@ -431,7 +430,7 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
   }
 }
 
-async function processEmail(controlFilePath, messagePath) {
+async function processEmail(controlFilePath, messagePath, rules) {
   try {
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
@@ -441,7 +440,7 @@ async function processEmail(controlFilePath, messagePath) {
 
     console.log(`Processing email: ${subjectText} from ${fromAddr}`);
 
-    const rules = loadRules();
+    // const rules = loadRules();
     const destMessageName = path.basename(messagePath);
     const recipients = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
     const originatingIp = extractOriginatingIp(commandData);
@@ -668,7 +667,7 @@ else
   else
   { 
     // Normal processing of the email with all checks and potential quarantine or deletion based on rules and AI/spam checks.
-    processEmail(controlFilePath, messagePath).then(() => process.exit(0));
+    processEmail(controlFilePath, messagePath, loadRules()).then(() => process.exit(0));
   }
 }
 }

@@ -4,6 +4,10 @@ const path = require('path');
 
 const router = express.Router();
 
+router.get('/', (req, res) => {
+  res.render('rulesEditor', { title: 'Rules Editor' });
+});
+
 // Get rules.json content
 router.get('/api/rules', (req, res) => {
   const rulesPath = path.resolve(__dirname, '../config/rules.json');

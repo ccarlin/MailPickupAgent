@@ -397,7 +397,6 @@ async function isEmailSpamAICheck(email, req)
         return "Offline";
 }
 
-
 //Get the quarentined emails to be processed
 function getEmails(emailPath, callback)
 {

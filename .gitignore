@@ -12,5 +12,4 @@ dry-run-output/
 deleted/
 quarantine/
 release/
-config/rules.json
-
+config/rules*

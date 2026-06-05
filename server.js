@@ -12,6 +12,7 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Middleware to parse incoming JSON request bodies
 app.use(express.json());
+app.use(express.static(__dirname + '/public'));
 app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/mailq', require('./routes/mailQRoute'));
 
@@ -230,7 +231,7 @@ app.post('/api/process', async (req, res) => {
     }
 
     // Process synchronously
-    await processEmail(controlFilePath, messagePath);
+    await processEmail(controlFilePath, messagePath, config.rules);
     
     const result = {
       timestamp: new Date().toISOString(),

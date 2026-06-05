@@ -1,0 +1,374 @@
+/* #STYLES  */
+html {
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  /* box-sizing: inherit; [1] */
+  margin: 0;
+  padding: 0;
+}
+
+/* FONTS  */
+body {
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif; /* [2] */
+  height: 100%;
+}
+
+/* Header  */
+.header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: rightcenter;
+  height: 50px;
+  background-color: #525286;
+  color: #FFFFFF;
+  z-index: 1000;
+}
+
+/* Page content */
+.content {
+  padding: 4px;
+}
+
+/* The sticky class is added to the header with JS when it reaches its scroll position */
+.sticky {
+  position: fixed;
+  top: 0;
+  width: 100%
+}
+
+/* Add some top padding to the page content to prevent sudden quick movement */
+.sticky + .content {
+  padding-top: 52px;
+}
+
+/* Chat Window Styles
+   ========================================================================== */
+  :root {
+    --rowHeight: 86vh;
+    --colWidth: 74vw;
+  }
+
+  body{
+      background: #333333;
+  }
+  
+  .videos { 
+  
+      display: grid;
+      grid-gap: 5px;
+      grid-auto-flow: row;
+      
+      grid-template-columns: repeat(auto-fit, minmax(var(--colWidth), 1fr)) ;
+  }
+  
+  .videoContainer {
+      position: relative;
+      overflow: hidden;
+      
+      min-height: var(--rowHeight);
+      min-width: var(--colWidth);
+      
+  }
+  
+  .videoContainer video {
+  
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: auto;
+      width: 100%;
+  }
+  
+  .videoLabel {
+      color: white;
+      font: bold 18px Arial, Sans-Serif;
+      line-height: 18px;
+      height: 18px;
+      
+      background: rgba(0, 0, 0, 0.55);
+      
+      position: absolute;
+      left: 2;
+      bottom: 2;
+      padding: 4px;
+  }
+
+  .carousel
+  {
+    border-radius: 5px;
+    cursor: pointer;
+    float: left;
+    overflow: hidden;
+    height: 100%;
+    border: 2px solid #FFF;
+    border-radius: 4px;
+    margin-bottom: 5px;  
+    margin-right:5px;
+    object-fit:contain;
+    height:160px;
+    width:200px
+  }
+
+  .carousel:hover
+  {
+    border: 2px solid rgb(218, 19, 19);    
+  }
+
+  .textreg
+{
+    color: #f39c12;
+    font-family: Verdana,Arial,Helvetica,sans-serif;
+    font-size: 16px;
+    padding-top: 10px;    
+    margin-left: 20px;
+}
+
+/***  Video Overlay for File Name  ***/
+.imagecontainer {
+  position: relative;
+  width: 200px;  
+}
+
+.image {
+  /*display: block;*/
+  width: 200px;
+  height: auto;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  transition: .5s ease;
+  background-color: #008CBA;
+}
+
+.imagecontainer:hover .overlay {
+  opacity: 1;
+}
+
+.text {
+  color: white;
+  font-size: 20px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+/* Style the buttons that are used to open and close the accordion panel */
+.accordion {
+  background-color: #16B1E5;
+  background: linear-gradient(to bottom, #16B1E5 5%, #5EF1FF 100%);
+  color: #525286;
+  cursor: pointer;
+  padding: 6px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  outline: none;
+  transition: 1.0s;
+  font-size: large;
+  text-align: center;  
+}
+
+/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.active, .accordion:hover {
+  background-color: #525286;
+  background: linear-gradient(to bottom, #525286 5%, #019ad2 100%);
+  color: white;
+}
+
+/* Style the accordion panel. Note: hidden by default */
+.panel {
+  padding: 0 18px;
+  background-color: black;
+  overflow: hidden;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease-out;  
+}
+
+.accordion:after {
+  content: '\02795'; /* Unicode character for "plus" sign (+) */
+  font-size: 13px;
+  color: #777;
+  float: right;
+  margin-left: 5px;
+}
+
+.active:after {
+  content: "\2796"; /* Unicode character for "minus" sign (-) */
+}
+
+.thumbnail {
+  border: 1px solid #ddd; /* Gray border */
+  border-radius: 4px;  /* Rounded border */  
+}
+
+.scrollLink{
+  margin-right: 40px;
+}
+
+/* unvisited link */
+a.linkMe:link {
+  color: #5EF1FF;
+  text-decoration: none;
+}
+
+/* visited link */
+a.linkMe:visited {
+  color: #5EF1FF;
+  text-decoration: none;
+}
+
+/* mouse over link */
+a.linkMe:hover {
+  color: violet;
+  text-decoration: underline;
+}
+
+/* selected link */
+a.linkMe:active {
+  color: violet;
+  text-decoration: underline;
+}
+.myButton {
+  box-shadow: 0px 1px 0px 0px #f0f7fa;
+  background:linear-gradient(to bottom, #525286 5%, #019ad2 100%);
+  background-color:#525286;
+  border-radius:6px;
+  border:1px solid #057fd0;
+  display:inline-block;
+  cursor:pointer;
+  color:#ffffff;
+  font-family:Arial;
+  font-size:18px;
+  font-weight:bold;
+  padding:6px 12px;
+  text-decoration:none;
+  text-shadow:0px -1px 0px #5b6178;
+}
+.myButton:hover {
+  background:linear-gradient(to bottom, #019ad2 5%, #525286 100%);
+  background-color:#019ad2;
+}
+.myButton:active {
+  position:relative;
+  top:1px;
+}    
+.myButton.icon span {
+  padding-left: 36px;
+  background: url('/img/videos.png') no-repeat 0 -4px;
+}
+.myButton.icon.videos span {
+  background-position: 0px -36px;
+}
+
+.myMiniButton {
+  box-shadow: 0px 1px 0px 0px #f0f7fa;
+  background:linear-gradient(to bottom, #525286 5%, #019ad2 100%);
+  background-color:#525286;
+  border-radius:3px;
+  border:1px solid #057fd0;
+  display:inline-block;
+  cursor:pointer;
+  color:#ffffff;
+  font-family:Arial;
+  font-size:10px;
+  font-weight:bold;
+  padding:3px 6px;
+  text-decoration:none;
+  text-shadow:0px -1px 0px #5b6178;
+}
+.myMiniButton:hover {
+  background:linear-gradient(to bottom, #019ad2 5%, #525286 100%);
+  background-color:#019ad2;
+}
+.myMiniButton:active {
+  position:relative;
+  top:1px;
+}    
+
+.marquee {
+  width: 450px;
+  margin: 0 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.marquee span {
+  display: inline-block;
+  padding-left: 100%;
+  will-change: transform;
+  /* show the marquee just outside the paragraph */
+  animation: marquee 20s linear infinite;
+}
+
+.marquee span:hover {
+  animation-play-state: paused
+}
+
+/* Make it move */
+@keyframes marquee {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(-100%, 0);
+  }
+}
+.inner { 
+  height: 100%; 
+}
+.SumoSelect>.CaptionCount {
+border-top :none;
+border-left :none;
+border-right :none;
+border-bottom :1pxsolid#a4a4a4;
+margin-left :0px;
+min-height :22.8px;
+}
+.SumoSelect.open>.CaptionCont ,.SumoSelect:focus>.CaptionCount ,.SumoSelect:hover>.CaptionCount {
+box-shadow :none;
+border-color :#7799d0;
+}
+.SumoSelect>.optWrapper>.MultiControls {
+height :32px;
+}
+.SumoSelect>.CaptionCont>span {
+font-size :small;
+}
+.SumoSelect>.CaptionCont {
+min-height :19px;
+height :19px;
+display :flex;
+align-items :center;
+box-sizing :border-box;
+}
+.SelectBox {
+padding :0px4px!important;
+}
+.input-field {
+margin :0px;
+}
+.SumoSelect .select-all>label, .SumoSelect>.CaptionCont, .SumoSelect>.optWrapper>.options li.opt label {
+    white-space: normal;
+    /* overflow: auto; Adds scrollbars if content overflows */
+}
+.SumoSelect {
+  min-width: 200px !important;
+  width: 100% !important;
+}

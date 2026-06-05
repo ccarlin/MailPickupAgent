@@ -2,20 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const moment = require("moment");
 const net = require("net");
-const nodemailer = require("nodemailer");
 const simpleParser = require('mailparser').simpleParser;
 //Supress output of this command
 require('dotenv').config({ quiet: true });
-
-const SMTP_HOST = process.env.SMTP_HOST || 'localhost';
-const SMTP_PORT = process.env.SMTP_PORT || 25;
-const transporter = nodemailer.createTransport({
-  host: SMTP_HOST, port: SMTP_PORT, secure: false, 
-   tls: {
-        // Do not fail on invalid certificates
-        rejectUnauthorized: false
-    }
-});
 
 module.exports = {
     getSortedFiles: function(imageDir, fileType, sortType, callback) {        
@@ -134,20 +123,6 @@ module.exports = {
       else if ((environment == "development") || (level != "DEBUG"))
         console.info(message);      
     },    
-    sendSystemEmail: function(subject, msg) {
-      try {
-        transporter.sendMail({
-          from: '"Chuck Carlin" <chuck@ccarlin.com>', // sender address
-          to: "ccarlinx@hotmail.com", // list of receivers
-          subject: subject, 
-          html: msg
-        });
-      }
-      catch (err)
-      {
-        this.logError(`Error Sending system email: ${err.message}`, "127.0.0.1")
-      }
-    },
     // Async: parse email file and return HTML/text as HTML.
     // Returns a Promise<string>. Callers should await this function.
     emailExtract: async function(mailFile, inHTML) {
