@@ -53,12 +53,16 @@ html(lang='en')
       .toast.error { background: #d93025; }
       .toast.info { background: #1a73e8; }
       .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
-      .modal { background: #fff; border-radius: 8px; padding: 24px; min-width: 400px; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+      .modal { background: #fff; border-radius: 8px; padding: 24px; min-width: 400px; max-width: 1000px; max-height: 80vh; overflow-y: auto; }
       .modal h3 { margin-bottom: 16px; }
-      .modal .field { margin-bottom: 12px; }
+      .modal-fields { display: grid; gap: 16px; }
+      .modal-fields.single-column { grid-template-columns: 1fr; }
+      .modal-fields.two-column { grid-template-columns: 1fr 1fr; }
+      .modal .field { margin-bottom: 0; }
       .modal .field label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #555; }
       .modal .field input, .modal .field select, .modal .field textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: 'Consolas', 'Courier New', monospace; }
       .modal .field textarea { min-height: 60px; resize: vertical; }
+      .modal .field.full-width { grid-column: 1 / -1; }
       .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
       .toggle-icon { font-size: 12px; margin-right: 6px; }
 
@@ -101,15 +105,17 @@ html(lang='en')
       }
 
       // --- Modal helpers ---
-      function showModal(title, fields, onSave) {
+      function showModal(title, fields, onSave, twoColumn) {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
         const modal = document.createElement('div');
         modal.className = 'modal';
-        let html = '<h3>' + title + '</h3>';
+        const columnClass = twoColumn ? 'two-column' : 'single-column';
+        let html = '<h3>' + title + '</h3><div class="modal-fields ' + columnClass + '">';
         fields.forEach(f => {
-          html += '<div class="field"><label>' + f.label + '</label>';
+          const fullWidthClass = f.fullWidth ? ' full-width' : '';
+          html += '<div class="field' + fullWidthClass + '"><label>' + f.label + '</label>';
           if (f.type === 'textarea') {
             html += '<textarea name="' + f.name + '">' + (f.value || '') + '</textarea>';
           } else if (f.type === 'select') {
@@ -123,7 +129,7 @@ html(lang='en')
           }
           html += '</div>';
         });
-        html += '<div class="modal-actions"><button class="btn btn-outline" id="modalCancelBtn">Cancel</button><button class="btn btn-primary" id="modalSaveBtn">Save</button></div>';
+        html += '</div><div class="modal-actions"><button class="btn btn-outline" id="modalCancelBtn">Cancel</button><button class="btn btn-primary" id="modalSaveBtn">Save</button></div>';
         modal.innerHTML = html;
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
@@ -404,7 +410,7 @@ html(lang='en')
       }
 
       function scopeLabel(scope) {
-        const map = { '0': 'Body', '1': 'Subject', '2': 'Headers', '3': 'Full' };
+        const map = { '1': 'Body', '2': 'Subject', '3': 'Full', '4': 'Headers' };
         return map[scope] || scope || 'Unknown';
       }
 
@@ -414,12 +420,12 @@ html(lang='en')
 
       function addKeywordFilter(parent, key) {
         showModal('Add Keyword Filter', [
-          { name: 'FilterName', label: 'Filter Name', type: 'text', value: '', placeholder: 'e.g. MY_FILTER' },
-          { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: '', placeholder: 'Regex or plain text' },
+          { name: 'FilterName', label: 'Filter Name', type: 'text', value: '', placeholder: 'e.g. MY_FILTER', fullWidth: true },
+          { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: '', placeholder: 'Regex or plain text', fullWidth: true },
           { name: 'Score', label: 'Score', type: 'text', value: '1', placeholder: 'Numeric score' },
           { name: 'FilterType', label: 'Filter Type', type: 'select', value: '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
-          { name: 'SearchScope', label: 'Search Scope', type: 'select', value: '1', options: [{ value: '0', label: 'Body' }, { value: '1', label: 'Subject' }, { value: '2', label: 'Headers' }, { value: '3', label: 'Full' }] },
-          { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: '0', options: [{ value: '0', label: 'Any match' }] },
+          { name: 'SearchScope', label: 'Search Scope', type: 'select', value: '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }] },
+          { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: '0', options: [{ value: '0', label: 'Any match' }, { value: '1', label: 'Starts with' }, { value: '2', label: 'Ends with' }, { value: '3', label: 'Whole word' }] },
           { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
           { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: '0', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
           { name: 'Comment', label: 'Comment', type: 'text', value: '', placeholder: 'Optional comment' }
@@ -441,17 +447,17 @@ html(lang='en')
           renderAllSections();
           markUnsaved();
           showToast('Filter added', 'success');
-        });
+        }, true);
       }
 
       function editKeywordFilter(parent, key, index, item) {
         showModal('Edit Keyword Filter', [
-          { name: 'FilterName', label: 'Filter Name', type: 'text', value: item.FilterName || '', placeholder: 'e.g. MY_FILTER' },
-          { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: item.FilterExpression || '', placeholder: 'Regex or plain text' },
+          { name: 'FilterName', label: 'Filter Name', type: 'text', value: item.FilterName || '', placeholder: 'e.g. MY_FILTER', fullWidth: true },
+          { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: item.FilterExpression || '', placeholder: 'Regex or plain text', fullWidth: true },
           { name: 'Score', label: 'Score', type: 'text', value: item.Score || '1', placeholder: 'Numeric score' },
           { name: 'FilterType', label: 'Filter Type', type: 'select', value: item.FilterType || '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
-          { name: 'SearchScope', label: 'Search Scope', type: 'select', value: item.SearchScope || '1', options: [{ value: '0', label: 'Body' }, { value: '1', label: 'Subject' }, { value: '2', label: 'Headers' }, { value: '3', label: 'Full' }] },
-          { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: item.FilterMatchType || '0', options: [{ value: '0', label: 'Any match' }] },
+          { name: 'SearchScope', label: 'Search Scope', type: 'select', value: item.SearchScope || '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }] },
+          { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: item.FilterMatchType || '0', options: [{ value: '0', label: 'Any match' }, { value: '1', label: 'Starts with' }, { value: '2', label: 'Ends with' }, { value: '3', label: 'Whole word' }] },
           { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: item.FilterCaseSensitive || '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
           { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: item.FilterExpressionType || '0', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
           { name: 'Comment', label: 'Comment', type: 'text', value: item.Comment || '', placeholder: 'Optional comment' }
