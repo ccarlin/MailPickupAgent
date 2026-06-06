@@ -5,11 +5,14 @@ const axios = require('axios');
 const { simpleParser } = require('mailparser');
 const nodemailer = require('nodemailer');
 const { buildAllTestEmails } = require('./testEmails');
+const { buildFilePaths } = require('./tools');
 const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
 //Supress output of this command
 require('dotenv').config({ quiet: true });
 
+const SMTP_QUEUE_DIR = process.env.SMTP_QUEUE_DIR || './queues';
+const SMTP_COMMAND_DIR = process.env.SMTP_COMMAND_DIR || './queues';
 const QUARANTINE_DIR = process.env.QUARANTINE_DIR || './quarantine';
 const DELETED_DIR = process.env.DELETED_DIR || './deleted';
 const SMTP_HOST = process.env.SMTP_HOST || 'localhost';
@@ -248,9 +251,11 @@ function scoreKeywordFilters(parsed, filters) {
   return filters.reduce((acc, filter) => {
     if (matchKeywordFilter(parsed, filter)) {
       const score = Number(filter.Score) || 0;
+      const filterName = filter.FilterName || 'Keyword';
+      console.log(`Keyword filter matched: "${filterName}", score: ${score}`);
       if (score > 0) {
         acc.score += score;
-        acc.matches.push(filter.FilterName || 'Keyword');
+        acc.matches.push(filterName);
       }
     }
     return acc;
@@ -293,7 +298,7 @@ function checkSpamAssassin(rawEmail) {
       let headerComplete = false;
       let isSpam = null;
       let score = 0;
-      let threshold = 5.0;
+      let threshold = 15.0;
 
       socket.on('data', (data) => {
         responseData += data.toString();
@@ -641,10 +646,7 @@ else
 {
   // Normal processing mode - expects message file and queue type as arguments
   const [messageFile, queueType] = args;
-  const qt = (queueType || '').toString().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
-  const envDir = (suffix) => `${qt}_${suffix}`;
-  const messagePath = process.env[envDir('QUEUE_DIR')] ? path.join(process.env[envDir('QUEUE_DIR')], messageFile) : messageFile;
-  const controlFilePath = process.env[envDir('COMMAND_DIR')] ? path.join(process.env[envDir('COMMAND_DIR')], messageFile) : messageFile;
+  const { messagePath, controlFilePath } = buildFilePaths(messageFile, queueType);
   // Dry run just copies files and logs the action without processing, allowing for testing and rule verification without affecting the actual email flow.
   //  It also sleeps for 15 seconds before exit to allow time to inspect the file paths are correct.
   if (DRY_RUN_COPY_LOG) {

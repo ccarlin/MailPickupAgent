@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { buildAllTestEmails, processEmail } = require('./index.js');
+const { buildFilePaths } = require('./tools');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,15 +16,6 @@ app.use(express.json());
 app.use(express.static(__dirname + '/public'));
 app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/mailq', require('./routes/mailQRoute'));
-
-// Helper function to build file paths from messageID and queueType
-function buildFilePaths(messageID, queueType) {
-  const qt = (queueType || '').toString().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
-  const envDir = (suffix) => `${qt}_${suffix}`;
-  const messagePath = process.env[envDir('QUEUE_DIR')] ? path.join(process.env[envDir('QUEUE_DIR')], messageID) : messageID;
-  const controlFilePath = process.env[envDir('COMMAND_DIR')] ? path.join(process.env[envDir('COMMAND_DIR')], messageID) : messageID;
-  return { messagePath, controlFilePath };
-}
 
 // Configuration loaded at startup
 let config = {

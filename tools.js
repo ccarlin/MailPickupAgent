@@ -141,5 +141,15 @@ module.exports = {
     },
     sleep: function(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    },
+    buildFilePaths: function(messageID, queueType) {
+        const qt = (queueType || '').toString().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+        const envDir = (suffix) => `${qt}_${suffix}`;
+        const messagePath = process.env[envDir('QUEUE_DIR')] ? path.join(process.env[envDir('QUEUE_DIR')], messageID) : messageID;
+        const controlFilePath = process.env[envDir('COMMAND_DIR')] ? path.join(process.env[envDir('COMMAND_DIR')], messageID) : messageID;
+        console.log(`Built file paths for messageID: ${messageID}, queueType: ${queueType}`);
+        console.log(`Resolved message path: ${messagePath}`);
+        console.log(`Resolved control file path: ${controlFilePath}`);
+        return { messagePath, controlFilePath };
     }    
 };
