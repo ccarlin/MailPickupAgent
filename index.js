@@ -26,6 +26,8 @@ const DRY_RUN_COPY_LOG = (process.env.DRY_RUN_COPY_LOG || 'false').toLowerCase()
 const DRY_RUN_LOG_FILE = process.env.DRY_RUN_LOG_FILE || './mailpickupagent-dryrun.log';
 const DRY_RUN_COPY_DEST = process.env.DRY_RUN_COPY_DEST || './dry-run-output';
 const TEST_EMAIL_SLEEP_SECONDS = Number(process.env.TEST_EMAIL_SLEEP_SECONDS || 10) || 10;
+const THRESHOLD_QUARANTINE = Number(process.env.THRESHOLD_QUARANTINE || 5);
+const THRESHOLD_DELETE = Number(process.env.THRESHOLD_DELETE || 15);
 const HEADER_SEPARATOR = '\r\n\r\n';
 
 [QUARANTINE_DIR, DELETED_DIR, DRY_RUN_COPY_DEST].forEach(dir => {
@@ -472,29 +474,24 @@ async function processEmail(controlFilePath, messagePath, rules) {
       return;
     }
 
-    // Flag for quarantine and track reasons for header and logging purposes
-    let quarantine = false;
+    // Track reasons for header and logging purposes and sum the spam score
     let quarantineReasons = [];
     let spamScore = 0;
     if (ipInRange(originatingIp, bl.ipRanges)) {
-      quarantine = true;
       quarantineReasons.push('Originating IP is blacklisted');
       spamScore++;
     }
     if (matchCountry(originatingIp,bl.countries)) {
-      quarantine = true;
       quarantineReasons.push('Originating country is blacklisted');
       spamScore++;
     }
     if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
-      quarantine = true;
       quarantineReasons.push('Combo rule matched');
       spamScore++;
     }
 
     const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters);
     if (keywordResult.score > 0) {
-      quarantine = true;
       spamScore += keywordResult.score;
       quarantineReasons.push(`Keyword matches: ${keywordResult.matches.join(', ')}`);
     }
@@ -506,7 +503,6 @@ async function processEmail(controlFilePath, messagePath, rules) {
         console.log(`SpamAssassin score: ${saResult.score}/${saResult.threshold}, isSpam: ${saResult.isSpam}`);
         spamScore += saResult.score;
         if (saResult.isSpam) {
-          quarantine = true;
           quarantineReasons.push('SpamAssassin flagged as spam');          
         }
       } else if (SPAMASSASSIN_ENABLED) {
@@ -522,7 +518,6 @@ async function processEmail(controlFilePath, messagePath, rules) {
         const isSpam = aiResponse.toLowerCase().includes('spam') && !aiResponse.toLowerCase().includes('ham');
         if (isSpam) {
           spamScore++;
-          quarantine = true;
           quarantineReasons.push('AI classified as spam');
         }        
       } catch (err) {
@@ -530,12 +525,18 @@ async function processEmail(controlFilePath, messagePath, rules) {
       }
     }    
 
-    if (quarantine) {
-      console.log(`Quarantining email due to: ${quarantineReasons.join('; ')}`);
+    console.log(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
+
+    if (spamScore >= THRESHOLD_DELETE) {
+      console.log(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
+      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore);
+      await deleteEmail(controlFilePath, messagePath, destMessageName);
+    } else if (spamScore >= THRESHOLD_QUARANTINE) {
+      console.log(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore);
       await quarantineEmail(controlFilePath, messagePath, destMessageName);
     } else {
-      console.log(`No rules matched, releasing email`);
+      console.log(`Releasing email with score ${spamScore}.`);
     }
   } catch (error) {
     console.error(`Error processing ${controlFilePath} and ${messagePath}:`, error);
