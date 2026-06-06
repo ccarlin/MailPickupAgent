@@ -58,7 +58,7 @@ html(lang='en')
 
       /* Left Column (Menu) styling */
       .left-column {
-        width: 250px; /* Fixed width for the menu column */
+        width: 210px; /* Fixed width for the menu column */
         background-color: #f8fafc; /* Light background for the menu */
         padding: 0.5rem 1rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Shadow for depth */
@@ -173,7 +173,7 @@ html(lang='en')
       .left-column h2 {
         margin-top: 0;
         color: #1e293b;
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         border-bottom: 2px solid #cbd5e1;
         padding-bottom: 0.5rem;
         margin-bottom: 1rem;
@@ -265,7 +265,7 @@ html(lang='en')
       .right-column h2 {
         margin-top: 0;
         color: #1e293b;
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         border-bottom: 2px solid #cbd5e1;
         padding-bottom: 0.5rem;
         margin-bottom: 1.5rem;
@@ -368,98 +368,53 @@ html(lang='en')
           img(src="/img/admin.png" alt="Admin" title="Admin Menu" style="width:28px; height:28px; vertical-align:middle; margin-right:8px;")
           | Admin Menu
 
-        // All existing collapsible sections remain as they were
-            ul
-              li.menu-item
-                a(href='/logviewer')
-                  img(src="/img/logviewer.png" 
-                    alt="Log Viewer" 
-                    title="Log Viewer" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/logviewer', '_blank'); return false;"
-                  )
-                  span Log Viewer
-              li.menu-item
-                a(href='/firewalllog' target="_blank")
-                  img.menu-icon(
-                    src="/img/firewall.png"
-                    alt="Firewall"
-                    title="Firewall Log"
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
-                    onclick="window.open('/firewalllog', '_blank'); return false;"
-                  )
-                  span Firewall Log
-              li.menu-item
-                a(href='/blacklist')
-                  img(src="/img/blacklist.png" 
-                    alt="Blacklist" 
-                    title="Blacklist" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/blacklist', '_blank'); return false;"
-                  )
-                  span Blacklist
-              li.menu-item
-                a(href='/media')
-                  img(src="/img/doorbell.png" 
-                    alt="Media" 
-                    title="Reolink Doorbell Media" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/media', '_blank'); return false;"
-                  )
-                  span Media
-        .collapsible-section
-          .collapsible-header.expanded(data-target='email-menu')
-            img(src="/img/emailMenu.png" alt="Email" title="Email Menu" style="width:22px; height:22px; vertical-align:middle;")
-            span Email
-            i.fas.fa-chevron-down.icon
-          .collapsible-content.expanded#email-menu
-            ul
-              li.menu-item
-                a(href='/mailq')
-                  img(src="/img/mailqueue.gif" 
-                    alt="Mail Queue" 
-                    title="Mail Queue" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/mailq', '_blank'); return false;"
-                  )
-                  span Mail Queue
-              li.menu-item
-                a(href='/smtplog?today=true' target="_blank")
-                  img.menu-icon(
-                    src="/img/smtplog.png"
-                    alt="SMTP"
-                    title="SMTP Log"
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
-                    onclick="window.open('/smtplog?today=true', '_blank'); return false;"
-                  )
-                  span SMTP Log
-              li.menu-item
-                a(href='/spamlog?today=true')
-                  img(src="/img/spamlog.png" 
-                    alt="Email Log" 
-                    title="Email Log" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/spamlog?today=true', '_blank'); return false;"
-                  )
-                  span SPAM Log
-              li.menu-item
-                a(href='/maillog?range=Today')
-                  img(src="/img/email.png" 
-                    alt="Queue Log" 
-                    title="Queue Log" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/maillog?range=Today', '_blank'); return false;"
-                  )
-                  span Mail Log
-              li.menu-item
-                a(href='/rulesEditor')
-                  img(src="/img/rules.png" 
-                    alt="Rules Editor" 
-                    title="Rules Editor" 
-                    style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                    onclick="window.open('/rulesEditor', '_blank'); return false;"
-                  )
-                  span Rules Editor
+        ul
+          li.menu-item
+            a(href='/mailq')
+              img(src="/img/mailqueue.gif" 
+                alt="Mail Queue" 
+                title="Mail Queue" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/mailq', '_blank'); return false;"
+              )
+              span Mail Queue
+          li.menu-item
+            a(href='/smtplog?today=true' target="_blank")
+              img.menu-icon(
+                src="/img/smtplog.png"
+                alt="SMTP"
+                title="SMTP Log"
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
+                onclick="window.open('/smtplog?today=true', '_blank'); return false;"
+              )
+              span SMTP Log
+          li.menu-item
+            a(href='/spamlog?today=true')
+              img(src="/img/spamlog.png" 
+                alt="Email Log" 
+                title="Email Log" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/spamlog?today=true', '_blank'); return false;"
+              )
+              span SPAM Log
+          li.menu-item
+            a(href='/maillog?range=Today')
+              img(src="/img/email.png" 
+                alt="Queue Log" 
+                title="Queue Log" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/maillog?range=Today', '_blank'); return false;"
+              )
+              span Mail Log
+          li.menu-item
+            a(href='/rulesEditor')
+              img(src="/img/rules.png" 
+                alt="Rules Editor" 
+                title="Rules Editor" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/rulesEditor', '_blank'); return false;"
+              )
+              span Rules Editor
       .right-column
         block content
 
@@ -473,16 +428,6 @@ html(lang='en')
           if (window.innerWidth <= 768) {
             // On small screens, start collapsed (vertical collapse)
             leftColumn.classList.add('collapsed');
-            // Ensure the individual collapsible sections are also collapsed if they were expanded
-            document.querySelectorAll('.collapsible-content.expanded').forEach(content => {
-              content.classList.remove('expanded');
-            });
-            document.querySelectorAll('.collapsible-header.expanded').forEach(header => {
-              header.classList.remove('expanded');
-              const icon = header.querySelector('.icon');
-              if (icon) icon.style.transform = 'rotate(-90deg)';
-            });
-
           } else {
             // Restore state from localStorage
             if (localStorage.getItem('leftColumnCollapsed') === 'true') {
@@ -490,19 +435,7 @@ html(lang='en')
             }
             else 
               leftColumn.classList.remove('collapsed');
-            // Ensure individual collapsible sections are expanded as initially intended
-            document.querySelectorAll('.collapsible-content').forEach(content => {
-              if (content.id === 'logfiles-menu' || content.id === 'email-menu') { // Based on your initial Pug
-                content.classList.add('expanded');
-              }
-            });
-            document.querySelectorAll('.collapsible-header').forEach(header => {
-              if (header.dataset.target === 'logfiles-menu' || header.dataset.target === 'email-menu') {
-                header.classList.add('expanded');
-                const icon = header.querySelector('.icon');
-                if (icon) icon.style.transform = 'rotate(0deg)';
-              }
-            });
+
           }
         }
 
@@ -522,39 +455,5 @@ html(lang='en')
           localStorage.setItem('leftColumnCollapsed', leftColumn.classList.contains('collapsed'));
         });
 
-        // Existing script for internal collapsible sections
-        const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
 
-        collapsibleHeaders.forEach(header => {
-          // Set initial state for icon rotation based on 'expanded' class
-          const icon = header.querySelector('.icon');
-          if (header.classList.contains('expanded')) {
-            icon.style.transform = 'rotate(0deg)';
-          } else {
-            icon.style.transform = 'rotate(-90deg)';
-          }
-
-          header.addEventListener('click', function() {
-            // Only allow inner collapsibles to function if the main column is not collapsed horizontally
-            // or if on small screens (where collapse is vertical)
-            if (!leftColumn.classList.contains('collapsed') || window.innerWidth <= 768) {
-              const targetId = this.dataset.target;
-              const content = document.getElementById(targetId);
-              const icon = this.querySelector('.icon');
-
-              if (content) {
-                this.classList.toggle('expanded');
-                content.classList.toggle('expanded');
-
-                if (this.classList.contains('expanded')) {
-                  icon.style.transform = 'rotate(0deg)';
-                } else {
-                  icon.style.transform = 'rotate(-90deg)';
-                }
-              } else {
-                console.error('Collapsible content target not found:', targetId);
-              }
-            }
-          });
-        });
       });

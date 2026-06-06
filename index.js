@@ -353,11 +353,6 @@ function findFirstBlacklistSender(senders) {
   return null;
 }
 
-function findFirstBlacklistSubject(subjects) {
-  if (!Array.isArray(subjects)) return null;
-  return subjects.find(s => typeof s === 'string') || null;
-}
-
 function findFirstBlacklistCountry(countries) {
   if (!Array.isArray(countries)) return null;
   return countries.find(c => typeof c === 'string') || null;
@@ -481,11 +476,6 @@ async function processEmail(controlFilePath, messagePath, rules) {
     let quarantine = false;
     let quarantineReasons = [];
     let spamScore = 0;
-    if (matchSubject(subjectText, bl.subjects)) {
-      quarantine = true;
-      quarantineReasons.push('Subject matches blacklist pattern');
-      spamScore++;
-    }
     if (ipInRange(originatingIp, bl.ipRanges)) {
       quarantine = true;
       quarantineReasons.push('Originating IP is blacklisted');
