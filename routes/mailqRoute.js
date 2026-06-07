@@ -239,7 +239,7 @@ router.get('/', function(req, res) {
         res.cookie("MailQUserFilter", filterUser, { maxAge: 1000 * 60 * 1440 * 365 });
         tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO", req.socket.remoteAddress);
     }
-    else if (req.cookies.MailQUserFilter) {
+    else if (req.cookies?.MailQUserFilter) {
         // Use existing cookie value if no filter provided in query
         filterUser = String(req.cookies.MailQUserFilter).toLowerCase();        
     }
