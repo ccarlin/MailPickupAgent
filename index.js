@@ -32,7 +32,14 @@ const TEST_EMAIL_SLEEP_SECONDS = Number(process.env.TEST_EMAIL_SLEEP_SECONDS || 
 const THRESHOLD_QUARANTINE = Number(process.env.THRESHOLD_QUARANTINE || 5);
 const THRESHOLD_DELETE = Number(process.env.THRESHOLD_DELETE || 15);
 const HEADER_SEPARATOR = '\r\n\r\n';
-const PROCESSING_LOG = process.env.PROCESSING_LOG || './processing.log';
+const PROCESSING_LOG_DIR = process.env.PROCESSING_LOG || '.';
+const processingLogPath = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${PROCESSING_LOG_DIR}/processing-${y}${m}${day}.log`;
+};
 
 [QUARANTINE_DIR, DELETED_DIR, DRY_RUN_COPY_DEST].forEach(dir => {
   if (!fs.existsSync(dir)) {
@@ -410,18 +417,18 @@ function copyDryRunFiles(controlFilePath, messagePath) {
   }
 }
 
-function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, processTimeSec, result, spamInfo) {
+function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, processTimeSec, result, spamInfo, spamScore) {
   const pad = (n) => String(n).padStart(2, '0');
   const d = new Date();
-  const dateTime = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const dateTime = `${pad(d.getMonth()+1)}/${pad(d.getDate())}/${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   const s = (v) => String(v).replace(/\t/g, ' ').replace(/[\r\n]+/g, ' ');
   const line = [
-    dateTime, s(messageId), 'SMTP-IN(0)', sizeKb.toFixed(2), 'ccarlin.com',
+    dateTime, s(messageId), 'SMTP-IN(0)', Math.round(sizeKb), 'ccarlin.com',
     s(ip || ''), s(sender), s(recipients), s(subject),
-    processTimeSec.toFixed(3), s(result), s(spamInfo)
+    processTimeSec.toFixed(3), s(result), s(spamInfo), spamScore
   ].join('\t');
   try {
-    fs.appendFileSync(PROCESSING_LOG, line + '\n', 'utf8');
+    fs.appendFileSync(processingLogPath(), line + '\n', 'utf8');
   } catch (err) {
     console.error(`Failed to write processing log: ${err.message}`);
   }
@@ -476,13 +483,13 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const wl = rules.whitelist || {};
     if (matchSender(fromAddr, wl.senders, recipients)) {
       const elapsed = (Date.now() - processStartTime) / 1000;
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', '');
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Sender whitelisted', 0);
       console.log(`Sender ${fromAddr} is whitelisted, releasing`);
       return;
     }
     if (ipInRange(originatingIp, wl.ipRanges)) {
       const elapsed = (Date.now() - processStartTime) / 1000;
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', '');
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Originating IP is whitelisted', 0);
       console.log(`Originating IP is whitelisted, releasing`);
       return;
     }
@@ -495,7 +502,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       if (fromTld && !allowed.includes(fromTld)) {
         console.log(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
         const elapsed = (Date.now() - processStartTime) / 1000;
-        logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed');
+        logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 0);
         await deleteEmail(controlFilePath, messagePath, destMessageName);
         return;
       }
@@ -506,7 +513,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (matchSender(fromAddr, bl.senders)) {
       console.log(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender');
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 0);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
       return;
     }
@@ -571,22 +578,23 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (SPAMASSASSIN_ENABLED && saResult) {
       spamInfoParts.push(`SpamAssassin: ${saResult.score}`);
     }
-    const spamDetailInfo = spamInfoParts.join('; ');
+    let spamDetailInfo = spamInfoParts.join('; ');
 
     console.log(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
 
     if (spamScore >= THRESHOLD_DELETE) {
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, String(spamScore), spamDetailInfo);
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Deleted', spamDetailInfo, spamScore);
       console.log(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
     } else if (spamScore >= THRESHOLD_QUARANTINE) {
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo);
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo, spamScore);
       console.log(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore);
       await quarantineEmail(controlFilePath, messagePath, destMessageName);
     } else {
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, String(spamScore), spamDetailInfo);
+      if (spamDetailInfo.length == 0) spamDetailInfo = 'No significant spam indicators';
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed,'Released', spamDetailInfo, spamScore);
       console.log(`Releasing email with score ${spamScore}.`);
     }
   } catch (error) {

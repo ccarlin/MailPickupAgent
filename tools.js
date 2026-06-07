@@ -3,6 +3,8 @@ const path = require("path");
 const moment = require("moment");
 const net = require("net");
 const simpleParser = require('mailparser').simpleParser;
+const MMDBReader = require('mmdb-reader');
+const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
 //Supress output of this command
 require('dotenv').config({ quiet: true });
 
@@ -120,7 +122,7 @@ module.exports = {
       if (level == "ERROR") {
         console.error(message);
       }
-      else if ((environment == "development") || (level != "DEBUG"))
+      else if ((process.env.NODE_ENV == "development") || (level != "DEBUG"))
         console.info(message);      
     },    
     // Async: parse email file and return HTML/text as HTML.

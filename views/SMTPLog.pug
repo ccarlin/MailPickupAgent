@@ -28,32 +28,7 @@ block scripts
     script(src="scripts/filtercontrol.js")
 
 block content
-    script.    
-        function BanIPAddresses()
-        {
-            var selectCount = $("table[id*=myTable] input[type=checkbox][id*=chkItem]:checked").length;
-            if (selectCount > 0)
-            {
-                var msg = "Are you sure you wish to ban " + selectCount + " IP Addresses?";
-                if (confirm(msg)) {
-                    var selected = [];
-                    $("table[id*=myTable] input[type=checkbox][id*=chkItem]:checked").each(function() {
-                        selected.push($(this).attr('name'));
-                    });                                  
-                    $.post("/SMTPLog", {ipAddressList: selected}, function(data, status)                     
-                        {   
-                           alert(data); 
-                        }
-                    );
-                }
-            }            
-            else
-            {
-                alert("Please select one or more IPs.");
-                return false;
-            }
-        };
-
+    script.           
         $(document).ready(function ()
         {   
             $('#chkSelectAll').click(function ()
@@ -61,18 +36,10 @@ block content
                 $('input:checkbox').not(this).prop('checked', this.checked);
             }); 
             var table = $('#myTable').DataTable({ 
-                order: [[ 7, "desc" ]], 
+                order: [[ 6, "desc" ]], 
                 pageLength: 22,  
                 layout: {
-                    topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'pdf', 'print', 
-                        {
-                            text: 'Ban IPs',
-                            action: function(e, dt, node, config) 
-                            {
-                                BanIPAddresses();                            
-                            }
-                        }]                    
-                    },
+                    topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'pdf', 'print']},
                     topEnd: 'search',
                     bottomStart: 'info',
                     bottomEnd: 'paging'                
@@ -80,7 +47,7 @@ block content
                 language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."},
                 initComplete: function () {
                     var btns = $('.dt-button');
-                    btns.addClass('myButton');
+                    btns.addClass('myMiniButton');
                     btns.removeClass('dt-button');  
                     [2,11].forEach(idx => multiFilterSetup(this.api().column(idx)));                     
                  },
@@ -92,27 +59,27 @@ block content
                     };
     
                     // Total over all pages
-                    totalAttempts = api.column(6, {search:'applied'}).data().reduce(function (a, b) {
+                    totalAttempts = api.column(5, {search:'applied'}).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    totalFailures = api.column(7, {search:'applied'}).data().reduce(function (a, b) {
+                    totalFailures = api.column(6, {search:'applied'}).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    totalFailedRelays = api.column(8, {search:'applied'}).data().reduce(function (a, b) {
+                    totalFailedRelays = api.column(7, {search:'applied'}).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    totalSuccess = api.column(9, {search:'applied'}).data().reduce(function (a, b) {
+                    totalSuccess = api.column(8, {search:'applied'}).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
                     
                     // Update footer
-                    $(api.column(6).footer()).html(totalAttempts.toLocaleString("en-US"));
-                    $(api.column(7).footer()).html(totalFailures.toLocaleString("en-US"));
-                    $(api.column(8).footer()).html(totalFailedRelays.toLocaleString("en-US"));
-                    $(api.column(9).footer()).html(totalSuccess.toLocaleString("en-US"));
+                    $(api.column(5).footer()).html(totalAttempts.toLocaleString("en-US"));
+                    $(api.column(6).footer()).html(totalFailures.toLocaleString("en-US"));
+                    $(api.column(7).footer()).html(totalFailedRelays.toLocaleString("en-US"));
+                    $(api.column(8).footer()).html(totalSuccess.toLocaleString("en-US"));
                 },
                 createdRow : function (row, data, dataIndex) {
-                    if ((data[7] >  100)  || (data[10] > 50)) {                       
+                    if ((data[6] >  100)  || (data[9] > 50)) {                       
                         $(row).css({"color":"red"});
                     }
                 }
@@ -122,8 +89,6 @@ block content
     form(action='/SMTPLog', method="POST")
         table#myTable(class="row-border compact order-column hover stripe" style="font-size: small;")
             thead    
-                th(align='left' scope='col' data-orderable="false")
-                    input#chkSelectAll(type='checkbox')           
                 th(align='left' scope='col') IP Address
                 th(align='left' scope='col') Country
                 th(align='left' scope='col') First Seen
@@ -138,11 +103,6 @@ block content
                 th(align='left' scope='col' style="display: none;") IP Address
             each logEntry, idx in logData
                 tr
-                    td
-                        if (!logEntry.BlockedIP)
-                            // Use a unique id for each checkbox
-                            - var uniqueId = 'GridView1_chkItem_' + idx;
-                            input(type='checkbox' id=uniqueId name=logEntry.ipAddress)
                     td 
                         if (logEntry.UniqueIPCount > 1)
                             a(href=`${logEntry.ipLookup}`, target='_blank') #{logEntry.ipAddress} (#{logEntry.UniqueIPCount})
@@ -161,7 +121,6 @@ block content
                     td(style="display:none;") #{logEntry.ipAddress}  
             tfoot 
                 tr
-                    th 
                     th 
                     th 
                     th(style="text-align:right") Totals:

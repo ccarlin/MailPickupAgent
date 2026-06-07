@@ -16,6 +16,8 @@ app.use(express.json());
 app.use(express.static(__dirname + '/public'));
 app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/mailq', require('./routes/mailQRoute'));
+app.use('/SPAMLog', require('./routes/SPAMLog'));
+app.use('/SMTPLog', require('./routes/SMTPLog'));
 
 // Configuration loaded at startup
 let config = {

@@ -1,30 +1,19 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
 const tools = require("../tools");
 const fs = require("fs");
 const xss = require("xss");
 const moment = require("moment");
-const MMDBReader = require("mmdb-reader");
 const Set = require("collections/set");
+const MMDBReader = require('mmdb-reader');
+const mmdb = new MMDBReader(path.join(__dirname, '../GeoLite2-Country.mmdb'));
 
 /* Display Main page */
 router.get('/', function(req, res) {
 
-    const logPath = req.app.locals.smtpLogPath;    
-    const fileTypes = ".log";
-    let geoFile = req.app.locals.geolitePath
-    const mmdb = new MMDBReader(geoFile);
-    const mmdb_blocked = new MMDBReader(req.app.locals.SMTPBlockList);
-
-    if (req.query.key)
-    {
-        res.cookie("MailKey", req.query.key,  {maxAge: 1000 * 60 * 1440 * 30});
-        return res.redirect("/SMTPLog");
-    }
-
-    //Check if this is a valid connection if not send home..
-    if (tools.isValid(req) == false)
-        return res.redirect("/");
+    const logPath = process.env.SMTP_LOG_DIR || "./SMTPLog";    
+    const fileTypes = ".log";  
 
     tools.getSortedFiles(logPath, fileTypes, "ByLastUpdateDesc", function (err, files) {
         //Process each log file
@@ -121,8 +110,7 @@ router.get('/', function(req, res) {
                                 obj.Country = ipLookup.country.names.en;
                             else
                                 obj.Country = "Unknown";
-                            let blockLookup = mmdb_blocked.lookup(ipAddress);
-                            obj.BlockedIP = (blockLookup != null);
+                            obj.BlockedIP = false;
                             obj.Attempts = 0;
                             obj.Failures = 0;
                             obj.Success = 0;
@@ -225,26 +213,5 @@ router.get('/', function(req, res) {
         res.render('SMTPLog', { title, logData: logList});
     });  
 }); 
-
-router.post('/', function (req, res) {
-    try {
-        const banPath = req.app.locals.IPBanFile;
-        let ipAddressList = req.body.ipAddressList;
-        //Always pull out host address
-        let banList = ipAddressList.filter(e => e !== '75.150.210.238').join("\r\n");       
-        banList += "\r\n";
-        fs.appendFileSync(banPath, banList);
-
-        tools.logData(`Banning list of ${ipAddressList.length} IP Addresses for SMTP Block.`, "INFO", req.socket.remoteAddress);
-        return res.send(`Successfly added ${ipAddressList.length} IP Addresses to be banned.`);
-    }
-    catch (err)
-    {
-        let errorMsg = `Unable to add IPs to Ban List: ${err}.`
-        return res.send(errorMsg);
-    }
-
-
-});
 
 module.exports = router;
