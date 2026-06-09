@@ -35,10 +35,9 @@ let config = {
 // Load configuration at startup
 function initializeConfiguration() {
   try {
-    const rulesFile = process.env.RULES_FILE || './config/rules.json';
-    const rulesData = fs.readFileSync(rulesFile, 'utf8');
+    const rulesData = fs.readFileSync('./config/rules.json', 'utf8');
     config.rules = JSON.parse(rulesData);
-    console.log('Configuration loaded successfully from', rulesFile);
+    console.log('Configuration loaded successfully');
   } catch (error) {
     console.error('Error loading configuration:', error.message);
     config.rules = { whitelist: {}, blacklist: {} };

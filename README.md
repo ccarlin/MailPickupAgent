@@ -27,7 +27,6 @@ Set environment variables:
 - `SMTP_HOST`: SMTP host for releasing emails (default: localhost)
 - `SMTP_PORT`: SMTP port (default: 25)
 - `RELEASE_METHOD`: 'smtp' to send via SMTP, otherwise move to `RELEASE_DIR`
-- `RULES_FILE`: Path to rules.json file (default: ./rules.json)
 - `OLLAMA_HOST`: Ollama server host (default: localhost)
 - `OLLAMA_PORT`: Ollama server port (default: 11434)
 - `OLLAMA_MODEL`: Ollama model name (default: llama3.2)

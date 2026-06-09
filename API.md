@@ -20,7 +20,7 @@ PORT=8080 npm run server
 
 ## Configuration Loading
 
-All configuration is loaded **once at server startup** from the `rules.json` file (configurable via `RULES_FILE` environment variable). This eliminates the need to reload configuration for each request.
+All configuration is loaded **once at server startup** from the `rules.json` file. This eliminates the need to reload configuration for each request.
 
 The loaded configuration includes:
 - Whitelist rules (senders, IP ranges)

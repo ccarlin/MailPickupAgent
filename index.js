@@ -17,7 +17,7 @@ const QUARANTINE_DIR = process.env.QUARANTINE_DIR || './quarantine';
 const DELETED_DIR = process.env.DELETED_DIR || './deleted';
 const SMTP_HOST = process.env.SMTP_HOST || 'localhost';
 const SMTP_PORT = process.env.SMTP_PORT || 25;
-const RULES_FILE = process.env.RULES_FILE || './rules.json';
+const RULES_FILE = './config/rules.json';
 const AI_CHECK_ENABLED = (process.env.AI_CHECK_ENABLED || 'false').toLowerCase() === 'true';
 const OLLAMA_HOST = process.env.OLLAMA_SERVER || 'localhost';
 const OLLAMA_PORT = process.env.OLLAMA_PORT || 11434;
@@ -277,7 +277,6 @@ async function queryOllama(prompt) {
     prompt: prompt,
     stream: false,
   };
-  console.log(`Querying Ollama at ${url} with prompt: ${prompt}`);
   const resp = await axios.post(url, payload, {
     headers: { 'Content-Type': 'application/json' },
     timeout: 15000,
@@ -446,7 +445,7 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     let headers = message.substring(0, headerEndIndex); 
     let body = message.substring(headerEndIndex + HEADER_SEPARATOR.length);
     // Let's fake some legacy MXScan headers for compatibility with existing quarantine rules and processes
-    headers += `X-MXScan-Scan: Scanned by MailPickupAgent 1.0 for $\{process.env.HOSTNAME || 'localhost'}\r\n`;
+    headers += `\r\nX-MXScan-Scan: Scanned by MailPickupAgent 1.0 for ${process.env.HOSTNAME || 'localhost'}\r\n`;
     headers += `X-MXScan-Msgid: ${destMessageName}\r\n`;
     headers += `X-MXScan-AntiSpam: ${quarantineReasons.join('; ')}\r\n`;
     headers += `X-MXScan-SpamScore: ${spamScore}\r\n`;    
@@ -502,7 +501,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       if (fromTld && !allowed.includes(fromTld)) {
         console.log(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
         const elapsed = (Date.now() - processStartTime) / 1000;
-        logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 0);
+        logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
         await deleteEmail(controlFilePath, messagePath, destMessageName);
         return;
       }
@@ -513,7 +512,31 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (matchSender(fromAddr, bl.senders)) {
       console.log(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 0);
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
+      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      return;
+    }
+
+    if (ipInRange(originatingIp, bl.ipRanges)) {
+      console.log(`Originating IP ${originatingIp} is blacklisted, deleting`);
+      const elapsed = (Date.now() - processStartTime) / 1000;
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
+      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      return;
+    }
+
+    if (matchCountry(originatingIp,bl.countries)) {
+      console.log(`Originating country is blacklisted, deleting`);
+      const elapsed = (Date.now() - processStartTime) / 1000;
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
+      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      return;
+    }
+
+    if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
+      console.log(`Combo rule matched, deleting`);
+      const elapsed = (Date.now() - processStartTime) / 1000;
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
       return;
     }
@@ -521,19 +544,6 @@ async function processEmail(controlFilePath, messagePath, rules) {
     // Track reasons for header and logging purposes and sum the spam score
     let quarantineReasons = [];
     let spamScore = 0;
-    if (ipInRange(originatingIp, bl.ipRanges)) {
-      quarantineReasons.push('Originating IP is blacklisted');
-      spamScore++;
-    }
-    if (matchCountry(originatingIp,bl.countries)) {
-      quarantineReasons.push('Originating country is blacklisted');
-      spamScore++;
-    }
-    if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
-      quarantineReasons.push('Combo rule matched');
-      spamScore++;
-    }
-
     const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters);
     if (keywordResult.score > 0) {
       spamScore += keywordResult.score;
@@ -562,11 +572,11 @@ async function processEmail(controlFilePath, messagePath, rules) {
         const aiResponse = await queryOllama(aiPrompt);
         const isSpam = aiResponse.toLowerCase().includes('spam') && !aiResponse.toLowerCase().includes('ham');
         if (isSpam) {
-          spamScore++;
+          spamScore += 5; // Assign a score for AI-detected spam - this can be adjusted based on testing and needs;
           quarantineReasons.push('AI classified as spam');
         }        
       } catch (err) {
-        console.error(`Ollama query failed, releasing by default:`, err.message);
+        console.error(`Ollama query failed, not assigning score for AI check:`, err.message);
       }
     }    
 
@@ -583,7 +593,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     console.log(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
 
     if (spamScore >= THRESHOLD_DELETE) {
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Deleted', spamDetailInfo, spamScore);
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Blacklisted', spamDetailInfo, spamScore);
       console.log(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
@@ -594,7 +604,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       await quarantineEmail(controlFilePath, messagePath, destMessageName);
     } else {
       if (spamDetailInfo.length == 0) spamDetailInfo = 'No significant spam indicators';
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed,'Released', spamDetailInfo, spamScore);
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Released', spamDetailInfo, spamScore);
       console.log(`Releasing email with score ${spamScore}.`);
     }
   } catch (error) {
@@ -641,7 +651,8 @@ module.exports = {
   updateEmailHeaders,
   extractOriginatingIp,
   deleteEmail,
-  quarantineEmail
+  quarantineEmail,
+  scoreKeywordFilters
 };
 
 // Main Processing begins here - only run if this file is executed directly, not when imported as a module
