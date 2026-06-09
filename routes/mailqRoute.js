@@ -27,7 +27,7 @@ let msgIDCache = [];
 router.post('/', async function(req, res) {   // changed to async
     let bodyPostBack = req.body;
     let action = bodyPostBack.action.toLowerCase().split(" ")[0];
-    let path = req.app.locals.spamPath;
+    let path = process.env.PROCESSING_LOG || '\logs';
     let mailLog = req.app.locals.logPath + "\\" + mailLogFile;
     let mailErrorDB = req.app.locals.mailErrorDB;
 

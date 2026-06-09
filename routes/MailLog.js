@@ -77,8 +77,8 @@ router.get('/', function(req, res) {
         let results = `SPAM Log Analyzer: Call to lookup ${logList.length.toLocaleString("en-US")} IP Addresses took ${totalTime} milliseconds `;
         tools.logData(results, "INFO", req.socket.remoteAddress);
         
-        let title = "SPAM Analyzer";
-        res.render('SPAMLog', { title, logData: logList});
+        let title = "EMail Analyzer";
+        res.render('MailLog', { title, logData: logList});
     });  
 }); 
 

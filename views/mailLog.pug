@@ -1,119 +1,100 @@
 extends adminLayout
 
 block css
-    link(href="https://code.jquery.com/ui/1.14.0/themes/base/jquery-ui.css" rel="stylesheet")
     link(href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css" rel="stylesheet" integrity="sha384-lidBvvi7oLJ2j9e3nFlBSXfo+giBJ9L7QnUdgjc3AvLiynS0HdKEEEZtvZ4izE46" crossorigin="anonymous")
+    link(href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.min.css" rel="stylesheet" integrity="sha384-gZdV4/a6Gt/Qu0qCP3bchrOj0WlpkAfszB1m4/eFzOSnvvHUFMv9+C/KcgMO8CeR" crossorigin="anonymous")
     link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
-    link(href="css/sumoselect.min.css" rel="stylesheet"  type="text/css")
+    link(href="/css/sumoselect.min.css" rel="stylesheet"  type="text/css")
     style.
         body {
             background-color: white;
-        }       
+        }         
         .hideChat {
             display: none;
         }   
-        @media only screen and (max-device-width: 600px)
-        {
-            .myButton {
-                font-size: 12px;
-                border-radius: 4px;
-                padding: 2px 2px;
-                font-weight: normal;
-            }
-        }
-        .released 
-        {
-            font-weight:bold;
-            color: green;
-        }
-        .deleted
-        {
-            color: red;
-        }
         
-    link(id="favicon" rel="icon" href="/img/email.png" type="image/png" sizes="16x16")
+    link(id="favicon" rel="icon" href="/img/log.ico" type="image/ico")
 block scripts
     script(src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha384-NXgwF8Kv9SSAr+jemKKcbvQsz+teULH/a5UNJvZc6kP47hZgl62M1vGnw6gHQhb1" crossorigin="anonymous")
-    script(src="https://code.jquery.com/ui/1.14.0/jquery-ui.min.js")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
-    script(src='scripts/ellipsis.min.js')
+    script(src="https://cdn.datatables.net/buttons/3.2.2/js/dataTables.buttons.min.js" integrity="sha384-DmaAfo+/+UjRKHPidNNswlNqd9ybuE6yx9zKHyMY+vYy9SZhQEu4nauMVgwSx4Z/" crossorigin="anonymous")
+    script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.html5.min.js" integrity="sha384-+E6fb8f66UPOVDHKlEc1cfguF7DOTQQ70LNUnlbtywZiyoyQWqtrMjfTnWyBlN/Y" crossorigin="anonymous")
+    script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.print.min.js" integrity="sha384-FvTRywo5HrkPlBKFrm2tT8aKxIcI/VU819roC/K/8UrVwrl4XsF3RKRKiCAKWNly" crossorigin="anonymous")
+    script(src="/scripts/ellipsis.min.js")
     script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
-    script(src="scripts/jquery.sumoselect.min.js")
-    script(src="scripts/filtercontrol.js")
-    
-block content
-    script.    
-        $(document).ready(function ()
-        {             
-            var table = $('#GridView1').DataTable({
-                 order: [[ 0, "desc" ]],  
-                 iDisplayLength: 25,
-                 responsive: true,
-                 columnDefs: [ 
-                    { targets: 3, render: $.fn.dataTable.render.ellipsis(50, true)},
-                    { targets: 4, render: $.fn.dataTable.render.ellipsis(30, true)}
-                ],
-                initComplete: function () {
-                    [1].forEach(idx => standardFilterSetup(this.api().column(idx)));
-                    [2,5].forEach(idx => multiFilterSetup(this.api().column(idx), 180));                     
-                } 
-            });                       
-        });      
-        function popup(ip_address, asn, country, regionName)
-        {
-            $('<div></div>').dialog({
-                modal: true,
-                title: "IP Information",
-                width: 500,
-                open: function () {
-                    var markup = "IP Address: " + ip_address + "<br>AS Number: " + asn + "<br>Country: " + country;
-                    markup += "<br>Region: " + regionName;
-                    $(this).html(markup);
-                },
-                buttons: {
-                    Ok: function () {
-                        $(this).dialog("close");
-                    }
-                }
-            }); 
-        }    
-           
-    table#GridView1(class="row-border compact order-column hover stripe nowrap" style='width: 100%; font-size: small')
-        thead                
-            th(scope='col') Date/Time
-            th(scope='col') ClientIP
-            th(scope='col') Removal Type
-            th(scope='col') Subject
-            th(scope='col') From
-            th(scope='col') To
-            th(scope='col') Score
-            th(scope='col') Spam        
-        each spamRecord in spamTable
-            tr
-                td(data-sort=Date.parse(spamRecord.timestamp)) #{spamRecord.timestamp}
-                td 
-                    if (spamRecord.asn)
-                       a(href=`javascript:popup('${spamRecord.client_ip}', '${spamRecord.asn}', '${spamRecord.country}', '${spamRecord.regionName}')`) #{spamRecord.client_ip}
-                    else 
-                        a(href=`https://ip-api.com/#${spamRecord.client_ip}`, target='_blank') #{spamRecord.client_ip}                    
-                if (spamRecord.removal_type.includes("released"))
-                    td(class="released") #{spamRecord.removal_type}
-                else 
-                    td(class="deleted") #{spamRecord.removal_type}
-                td #{spamRecord.subject}
-                td #{spamRecord.from_email}
-                td #{spamRecord.recipient}
-                td #{spamRecord.spam_score}
-                td #{spamRecord.spam_classification}
-        tfoot
-            tr
-                th 
-                th 
-                th 
-                th 
-                th 
-                th 
-                th
-                th 
+    script(src="/scripts/jquery.sumoselect.min.js")
+    script(src="/scripts/filtercontrol.js")
 
-                    
+block content
+    script.            
+        $(document).ready(function ()
+        {              
+            var table = $('#myTable').DataTable({ 
+                pageLength: 22,  
+                order: [[0, "desc"]], 
+                layout: {
+                    topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'pdf', 'print'] },
+                    topEnd: 'search',
+                    bottomStart: 'info',
+                    bottomEnd: 'paging'                
+                },                          
+                language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."},
+                columnDefs: [ 
+                    { targets: 3, render: $.fn.dataTable.render.ellipsis(30, true)},
+                    { targets: 5, render: $.fn.dataTable.render.ellipsis(40, true)},
+                    { targets: 9, render: $.fn.dataTable.render.ellipsis(30, true)}
+                ], 
+                initComplete: function () {
+                    var btns = $('.dt-button');
+                    btns.addClass('myMiniButton');
+                    btns.removeClass('dt-button');   
+                    [2].forEach(idx => standardFilterSetup(this.api().column(idx)));
+                    [4,8].forEach(idx => multiFilterSetup(this.api().column(idx), 140));                                   
+                 }
+            });
+        });  
+               
+    form
+        table#myTable(class="row-border compact order-column hover stripe" style="font-size: small;")
+            thead    
+                th(align='left' scope='col') Time Stamp                    
+                th(align='left' scope='col') IP Address
+                th(align='left' scope='col') Country
+                th(align='left' scope='col') Sender
+                th(align='left' scope='col') Recipient
+                th(align='left' scope='col') Subject
+                th(align='left' scope='col') Size(Kb) 
+                th(align='left' scope='col') Score
+                th(align='left' scope='col') Result
+                th(align='left' scope='col') Details
+            each logEntry in logData
+                tr
+                    td #{logEntry.dateTime}
+                    td 
+                        a(href=`${logEntry.ipLookup}`, target='_blank') #{logEntry.ipAddress}
+                    td #{logEntry.Country}                       
+                    td #{logEntry.sender}
+                    td #{logEntry.recipient}
+                    td #{logEntry.subject}
+                    td #{logEntry.msgSize}
+                    td #{logEntry.spamScore} 
+                    td #{logEntry.spamResult}   
+                    if (logEntry.spamInfo.includes("SalesForce Crap"))
+                        td(style="color: red; font-weight: bold;") #{logEntry.spamInfo}
+                    else 
+                        td #{logEntry.spamInfo}      
+            tfoot 
+                tr
+                    th 
+                    th 
+                    th
+                    th
+                    th
+                    th
+                    th
+                    th
+                    th
+                    th 

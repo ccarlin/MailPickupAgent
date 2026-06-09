@@ -14,10 +14,17 @@ app.set('views', path.join(__dirname, 'views'));
 // Middleware to parse incoming JSON request bodies
 app.use(express.json());
 app.use(express.static(__dirname + '/public'));
+
+// Default landing page
+app.get('/', (req, res) => {
+  res.render('default');
+});
+
 app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/mailq', require('./routes/mailQRoute'));
-app.use('/SPAMLog', require('./routes/SPAMLog'));
+app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
+app.use('/QuarantineLog', require('./routes/QuarantineLog'));
 
 // Configuration loaded at startup
 let config = {
