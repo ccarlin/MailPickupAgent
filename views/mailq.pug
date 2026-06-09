@@ -119,48 +119,6 @@ block content
                 favicon.href = canvas.toDataURL('image/png');           
             };
         }
-
-        function performAICheck(filepath) {
-            // Show the modal and set the loading message
-            $('#aiCheckModal').show();
-            const resultElement = document.getElementById('aiCheckResult');
-            resultElement.innerHTML = 'Loading...';
-
-            // Perform the AI check
-            $.post('/mailq/performAICheck', { filepath: filepath }, function (data) {
-                if (data.success) {
-                    try {
-                        const result = JSON.parse(data.result);
-                        let color = '';
-                        if (result.spamLikelihood === 'High') {
-                            color = 'red';
-                        } else if (result.spamLikelihood === 'Medium') {
-                            color = 'orange';
-                        } else if (result.spamLikelihood === 'Low') {
-                            color = 'green';
-                        }
-                        
-                        let html = `<div style="margin-bottom: 10px;"><strong>Spam Likelihood:</strong> <span style="color: ${color}; font-weight: bold;">${result.spamLikelihood}</span></div>`;
-                        html += `<div style="margin-bottom: 10px;"><strong>Reasoning:</strong> ${result.reasoning}</div>`;
-                        if (result.notes) {
-                            html += `<div style="margin-bottom: 10px;"><strong>Notes:</strong> ${result.notes}</div>`;
-                        }
-                        resultElement.innerHTML = html;
-                    } catch (e) {
-                        resultElement.textContent = `AI Check Result: ${data.result}`;
-                    }
-                } else {
-                    resultElement.textContent = 'Failed to perform AI check. Please try again.';
-                }
-            }).fail(function () {
-                resultElement.textContent = 'An error occurred while performing the AI check.';
-            });
-        }
-
-        function closeAICheckModal() {
-            $('#aiCheckModal').hide();
-            return false;
-        }
         
     form(action='/mailq', method="POST")        
         table(style='width: 100%')
@@ -190,7 +148,6 @@ block content
                     th(scope='col') Date/Time
                     th(scope='col') ClientIP
                     th(scope='col') DKIM
-                    th(scope='col') AI Check
                     th(scope='col') Preview
                 each email, idx in emails
                     tr(title=email.clientipinfo)
@@ -210,8 +167,6 @@ block content
                         td(style='white-space:nowrap;') 
                             a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}  
                         td #{email.dkim}  
-                        td
-                            input.myMiniButton(type="button" onclick=`performAICheck("${email.filepath}")` value='AI Check')
                         td(style='white-space:nowrap;') 
                             a(target="_blank" href="mailPreview?mailKey=" + email.filepath) safe
                             if (email.safe)
@@ -228,17 +183,4 @@ block content
                             input(type='hidden' name=email.filepath+'aiCheck' value=email.aiCheck)
         br
         div
-            p#myFile !{mailLog}
-        div#aiCheckModal(
-            style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(31,41,55,0.75); z-index:1050;"
-        )
-            div(
-                style="background:#fff; padding:32px; border-radius:8px; box-shadow:0 4px 24px rgba(0,0,0,0.2); max-width:700px; width:100%; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);"
-            )
-                h2(style="font-size:1.25rem; font-weight:bold; margin-bottom:16px;") AI SPAM Check Result
-                p#aiCheckResult(style="margin-bottom:16px;") Loading...
-                button(
-                    type="button"
-                    style="background:#2563eb; color:#fff; padding:8px 24px; border:none; border-radius:4px; box-shadow:0 2px 6px rgba(0,0,0,0.08); cursor:pointer;"
-                    onclick="closeAICheckModal(); return false;"
-                ) Close
+            p#myFile !{mailLog}        

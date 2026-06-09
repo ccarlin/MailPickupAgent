@@ -11,8 +11,6 @@ const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
 //Supress output of this command
 require('dotenv').config({ quiet: true });
 
-const SMTP_QUEUE_DIR = process.env.SMTP_QUEUE_DIR || './queues';
-const SMTP_COMMAND_DIR = process.env.SMTP_COMMAND_DIR || './queues';
 const QUARANTINE_DIR = process.env.QUARANTINE_DIR || './quarantine';
 const DELETED_DIR = process.env.DELETED_DIR || './deleted';
 const SMTP_HOST = process.env.SMTP_HOST || 'localhost';
@@ -25,9 +23,6 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
 const SPAMASSASSIN_ENABLED = (process.env.SPAMASSASSIN_ENABLED || 'false').toLowerCase() === 'true';
 const SPAMASSASSIN_HOST = process.env.SPAMASSASSIN_HOST || 'localhost';
 const SPAMASSASSIN_PORT = process.env.SPAMASSASSIN_PORT || 783;
-const DRY_RUN_COPY_LOG = (process.env.DRY_RUN_COPY_LOG || 'false').toLowerCase() === 'true';
-const DRY_RUN_LOG_FILE = process.env.DRY_RUN_LOG_FILE || './mailpickupagent-dryrun.log';
-const DRY_RUN_COPY_DEST = process.env.DRY_RUN_COPY_DEST || './dry-run-output';
 const TEST_EMAIL_SLEEP_SECONDS = Number(process.env.TEST_EMAIL_SLEEP_SECONDS || 10) || 10;
 const THRESHOLD_QUARANTINE = Number(process.env.THRESHOLD_QUARANTINE || 5);
 const THRESHOLD_DELETE = Number(process.env.THRESHOLD_DELETE || 15);
@@ -41,18 +36,18 @@ const processingLogPath = () => {
   return `${PROCESSING_LOG_DIR}/processing-${y}${m}${day}.log`;
 };
 
-[QUARANTINE_DIR, DELETED_DIR, DRY_RUN_COPY_DEST].forEach(dir => {
+[QUARANTINE_DIR, DELETED_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
 const transporter = nodemailer.createTransport({
-  host: SMTP_HOST, port: SMTP_PORT, secure: false, 
-   tls: {
-        // Do not fail on invalid certificates
-        rejectUnauthorized: false
-    }
+  host: SMTP_HOST, port: SMTP_PORT, secure: false,
+  tls: {
+    // Do not fail on invalid certificates
+    rejectUnauthorized: false
+  }
 });
 
 function loadRules() {
@@ -117,13 +112,13 @@ function ipInRange(ip, ranges) {
 // Extract from the tag ClientIP= to get the originating IP
 function extractOriginatingIp(commandData) {
   const match = commandData.match(/ClientIP=(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
-  if (match) return match[1];  
+  if (match) return match[1];
   return null;
 }
 
 // Checks if the email's originating country matches any in the list, using GeoIP lookup.
 // Returns { matched: boolean, country: string|null } so callers can use either value.
-function matchCountry(originatingIp, countries) { 
+function matchCountry(originatingIp, countries) {
   if (originatingIp) {
     console.log(`Checking originating country for IP: ${originatingIp}`);
     try {
@@ -134,7 +129,7 @@ function matchCountry(originatingIp, countries) {
         const matched = countries.some(c => c.toUpperCase() === code);
         return { matched, country: code };
       }
-    } catch(err) {
+    } catch (err) {
       // Ignore MMDB errors
       console.error(`GeoIP lookup failed for IP: ${originatingIp}.  Error: ${err.message}`);
     }
@@ -188,6 +183,7 @@ function getKeywordText(parsed, filter) {
         }
         return headers.join('\n');
       } catch (e) {
+        console.error(`Error occurred while extracting headers: ${e}`);
         return '';
       }
     }
@@ -224,6 +220,7 @@ function matchKeywordFilter(parsed, filter) {
         const rx = new RegExp(expr, flags);
         return rx.test(text);
       } catch (e) {
+        console.error(`Error occurred while testing regex: ${e}`);
         return false;
       }
     }
@@ -283,7 +280,7 @@ async function queryOllama(prompt) {
     headers: { 'Content-Type': 'application/json' },
     timeout: 15000,
   });
-  if (resp && resp.data) { 
+  if (resp && resp.data) {
     console.log(`Ollama response: ${resp.data.response}`);
     return resp.data.response || '';
   }
@@ -317,7 +314,7 @@ function checkSpamAssassin(rawEmail) {
           if (headerEnd !== -1) {
             headerComplete = true;
             const headerText = responseData.substring(0, headerEnd);
-            
+
             // Parse response headers
             const lines = headerText.split('\r\n');
             for (const line of lines) {
@@ -360,68 +357,10 @@ function checkSpamAssassin(rawEmail) {
   });
 }
 
-function findFirstBlacklistSender(senders) {
-  if (!Array.isArray(senders)) return null;
-  for (const entry of senders) {
-    if (typeof entry === 'string') return entry;
-    if (entry && typeof entry === 'object' && entry.sender) return entry.sender;
-  }
-  return null;
-}
-
-function findFirstBlacklistCountry(countries) {
-  if (!Array.isArray(countries)) return null;
-  return countries.find(c => typeof c === 'string') || null;
-}
-
-// buildTestEmail removed — testEmails.js provides test case builders via buildAllTestEmails()
-async function sendTestEmail(subject, msg, from, headers = {}) {
-  try {
-    await transporter.sendMail({
-      from: from || '"MailPickupAgent" <no-reply@localhost>',
-      to: process.env.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com',
-      subject: subject,
-      html: msg,
-      headers,
-    });
-    console.log('Test email sent');
-  } catch (err) {
-    console.error(`Error sending test email: ${err.message}`);
-  }
-}
-
-function logDryRun(args, controlFilePath, messagePath) {
-  const entry = {
-    timestamp: new Date().toISOString(),
-    args,
-    controlFilePath,
-    messagePath,
-  };
-  try {
-    fs.appendFileSync(DRY_RUN_LOG_FILE, `${JSON.stringify(entry)}\n`);
-    console.log(`Dry-run log written to ${DRY_RUN_LOG_FILE}`);
-  } catch (err) {
-    console.error(`Unable to write dry-run log: ${err.message}`);
-  }
-}
-
-function copyDryRunFiles(controlFilePath, messagePath) {
-  try {
-    const headerDest = path.join(DRY_RUN_COPY_DEST, path.basename(controlFilePath)).replace(".MAI", ".H00");
-    const messageDest = path.join(DRY_RUN_COPY_DEST, path.basename(messagePath));
-    fs.copyFileSync(controlFilePath, headerDest);
-    fs.copyFileSync(messagePath, messageDest);
-    console.log(`Copied header to ${headerDest}`);
-    console.log(`Copied message to ${messageDest}`);
-  } catch (err) {
-    console.error(`Unable to copy dry-run files: ${err.message}`);
-  }
-}
-
 function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, processTimeSec, result, spamInfo, spamScore) {
   const pad = (n) => String(n).padStart(2, '0');
   const d = new Date();
-  const dateTime = `${pad(d.getMonth()+1)}/${pad(d.getDate())}/${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const dateTime = `${pad(d.getMonth() + 1)}/${pad(d.getDate())}/${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   const s = (v) => String(v).replace(/\t/g, ' ').replace(/[\r\n]+/g, ' ');
   const line = [
     dateTime, s(messageId), 'SMTP-IN(0)', Math.round(sizeKb), 'ccarlin.com',
@@ -444,7 +383,7 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
       console.error(`Invalid email format, no header-body separation found`);
       return;
     }
-    let headers = message.substring(0, headerEndIndex); 
+    let headers = message.substring(0, headerEndIndex);
     let body = message.substring(headerEndIndex + HEADER_SEPARATOR.length);
     // Let's add some MPA-specific headers
     headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${process.env.HOSTNAME || 'localhost'}\r\n`;
@@ -566,7 +505,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
         console.log(`SpamAssassin score: ${saResult.score}/${saResult.threshold}, isSpam: ${saResult.isSpam}`);
         spamScore += saResult.score;
         if (saResult.isSpam) {
-          quarantineReasons.push('SpamAssassin flagged as spam');          
+          quarantineReasons.push('SpamAssassin flagged as spam');
         }
       } else if (SPAMASSASSIN_ENABLED) {
         console.log(`SpamAssassin check unavailable, continuing with other checks`);
@@ -582,11 +521,11 @@ async function processEmail(controlFilePath, messagePath, rules) {
         if (isSpam) {
           spamScore += 5; // Assign a score for AI-detected spam - this can be adjusted based on testing and needs;
           quarantineReasons.push('AI classified as spam');
-        }        
+        }
       } catch (err) {
         console.error(`Ollama query failed, not assigning score for AI check:`, err.message);
       }
-    }    
+    }
 
     const processElapsed = (Date.now() - processStartTime) / 1000;
     const spamInfoParts = [];
@@ -667,73 +606,59 @@ module.exports = {
 if (require.main === module) {
   // Expects two arguments: the message file name and the queue type. 
   const args = process.argv.slice(2);
-const testArgIndex = args.findIndex(arg => arg === '--test' || arg.startsWith('--test='));
-let testType = null;
+  const testArgIndex = args.findIndex(arg => arg === '--test' || arg.startsWith('--test='));
+  let testType = null;
 
-if (testArgIndex !== -1) {
-  const testArg = args[testArgIndex];
-  if (testArg === '--test') {
-    const nextArg = args[testArgIndex + 1];
-    if (nextArg && !nextArg.startsWith('-')) {
-      testType = nextArg.toLowerCase();
+  if (testArgIndex !== -1) {
+    const testArg = args[testArgIndex];
+    if (testArg === '--test') {
+      const nextArg = args[testArgIndex + 1];
+      if (nextArg && !nextArg.startsWith('-')) {
+        testType = nextArg.toLowerCase();
+      } else {
+        testType = 'good';
+      }
     } else {
-      testType = 'good';
+      testType = testArg.split('=')[1]?.toLowerCase() || 'good';
     }
-  } else {
-    testType = testArg.split('=')[1]?.toLowerCase() || 'good';
   }
-}
 
-if (testType) {
-  // Send the full suite of generated test emails (blacklist, whitelist, TLD, combo, keywords)
-  const tests = buildAllTestEmails();
-  (async () => {
-    for (let index = 0; index < tests.length; index += 1) {
-      const t = tests[index];
-      try {
-        const mailOpts = {
-          from: t.mail.from || process.env.TEST_EMAIL_FROM || '"MailPickupAgent" <no-reply@localhost>',
-          to: t.mail.to || process.env.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com',
-          subject: t.mail.subject || 'MailPickupAgent test email',
-          html: t.mail.html || '',
-          headers: t.mail.headers || {},
-        };
-        await transporter.sendMail(mailOpts);
-        console.log(`Sent test '${t.name}' to ${mailOpts.to}`);
-      } catch (err) {
-        console.error(`Failed to send test '${t.name}': ${err.message}`);
+  if (testType) {
+    // Send the full suite of generated test emails (blacklist, whitelist, TLD, combo, keywords)
+    const tests = buildAllTestEmails();
+    (async () => {
+      for (let index = 0; index < tests.length; index += 1) {
+        const t = tests[index];
+        try {
+          const mailOpts = {
+            from: t.mail.from || process.env.TEST_EMAIL_FROM || '"MailPickupAgent" <no-reply@localhost>',
+            to: t.mail.to || process.env.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com',
+            subject: t.mail.subject || 'MailPickupAgent test email',
+            html: t.mail.html || '',
+            headers: t.mail.headers || {},
+          };
+          await transporter.sendMail(mailOpts);
+          console.log(`Sent test '${t.name}' to ${mailOpts.to}`);
+        } catch (err) {
+          console.error(`Failed to send test '${t.name}': ${err.message}`);
+        }
+        if (index < tests.length - 1) {
+          console.log(`Sleeping ${TEST_EMAIL_SLEEP_SECONDS} seconds before sending next test email...`);
+          await sleep(TEST_EMAIL_SLEEP_SECONDS * 1000);
+        }
       }
-      if (index < tests.length - 1) {
-        console.log(`Sleeping ${TEST_EMAIL_SLEEP_SECONDS} seconds before sending next test email...`);
-        await sleep(TEST_EMAIL_SLEEP_SECONDS * 1000);
-      }
-    }
-    process.exit(0);
-  })();
-}
-else if (args.length !== 2 || ['-h', '--help'].includes(args[0])) {
+      process.exit(0);
+    })();
+  }
+  else if (args.length !== 2 || ['-h', '--help'].includes(args[0])) {
     printUsage();
     process.exit(args.length === 2 ? 0 : 1);
-}
-else 
-{
-  // Normal processing mode - expects message file and queue type as arguments
-  const [messageFile, queueType] = args;
-  const { messagePath, controlFilePath } = buildFilePaths(messageFile, queueType);
-  // Dry run just copies files and logs the action without processing, allowing for testing and rule verification without affecting the actual email flow.
-  //  It also sleeps for 15 seconds before exit to allow time to inspect the file paths are correct.
-  if (DRY_RUN_COPY_LOG) {
-    logDryRun(args, controlFilePath, messagePath);
-    copyDryRunFiles(controlFilePath, messagePath);
-    console.log('Sleeping 15 seconds before exit...');
-    setTimeout(() => {
-      process.exit(0);
-    }, 15000);
   }
-  else
-  { 
+  else {
+    // Normal processing mode - expects message file and queue type as arguments
+    const [messageFile, queueType] = args;
+    const { messagePath, controlFilePath } = buildFilePaths(messageFile, queueType);
     // Normal processing of the email with all checks and potential quarantine or deletion based on rules and AI/spam checks.
     processEmail(controlFilePath, messagePath, loadRules()).then(() => process.exit(0));
   }
-}
 }

@@ -42,7 +42,6 @@ router.get('/', function(req, res) {
                             continue;
                         
                         let ipAddress = lineParts[5];
-                        let agent = lineParts[2];                    
 
                         obj = {};                     
                         obj.ipAddress = ipAddress;   

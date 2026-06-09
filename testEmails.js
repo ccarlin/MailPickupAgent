@@ -6,6 +6,7 @@ function loadRules() {
     const data = fs.readFileSync(path.join(__dirname, 'config', 'rules.json'), 'utf8');
     return JSON.parse(data);
   } catch (e) {
+    console.error(`Error loading rules: ${e}`);
     return { whitelist: {}, blacklist: {} };
   }
 }

@@ -1,7 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const moment = require("moment");
-const net = require("net");
 const simpleParser = require('mailparser').simpleParser;
 const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
@@ -27,20 +25,7 @@ module.exports = {
               if(checkTypes.includes(currentType))
               {
                 let fileInfo = {};
-                let fullFilePath = imageDir + '/' + list[i];
-                fileInfo.name = list[i];
-                if (currentType == ".jpg")
-                {
-                  try {                     
-                      const data = exif.parseSync(fullFilePath);
-                      fileInfo.date = moment(data.SubExif.DateTimeOriginal, "YYYY:MM:DD HH:mm:ss").toDate();       
-                      fileInfo.displayDate = fileInfo.date.toLocaleDateString();             
-                  }
-                  catch(err)
-                  { 
-                    module.exports.logWarn(`Unable to get photo info from file: ${fullFilePath} Error: ${err}`);
-                  }
-                }
+                fileInfo.name = list[i];              
                 try {
                   if ((fileInfo.date == null) || (sortType == "ByLastUpdateDesc"))
                   {

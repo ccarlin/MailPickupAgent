@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const fs = require("fs");
 const path = require("path");
+const axios = require("axios");
 const dns = require('dns');
 const tools = require("../tools");
 const dnsPromises = dns.promises;
 const xss = require("xss");
-const axios = require("axios");
 
 const prefixUTF = '=?UTF-8?B?';
 const suffix = '?=';
@@ -14,22 +14,18 @@ const prefixBase64 = '?BASE64?B?';
 const prefixLatin = "=?UTF-8?Q?";
 //TODO - Get these values from config or environment variables
 const mailLogFile = "FIX ME";
-const emailConfigPath = path.join(__dirname, '..', 'public', 'config', 'email.json');
+const rulesConfigPath = path.join(__dirname, '..', 'config', 'rules.json');
 
 function reasonText(action) {
     const edActions = new Set(['whitelist', 'blacklist']);
     return edActions.has(action) ? `Manually ${action}ed` : `Manually ${action}d`;
 }
 
-let msprvs1IDs = [];
-let msgIDCache = [];
-
 router.post('/', async function(req, res) {   // changed to async
     let bodyPostBack = req.body;
     let action = bodyPostBack.action.toLowerCase().split(" ")[0];
-    let path = process.env.PROCESSING_LOG || '\logs';
+    let path = process.env.PROCESSING_LOG || './logs';
     let mailLog = req.app.locals.logPath + "\\" + mailLogFile;
-    let mailErrorDB = req.app.locals.mailErrorDB;
 
     let data = Object.entries(bodyPostBack);
     let emails = [];
@@ -74,14 +70,13 @@ router.post('/', async function(req, res) {   // changed to async
     switch(action)
     {
         case "release":
-            ReleaseMessages(req, emails, mailErrorDB);
+            ReleaseMessages(req, emails);
             break;
         case "delete":
-            DeleteMessages(emails, mailErrorDB, path);
+            DeleteMessages(emails, path);
             break;
         case "clear":            
-            clearLogFile(mailLog);
-            clearCache(mailErrorDB);
+            clearLogFile(mailLog);           
             break;  
         case "filter":
             res.clearCookie("MailQUserFilter");
@@ -89,11 +84,11 @@ router.post('/', async function(req, res) {   // changed to async
             return;
         case "whitelist":
             if (await addGoodEntries(emails, req))
-                ReleaseMessages(req, emails, mailErrorDB);
+                ReleaseMessages(req, emails);
             break;
         case "blacklist":
             if (await addBadComboEntries(emails, req))
-                DeleteMessages(emails, mailErrorDB, path);
+                DeleteMessages(emails, path);
             break;
         default:
             //Do nothing
@@ -108,7 +103,6 @@ router.post('/action', async function(req, res) {   // changed to async
     let action = bodyPostBack.action.toLowerCase().split(" ")[0];
     let path = req.app.locals.spamPath;
     let mailLog = req.app.locals.logPath + "\\" + mailLogFile;
-    let mailErrorDB = req.app.locals.mailErrorDB;
 
     let data = Object.entries(bodyPostBack);
     let email = {};
@@ -158,14 +152,13 @@ router.post('/action', async function(req, res) {   // changed to async
     switch(action)
     {
         case "release":
-            ReleaseMessages(req, emails, mailErrorDB);
+            ReleaseMessages(req, emails);
             break;
         case "delete":
-            DeleteMessages(emails, mailErrorDB, path);
+            DeleteMessages(emails, path);
             break;
         case "clear":            
             clearLogFile(mailLog);
-            clearCache(mailErrorDB);
             break;  
         case "filter":
             res.clearCookie("MailQUserFilter");
@@ -173,11 +166,11 @@ router.post('/action', async function(req, res) {   // changed to async
             return;
         case "whitelist":
             if (await addGoodEntries(emails, req))
-                ReleaseMessages(req, emails, mailErrorDB);
+                ReleaseMessages(req, emails);
             break;
         case "blacklist":
             if (await addBadComboEntries(emails, req))
-                DeleteMessages(emails, mailErrorDB, path);
+                DeleteMessages(emails, path);
             break;
         default:
             //Do nothing
@@ -185,26 +178,6 @@ router.post('/action', async function(req, res) {   // changed to async
     }
 
     res.redirect(req.get('Referrer') || '/');
-});
-
-router.post('/performAICheck', async function (req, res) {
-    try {
-        const filePath = req.body.filepath; // Extract filePath from the request body
-
-        if (!filePath) {
-            return res.status(400).json({ success: false, message: 'filePath is required' });
-        }
-
-        // Perform the AI check logic
-        const email = { filepath: filePath }; // Create an email object with the filepath
-        const aiCheckResult = await isEmailSpamAICheck(email, req); // Call the AI check function
-
-        // Return the result of the AI check
-        return res.json({ success: true, result: aiCheckResult });
-    } catch (error) {
-        console.error('Error in performAICheck:', error);
-        return res.status(500).json({ success: false, message: 'An error occurred while performing the AI check' });
-    }
 });
 
 /* Display Main page */
@@ -254,7 +227,6 @@ router.get('/', function(req, res) {
             });
         }
 
-        emails = await processEmails(req, emails);
         let now = new Date().toLocaleString();
         let mailLog = [];
         let filePath = req.app.locals.logPath + "\\" + mailLogFile;
@@ -302,99 +274,6 @@ function prettyDisplay(logText)
         }
     }
     return output;
-}
-
-//Check for bad senders and subjects to auto purge 
-async function processEmails(req, emails) {
-    let path = req.app.locals.spamPath;
-    let filePath = req.app.locals.logPath + "\\" + mailLogFile;
-    let mailErrorDB = req.app.locals.mailErrorDB;
-    for(let i=0;i<emails.length;i++) 
-    {
-        let email = emails[i];
-        let msg = "";
-        //Allow for at most 2 non-ascii characters.
-        // eslint-disable-next-line no-control-regex
-        let asciiSubject = email.subject.replace(/[^\x00-\x7F]/g, "");
-        let lengthTest = asciiSubject.length + 4;
-            
-        let spamDetails = `<br>DKIM: ${email.dkim}, Spam Score: ${email.spamScore}, Spam Classification: ${email.antiSpam}`;          
-        }
-    
-    return displayEmails;
-}
-
-// ─── SYSTEM PROMPT ────────────────────────────────────────────────────────────
-function buildSystemPrompt(email, messageText) {
-    return `You are an expert in email analysis. 
-
-    Email Header Information:
-    Sender: ${email.sender}
-    Recipients: ${email.recipients}
-    Subject: ${email.subject}
-    DKIM: ${email.dkim}
-    Content: ${messageText}
-
-    INSTRUCTIONS:
-    1. Analyze this email and identify if it exhibits any common characteristics of spam.
-    2. Look for signs of spam, such as suspicious sender addresses, urgent language, excessive exclamation points
-       unusual attachments, or links that don't align with the sender's domain, and provide a conclusion on whether it is likely spam. 
-    3. If it is spam, provide a reason why it is spam. 
-    4. If it is not spam, provide a reason why it is not spam. 
-    5. If you are unsure, please say so. If the email is in a foreign language, please translate it to English and then analyze it. 
-    6. Output Requirements: Respond with: Spam Likelihood: High / Medium / Low\r\n Reasoning: A concise explanation referencing email content, headers, subject, and IP characteristics. Final Determination: “Spam” or “Not Spam”
-    4. Respond in this EXACT JSON format (no markdown, no extra text):
-    {
-        "spamLikelihood": "High / Medium / Low",
-        "reasoning": "Brief explanation of why you came to the conclusion, referencing specific email content, headers, subject, and IP characteristics.",
-        "notes": "Any important notes or warnings (optional)"
-    }
-
-    Rules:
-    - Do not respond with anything other than the specified JSON format. 
-    - Do not include any explanations, disclaimers, or additional text outside of the JSON response.`;    
-}
-
-///Check if AI thinks this is spam or not
-async function isEmailSpamAICheck(email, req)
-{
-    // TODO: Borrow the Querymind AI logic for building the prompt to use.
-    // TODO: Look into increasing the token size for ollama to allow for more content to be analyzed.     
-    const ollama_site = req.app.locals.ollamSite;
-    let ollama_model = req.app.locals.ollamaEmail;
-    if (ollama_site && (ollama_model.length > 0))
-    {        
-        let retValue = await checkCache(email.filepath,  req.app.locals.mailErrorDB);
-        if (retValue == "")
-        {
-            //Get mail message if it exists
-            let mailFile = req.app.locals.spamPath + "\\" + email.filepath + ".MAI";
-            const mailMessage = await tools.emailExtract(mailFile, true);
-            
-            try 
-            {
-                let startTime = performance.now();
-                let requestURL = ollama_site + "/api/generate";
-                let message = buildSystemPrompt(email, mailMessage);
-                let response = await axios.post(requestURL, {model: ollama_model, prompt: message, stream: false});
-                retValue = response.data.response;               
-
-                let endTime = performance.now()    
-                let totalTime = endTime - startTime;
-                let results = `AI check completed. AI timing: ${totalTime} milliseconds `;
-                tools.logData(results, "INFO", req.socket.remoteAddress);
-                updateCache(email.filepath, retValue, req.app.locals.mailErrorDB);
-            } 
-            catch (err) {
-                tools.logWarn(`Unable to check email with AI. Error: ${err}`, "127.0.0.1");    
-                return "Offline";   
-            }
-        }               
-        
-        return retValue;                
-    }
-    else
-        return "Offline";
 }
 
 //Get the quarentined emails to be processed
@@ -459,10 +338,10 @@ function getEmails(emailPath, callback)
                     for(j=0;j<lines.length;j++)
                     {
                         let nFound = 0;
-                        if (lines[j].startsWith("X-MXScan"))
+                        if (lines[j].startsWith("X-MPA"))
                         {
                             let data = lines[j].split(": ");
-                            let key = data[0].substring(9);
+                            let key = data[0].substring(6);
                             let value = data[1];
                             switch (key)
                             {
@@ -602,7 +481,7 @@ function GetEmailRecipient(emailList, bFirstOnly)
 }
 
 //Delete the email permenantly
-function DeleteMessages(emails, mailErrorDB, path)
+function DeleteMessages(emails, path)
 {
     for (let i=0;i<emails.length;i++)
     {        
@@ -621,11 +500,10 @@ function DeleteMessages(emails, mailErrorDB, path)
             tools.logError(`Unable to delete email: ${err}`, "127.0.0.1");
         }
     }
-    storeDBInfo(emails, mailErrorDB);
 }
 
 //Release the message back to the queue to be delivered
-function ReleaseMessages(req, emails, mailErrorDB)
+function ReleaseMessages(req, emails)
 {
     let path = req.app.locals.spamPath;
     
@@ -652,7 +530,6 @@ function ReleaseMessages(req, emails, mailErrorDB)
             tools.logError(`Unable to release email. Error: ${err}`, "127.0.0.1");
         }
     }  
-    storeDBInfo(emails, mailErrorDB);
 }
 
 //Add a new entry to the log file
@@ -746,43 +623,30 @@ function parseEmailAddress(email) {
 
 async function addGoodEntries(emails, req) {
     try {
-        const raw = fs.readFileSync(emailConfigPath, 'utf8');
-        const j = JSON.parse(raw);
-        j.good = j.good || [];
+        const raw = fs.readFileSync(rulesConfigPath, 'utf8');
+        const rules = JSON.parse(raw);
+        rules.whitelist = rules.whitelist || {};
+        rules.whitelist.senders = rules.whitelist.senders || [];
 
         const added = [];
         emails.forEach(email => {
             const sender = parseEmailAddress((email.sender || '').trim());
             if (!sender) return;
-            // recipients may be comma-separated; use each recipient token
-            const recipients = String(email.recipients || '').split(',').map(r => r.trim()).filter(Boolean);
-            recipients.forEach(recipient => {
-                if (!recipient) return;
-                const duplicate = j.good.some(g =>
-                    String(g.recipient || '').toLowerCase() === recipient.toLowerCase()
-                    && String(g.sender || '').toLowerCase() === sender.toLowerCase()
+            const duplicate = rules.whitelist.senders.some(s =>
+                    typeof s === 'string' && s.toLowerCase() === sender.toUpperCase().toLowerCase()
                 );
-                if (!duplicate) {
-                    const newEntry = { recipient: recipient.toUpperCase(), sender: sender.toUpperCase() };
-                    j.good.push(newEntry);
-                    try { 
-                        goodCombos.push(newEntry); 
-                    } 
-                    catch (e) 
-                    {
-                        tools.logError(`Error updating goodCombos in memory: ${e}`, req.socket.remoteAddress);
-                    }
-                    added.push(newEntry);
-                }
-            });
+            if (!duplicate) {
+                rules.whitelist.senders.push(sender.toUpperCase());
+                added.push(sender.toUpperCase());
+            }
         });
-
+        
         if (added.length > 0) {
-            fs.writeFileSync(emailConfigPath, JSON.stringify(j, null, 2), 'utf8');
-            tools.logData(`Added ${added.length} good combos`, "INFO", req.socket.remoteAddress);
+            fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
+            tools.logData(`Added ${added.length} whitelist senders`, "INFO", req.socket.remoteAddress);
             return true;
         } else {
-            tools.logData(`No new good combos to add`, "INFO", req.socket.remoteAddress);
+            tools.logData(`No new senders to add to whitelist`, "INFO", req.socket.remoteAddress);
             return false;
         }
     } catch (err) {
@@ -793,9 +657,10 @@ async function addGoodEntries(emails, req) {
 
 async function addBadComboEntries(emails, req) {
     try {
-        const raw = fs.readFileSync(emailConfigPath, 'utf8');
-        const j = JSON.parse(raw);
-        j.combo = j.combo || [];
+        const raw = fs.readFileSync(rulesConfigPath, 'utf8');
+        const rules = JSON.parse(raw);
+        rules.blacklist = rules.blacklist || {};
+        rules.blacklist.combos = rules.blacklist.combos || [];
 
         const added = [];
         emails.forEach(email => {
@@ -804,27 +669,20 @@ async function addBadComboEntries(emails, req) {
             const recipients = String(email.recipients || '').split(',').map(r => r.trim()).filter(Boolean);
             recipients.forEach(recipient => {
                 if (!recipient) return;
-                const duplicate = j.combo.some(c =>
+                const duplicate = rules.blacklist.combos.some(c =>
                     String(c.recipient || '').toLowerCase() === recipient.toLowerCase()
                     && String(c.sender || '').toLowerCase() === sender.toLowerCase()
                 );
                 if (!duplicate) {
                     const newEntry = { recipient: recipient.toUpperCase(), sender: sender.toUpperCase() };
-                    j.combo.push(newEntry);
-                    try { 
-                        badCombos.push(newEntry); 
-                    } 
-                    catch (e) 
-                    {
-                        tools.logError(`Error updating badCombos in memory: ${e}`, req.socket.remoteAddress);
-                    }
+                    rules.blacklist.combos.push(newEntry);
                     added.push(newEntry);
                 }
             });
         });
 
         if (added.length > 0) {
-            fs.writeFileSync(emailConfigPath, JSON.stringify(j, null, 2), 'utf8');
+            fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
             tools.logData(`Added ${added.length} bad combos`, "INFO", req.socket.remoteAddress);
             return true;
         } else {
