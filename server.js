@@ -25,6 +25,7 @@ app.use('/mailq', require('./routes/mailQRoute'));
 app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
 app.use('/QuarantineLog', require('./routes/QuarantineLog'));
+app.use('/emailPreview', require('./routes/emailPreview'));
 
 // Configuration loaded at startup
 let config = {

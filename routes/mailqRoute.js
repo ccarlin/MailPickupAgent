@@ -6,7 +6,6 @@ const axios = require("axios");
 const dns = require('dns');
 const tools = require("../tools");
 const dnsPromises = dns.promises;
-const xss = require("xss");
 
 const prefixUTF = '=?UTF-8?B?';
 const suffix = '?=';
@@ -183,23 +182,7 @@ router.post('/action', async function(req, res) {   // changed to async
 /* Display Main page */
 router.get('/', function(req, res) {
 
-    let filterUser = req.query.user ? String(req.query.user).toLowerCase() : null;
-
-    //If the key is in the query string then set the cookie and redirect
-    if (req.query.key)
-    {
-        res.cookie("MailKey", req.query.key, {maxAge: 1000 * 60 * 1440 * 365});    
-        //If the user is passed with the key then set that cookie as well
-        if (filterUser)
-        {
-            //The all value clears the cookie
-            if (filterUser == "all")
-                res.clearCookie("MailQUserFilter");
-            else
-                res.cookie("MailQUserFilter", req.query.user, { maxAge: 1000 * 60 * 1440 * 365 });
-        }        
-        return res.redirect("/mailq");
-    }
+    let filterUser = req.query.user ? String(req.query.user).toLowerCase() : null;     
     
     // Optional filter parameter to only process/display emails for a specific user
     // Accepts ?user=<value> (matches against the recipients field)    
@@ -217,7 +200,7 @@ router.get('/', function(req, res) {
         filterUser = String(req.cookies.MailQUserFilter).toLowerCase();        
     }
 
-    getEmails(req.app.locals.spamPath, async function(err, emails)
+    getEmails(process.env.QUARANTINE_DIR, async function(err, emails)
     {
         // If a filter was provided, restrict the set of emails before processing
         if (filterUser) {
@@ -227,54 +210,16 @@ router.get('/', function(req, res) {
             });
         }
 
-        let now = new Date().toLocaleString();
-        let mailLog = [];
-        let filePath = req.app.locals.logPath + "\\" + mailLogFile;
-        if (fs.existsSync(filePath))
-        {
-            mailLog = fs.readFileSync(filePath).toString();
-            mailLog = prettyDisplay(mailLog);
-        }   
-             
-        // Pass the filter to the view so it can show the current filter if desired
+        let now = new Date().toLocaleString();              
         let title = "Mail Quarentine";
         if (filterUser) 
             title += ` - ${filterUser}`;
         if (filterUser && filterUser != "all")
-            res.render('mailqCard', { title, emails, currentTime: now, mailLog, filterUser });    
+            res.render('mailqCard', { title, emails, currentTime: now, filterUser });    
         else
-            res.render('mailq', { title, emails, currentTime: now, mailLog, filterUser});
+            res.render('mailq', { title, emails, currentTime: now, filterUser});
     });    
 }); 
-
-function prettyDisplay(logText)
-{
-    let output = "";
-    logText = xss(logText);
-    let logLines = logText.split('\n');
-    for(let i=0;i<logLines.length;i++)
-    {
-        let line = logLines[i];
-        if (line.length > 0) {           
-            if ((line.includes("removing")) || (line.includes("deleted"))) 
-            {
-                if (line.includes("blocked subject"))
-                    line = `<span style="color: maroon;">${line}</span>`;
-                else if (line.includes("blocked sender"))
-                    line = `<span style="color: orange;">${line}</span>`;
-                else if (line.includes("Manually"))
-                    line = `<span style="color: purple;">${line}</span>`;
-                else
-                    line = `<span style="color: red;">${line}</span>`;
-            }
-            else if ((line.includes("allowing good")) || (line.includes("released")))
-                line = `<span style="color: green;">${line}</span>`;          
-            
-            output = line + "<br>" + output;
-        }
-    }
-    return output;
-}
 
 //Get the quarentined emails to be processed
 function getEmails(emailPath, callback)

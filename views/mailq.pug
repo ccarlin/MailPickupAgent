@@ -9,7 +9,25 @@ block css
         }    
         .myMiniButton {
             margin-left: 5px;
-        }        
+        }
+        .preview-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7); z-index: 100;
+            display: none;
+        }
+        .preview-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: white; padding: 20px; border-radius: 10px;
+            width: 85vw; height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        .preview-modal-content h2 {
+            margin: 0 0 10px 0;
+        }
+        .preview-modal-content iframe {
+            flex: 1; border: 1px solid #ddd; border-radius: 4px;
+        }
 
     link(id="favicon" rel="icon" href="/img/email.png" type="image/png" sizes="16x16")
 block scripts
@@ -43,13 +61,7 @@ block content
         });      
 
         function ConfirmFunction(action)
-        {
-            if (action == 'wipe')
-            {
-                var msg = "Are you sure you wish to clear the mail log file?";
-                return confirm(msg);
-            }           
-
+        {           
             if (action == 'clear')
             {
                $('#chkSelectAll').click();
@@ -69,6 +81,21 @@ block content
             }
         };
        
+        function closePreviewModal() {
+            $('#emailPreviewModal').hide();
+            $('#emailPreviewFrame').attr('src', '');
+        }
+
+        $(document).on('click', '.preview-link', function (e) {
+            e.preventDefault();
+            var key = $(this).data('mailkey');
+            var view = $(this).data('view');
+            if (!key) return;
+            var url = view === 'html' ? 'emailPreview?view=HTML&mailKey=' + encodeURIComponent(key) : 'emailPreview?mailKey=' + encodeURIComponent(key);
+            $('#emailPreviewFrame').attr('src', url);
+            $('#emailPreviewModal').show();
+        });
+
         function changeIcon()
         { 
             var emailCount = $("table[id*=GridView1] input[type=checkbox]").length - 1;        
@@ -127,9 +154,6 @@ block content
                     input#butDeleteAll(type='submit' name='action' value='Delete All' onclick="return ConfirmFunction('clear');" class="myMiniButton")
                     input#butDelete(type='submit' name='action' value='Delete' onclick="return ConfirmFunction('remove');" class="myMiniButton")
                     input#butRelease(type='submit' name='action' value='Release' onclick="return ConfirmFunction('release');" class="myMiniButton")  
-                    input#butClearLog(type='submit' name='action' value='Clear' onclick="return ConfirmFunction('wipe');" class="myMiniButton")
-                    input(type='button' name='action' value='Spam Log' onclick="window.open('/mailLog?range=Today')" class="myMiniButton")
-                    input(type='button' name='action' value='Email Log' onclick="window.open('/spamLog?today=true')" class="myMiniButton")
                     // Clear filter button: shown when server indicates a filter is active
                     if filterUser
                         input(type='submit' name='action' value='Filter Clear' class='myMiniButton' onclick="return confirm('Clear MailQ user filter?');")
@@ -168,10 +192,10 @@ block content
                             a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}  
                         td #{email.dkim}  
                         td(style='white-space:nowrap;') 
-                            a(target="_blank" href="mailPreview?mailKey=" + email.filepath) safe
+                            a(href="#" data-mailkey=email.filepath data-view="text").preview-link safe
                             if (email.safe)
                                 | 
-                                a(target="_blank" href="mailPreview?view=HTML&mailKey=" + email.filepath) html          
+                                a(href="#" data-mailkey=email.filepath data-view="html").preview-link html          
                             input(type='hidden' name=email.filepath+'subject' value=email.subject)
                             input(type='hidden' name=email.filepath+'sender' value=email.sender)
                             input(type='hidden' name=email.filepath+'recipients' value=email.recipients)
@@ -181,6 +205,10 @@ block content
                             input(type='hidden' name=email.filepath+'datetime' value=email.date)
                             input(type='hidden' name=email.filepath+'dkim' value=email.dkim)
                             input(type='hidden' name=email.filepath+'aiCheck' value=email.aiCheck)
-        br
-        div
-            p#myFile !{mailLog}        
+        
+    #emailPreviewModal.preview-modal
+        .preview-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2 Email Preview
+                button.myButton(onclick="closePreviewModal()") Close
+            iframe#emailPreviewFrame

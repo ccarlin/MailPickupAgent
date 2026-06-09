@@ -142,7 +142,28 @@ block css
                 font-size: 0.75rem;
                 padding: 4px 8px;
             }
-            /* Make action buttons form up to two columns on small screens */
+            .preview-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7); z-index: 100;
+            display: none;
+        }
+        .preview-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: white; padding: 20px; border-radius: 10px;
+            width: 85vw; height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        .preview-modal-content h2 {
+            margin: 0 0 10px 0;
+        }
+        .preview-modal-content iframe {
+            flex: 1; border: 1px solid #ddd; border-radius: 4px;
+        }
+        .preview-modal-content .preview-close {
+            align-self: flex-end; margin-bottom: 10px;
+        }
+        /* Make action buttons form up to two columns on small screens */
             .email-actions {
                 justify-content: space-between;
                 gap: 8px;
@@ -227,16 +248,21 @@ block scripts
             $('#aiCheckModal').hide();
         }
 
-        // delegated click handler for preview buttons — ensures filepath is read from data attribute
+        function closePreviewModal() {
+            $('#emailPreviewModal').hide();
+            $('#emailPreviewFrame').attr('src', '');
+        }
+
+        // delegated click handler for preview buttons — opens email in a modal popup
         $(document).on('click', '.btn-preview', function (e) {
             var $btn = $(this);
-            // data-mailkey is encoded on output; decode here to recover original filepath safely
             var raw = $btn.attr('data-mailkey') || '';
             var key = raw ? decodeURIComponent(raw) : '';
             var safe = ($btn.attr('data-safe') === 'true' || $btn.attr('data-safe') === true);
             if (!key) return;
-            var url = safe ? 'mailPreview?view=HTML&mailKey=' + encodeURIComponent(key) : 'mailPreview?mailKey=' + encodeURIComponent(key);
-            window.open(url, '_blank');
+            var url = (safe ? 'emailPreview?view=HTML&mailKey=' : 'emailPreview?mailKey=') + encodeURIComponent(key);
+            $('#emailPreviewFrame').attr('src', url);
+            $('#emailPreviewModal').show();
         });
 
         // show reason once; after revealing remove the "Show Reason" button so it cannot be hidden again
@@ -369,3 +395,10 @@ block content
             h2 AI Check Result
             p#aiCheckResult Loading...
             button.myButton(onclick="closeAICheckModal()") Close
+
+    #emailPreviewModal.preview-modal
+        .preview-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2 Email Preview
+                button.myButton.preview-close(onclick="closePreviewModal()") Close
+            iframe#emailPreviewFrame
