@@ -121,7 +121,8 @@ function extractOriginatingIp(commandData) {
   return null;
 }
 
-// Checks if the email's originating country matches any in the list, using headers or GeoIP lookup
+// Checks if the email's originating country matches any in the list, using GeoIP lookup.
+// Returns { matched: boolean, country: string|null } so callers can use either value.
 function matchCountry(originatingIp, countries) { 
   if (originatingIp) {
     console.log(`Checking originating country for IP: ${originatingIp}`);
@@ -130,14 +131,15 @@ function matchCountry(originatingIp, countries) {
       if (lookup && lookup.country && lookup.country.iso_code) {
         const code = lookup.country.iso_code.toUpperCase();
         console.log(`Originating country code: ${code}`);
-        if (countries.some(c => c.toUpperCase() === code)) return true;
+        const matched = countries.some(c => c.toUpperCase() === code);
+        return { matched, country: code };
       }
     } catch(err) {
       // Ignore MMDB errors
       console.error(`GeoIP lookup failed for IP: ${originatingIp}.  Error: ${err.message}`);
     }
   }
-  return false;
+  return { matched: false, country: null };
 }
 
 // Extract the top-level domain (TLD) from an email address (returns lowercase, e.g. 'com')
@@ -434,7 +436,7 @@ function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, 
 }
 
 // Updates email headers with quarantine reasons and spam score for better tracking and compatibility with existing rules
-async function updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore) {
+async function updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, country) {
   try {
     let message = fs.readFileSync(messagePath, 'utf8');
     const headerEndIndex = message.indexOf(HEADER_SEPARATOR);
@@ -444,11 +446,14 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     }
     let headers = message.substring(0, headerEndIndex); 
     let body = message.substring(headerEndIndex + HEADER_SEPARATOR.length);
-    // Let's fake some legacy MXScan headers for compatibility with existing quarantine rules and processes
-    headers += `\r\nX-MXScan-Scan: Scanned by MailPickupAgent 1.0 for ${process.env.HOSTNAME || 'localhost'}\r\n`;
-    headers += `X-MXScan-Msgid: ${destMessageName}\r\n`;
-    headers += `X-MXScan-AntiSpam: ${quarantineReasons.join('; ')}\r\n`;
-    headers += `X-MXScan-SpamScore: ${spamScore}\r\n`;    
+    // Let's add some MPA-specific headers
+    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${process.env.HOSTNAME || 'localhost'}\r\n`;
+    headers += `X-MPA-Msgid: ${destMessageName}\r\n`;
+    headers += `X-MPA-AntiSpam: ${quarantineReasons.join('; ')}\r\n`;
+    headers += `X-MPA-SpamScore: ${spamScore}\r\n`;
+    if (country) {
+      headers += `X-MPA-Country: ${country}\r\n`;
+    }
     fs.writeFileSync(messagePath, headers + HEADER_SEPARATOR + body, 'utf8');
     console.log(`Updated email headers with quarantine reasons`);
   } catch (err) {
@@ -477,6 +482,10 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const recipients = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
     const originatingIp = extractOriginatingIp(commandData);
     console.log(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`);
+
+    // Country lookup — used for blacklist matching and MPA-Country header on quarantined emails
+    const bl = rules.blacklist || {};
+    const countryResult = matchCountry(originatingIp, bl.countries || []);
 
     // 1. Whitelist check — release immediately if matched
     const wl = rules.whitelist || {};
@@ -508,7 +517,6 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     // 2. Blacklist check — delete immediately if matched
-    const bl = rules.blacklist || {};
     if (matchSender(fromAddr, bl.senders)) {
       console.log(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
@@ -525,8 +533,8 @@ async function processEmail(controlFilePath, messagePath, rules) {
       return;
     }
 
-    if (matchCountry(originatingIp,bl.countries)) {
-      console.log(`Originating country is blacklisted, deleting`);
+    if (countryResult.matched) {
+      console.log(`Originating country ${countryResult.country} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
@@ -595,12 +603,12 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (spamScore >= THRESHOLD_DELETE) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Blacklisted', spamDetailInfo, spamScore);
       console.log(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
-      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore);
+      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
     } else if (spamScore >= THRESHOLD_QUARANTINE) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo, spamScore);
       console.log(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
-      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore);
+      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country);
       await quarantineEmail(controlFilePath, messagePath, destMessageName);
     } else {
       if (spamDetailInfo.length == 0) spamDetailInfo = 'No significant spam indicators';

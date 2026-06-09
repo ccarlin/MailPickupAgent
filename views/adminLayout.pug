@@ -389,21 +389,21 @@ html(lang='en')
               )
               span SMTP Log       
           li.menu-item
-            a(href='/MailLog?range=Today')
+            a(href='/MailLog?today=true')
               img(src="/img/email.png" 
                 alt="Queue Log" 
                 title="Queue Log" 
                 style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                onclick="window.open('/MailLog?range=Today', '_blank'); return false;"
+                onclick="window.open('/MailLog?today=true', '_blank'); return false;"
               )
               span Mail Log
           li.menu-item
-            a(href='/QuarantineLog?range=Today')
+            a(href='/QuarantineLog?today=true')
               img(src="/img/spamLog.png" 
                 alt="Quarantine Log" 
                 title="Quarantine Log" 
                 style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                onclick="window.open('/QuarantineLog?range=Today', '_blank'); return false;"
+                onclick="window.open('/QuarantineLog?today=true', '_blank'); return false;"
               )
               span Quarantine Log
           li.menu-item
