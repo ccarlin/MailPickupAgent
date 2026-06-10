@@ -74,19 +74,16 @@ router.post('/', async function(req, res) {   // changed to async
         case "delete":
             DeleteMessages(emails, path);
             break;
-        case "clear":            
-            clearLogFile(mailLog);           
-            break;  
         case "filter":
             res.clearCookie("MailQUserFilter");
             res.redirect('/mailq');
             return;
         case "whitelist":
-            if (await addGoodEntries(emails, req))
+            if (await addGoodEntries(emails))
                 ReleaseMessages(req, emails);
             break;
         case "blacklist":
-            if (await addBadComboEntries(emails, req))
+            if (await addBadComboEntries(emails))
                 DeleteMessages(emails, path);
             break;
         default:
@@ -156,19 +153,16 @@ router.post('/action', async function(req, res) {   // changed to async
         case "delete":
             DeleteMessages(emails, path);
             break;
-        case "clear":            
-            clearLogFile(mailLog);
-            break;  
         case "filter":
             res.clearCookie("MailQUserFilter");
             res.redirect('/mailq');
             return;
         case "whitelist":
-            if (await addGoodEntries(emails, req))
+            if (await addGoodEntries(emails))
                 ReleaseMessages(req, emails);
             break;
         case "blacklist":
-            if (await addBadComboEntries(emails, req))
+            if (await addBadComboEntries(emails))
                 DeleteMessages(emails, path);
             break;
         default:
@@ -193,7 +187,7 @@ router.get('/', function(req, res) {
     }
     else if (filterUser) {
         res.cookie("MailQUserFilter", filterUser, { maxAge: 1000 * 60 * 1440 * 365 });
-        tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO", req.socket.remoteAddress);
+        tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO");
     }
     else if (req.cookies?.MailQUserFilter) {
         // Use existing cookie value if no filter provided in query
@@ -342,7 +336,7 @@ async function GetClientInfo(infoList)
         }
         catch(err)
         {
-            tools.logWarn(`Unable to get IPInfo on email message: ${err}`, "127.0.0.1");
+            tools.logWarn(`Unable to get IPInfo on email message: ${err}`);
         }
     }
 
@@ -426,39 +420,42 @@ function GetEmailRecipient(emailList, bFirstOnly)
 }
 
 //Delete the email permenantly
-function DeleteMessages(emails, path)
+function DeleteMessages(emails, sourcePath)
 {
+    const deletedDir = process.env.DELETED_DIR || './deleted';
+    if (!fs.existsSync(deletedDir)) {
+        fs.mkdirSync(deletedDir, { recursive: true });
+    }
     for (let i=0;i<emails.length;i++)
-    {        
-        //Test parameters
+    {
         let email = emails[i];
-        let messageFile = path + "\\" + email.filepath;
-        let headerFile = messageFile + ".H00";
-        let emailFile = messageFile + ".MAI";
-        try 
+        let headerFile = path.join(sourcePath, email.filepath + ".H00");
+        let emailFile = path.join(sourcePath, email.filepath + ".MAI");
+        let destHeader = path.join(deletedDir, email.filepath + ".H00");
+        let destMessage = path.join(deletedDir, email.filepath + ".MAI");
+        try
         {
-            //Clean up files
-            fs.unlinkSync(headerFile);
-            fs.unlinkSync(emailFile);
+            fs.renameSync(headerFile, destHeader);
+            fs.renameSync(emailFile, destMessage);
         }
         catch(err) {
-            tools.logError(`Unable to delete email: ${err}`, "127.0.0.1");
+            tools.logError(`Unable to move email to the delete directory: ${err}`);
         }
     }
 }
 
 //Release the message back to the queue to be delivered
-function ReleaseMessages(req, emails)
+function ReleaseMessages(emails)
 {
-    let path = req.app.locals.spamPath;
+    let spamPath = process.env.SPAM_PATH;
     
     for (let i=0;i<emails.length;i++)
     {
         let email = emails[i];
-        let headerFile = path + "\\" + email.filepath + ".H00";
-        let emailFile = path + "\\" + email.filepath + ".MAI";
-        let newEmailFile = emailFile.replace(req.app.locals.spamPath, req.app.locals.recoverPath);
-        let commandFile = emailFile.replace(req.app.locals.spamPath, req.app.locals.commandPath);
+        let headerFile = spamPath + "\\" + email.filepath + ".H00";
+        let emailFile = spamPath + "\\" + email.filepath + ".MAI";
+        let newEmailFile = emailFile.replace(spamPath, process.env.SMTP_QUEUE_DIR);
+        let commandFile = emailFile.replace(spamPath, process.env.SMTP_COMMAND_DIR);
             
         //Change the status of the message
         try {
@@ -472,7 +469,7 @@ function ReleaseMessages(req, emails)
         }
         catch (err)
         {
-            tools.logError(`Unable to release email. Error: ${err}`, "127.0.0.1");
+            tools.logError(`Unable to release email. Error: ${err}`);
         }
     }  
 }
@@ -487,13 +484,6 @@ function updateLogFile(logFile, logLine, ipAddress)
         fs.appendFileSync(logFile, data);
     else
         fs.writeFileSync(logFile, data);
-}
-
-//Clears the content of the mail log file.
-function clearLogFile(logFile)
-{
-    let data = "";
-    fs.writeFileSync(logFile, data);
 }
 
 // helper: parse List-Unsubscribe header value and return first usable URL or mailto
@@ -540,21 +530,21 @@ router.post('/unsubscribe', async function(req, res) {
         // attempt POST (many unsubscribe endpoints accept GET or POST; POST is safer for forms)
         try {
             const resp = await axios.post(url, {}, { timeout: 8000, headers: { 'User-Agent': 'HomeSite/1.0' } });
-            tools.logData(`Unsubscribe request for ${filepath || 'unknown'} => ${url} returned ${resp.status}`, "INFO", req.socket.remoteAddress);
+            tools.logData(`Unsubscribe request for ${filepath || 'unknown'} => ${url} returned ${resp.status}`, "INFO");
             return res.json({ success: true, status: resp.status });
         } catch (err) {
             // try GET as fallback
             try {
                 const resp2 = await axios.get(url, { timeout: 8000, headers: { 'User-Agent': 'HomeSite/1.0' } });
-                tools.logData(`Unsubscribe GET fallback for ${filepath || 'unknown'} => ${url} returned ${resp2.status}`, "INFO", req.socket.remoteAddress);
+                tools.logData(`Unsubscribe GET fallback for ${filepath || 'unknown'} => ${url} returned ${resp2.status}`, "INFO");
                 return res.json({ success: true, status: resp2.status });
             } catch (err2) {
-                tools.logWarn(`Unsubscribe failed for ${url}: ${err.message}`, req.socket.remoteAddress);
+                tools.logWarn(`Unsubscribe failed for ${url}: ${err.message}`);
                 return res.json({ success: false, message: err2 && err2.message ? err2.message : err.message });
             }
         }
     } catch (ex) {
-        tools.logError(`Error handling unsubscribe: ${ex}`, req.socket.remoteAddress);
+        tools.logError(`Error handling unsubscribe: ${ex}`);
         return res.status(500).json({ success: false, message: 'Server error' });
     }
 });
@@ -566,7 +556,7 @@ function parseEmailAddress(email) {
     return match ? match[0] : null;
 }
 
-async function addGoodEntries(emails, req) {
+async function addGoodEntries(emails) {
     try {
         const raw = fs.readFileSync(rulesConfigPath, 'utf8');
         const rules = JSON.parse(raw);
@@ -588,19 +578,19 @@ async function addGoodEntries(emails, req) {
         
         if (added.length > 0) {
             fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
-            tools.logData(`Added ${added.length} whitelist senders`, "INFO", req.socket.remoteAddress);
+            tools.logData(`Added ${added.length} whitelist senders`, "INFO");
             return true;
         } else {
-            tools.logData(`No new senders to add to whitelist`, "INFO", req.socket.remoteAddress);
+            tools.logData(`No new senders to add to whitelist`, "INFO");
             return false;
         }
     } catch (err) {
-        tools.logError(`Error adding good combos: ${err}`, req.socket.remoteAddress);
+        tools.logError(`Error adding good combos: ${err}`);
         return false;
     }
 }
 
-async function addBadComboEntries(emails, req) {
+async function addBadComboEntries(emails) {
     try {
         const raw = fs.readFileSync(rulesConfigPath, 'utf8');
         const rules = JSON.parse(raw);
@@ -628,14 +618,14 @@ async function addBadComboEntries(emails, req) {
 
         if (added.length > 0) {
             fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
-            tools.logData(`Added ${added.length} bad combos`, "INFO", req.socket.remoteAddress);
+            tools.logData(`Added ${added.length} bad combos`, "INFO");
             return true;
         } else {
-            tools.logData(`No new bad combos to add`, "INFO", req.socket.remoteAddress);
+            tools.logData(`No new bad combos to add`, "INFO");
             return false;
         }
     } catch (err) {
-        tools.logError(`Error adding bad combos: ${err}`, req.socket.remoteAddress);
+        tools.logError(`Error adding bad combos: ${err}`);
         return false;
     }
 }

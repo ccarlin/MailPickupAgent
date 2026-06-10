@@ -135,14 +135,7 @@ block css
             box-shadow: 0 1px 4px rgba(0,0,0,0.08);
             text-align: center;
         }
-        @media (max-width: 600px) {
-            .last-updated {
-                top: 8px;
-                right: 8px;
-                font-size: 0.75rem;
-                padding: 4px 8px;
-            }
-            .preview-modal {
+        .preview-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.7); z-index: 100;
             display: none;
@@ -163,7 +156,14 @@ block css
         .preview-modal-content .preview-close {
             align-self: flex-end; margin-bottom: 10px;
         }
-        /* Make action buttons form up to two columns on small screens */
+        @media (max-width: 600px) {
+            .last-updated {
+                top: 8px;
+                right: 8px;
+                font-size: 0.75rem;
+                padding: 4px 8px;
+            }
+            /* Make action buttons form up to two columns on small screens */
             .email-actions {
                 justify-content: space-between;
                 gap: 8px;
@@ -224,7 +224,6 @@ block scripts
                 $('<input>').attr({ type: 'hidden', name: `clientip`, value: '' }).appendTo(form);
                 $('<input>').attr({ type: 'hidden', name: `datetime`, value: emailData.find('.email-body p:nth-child(4) span').text().trim() }).appendTo(form);
                 $('<input>').attr({ type: 'hidden', name: `dkim`, value: emailData.find('.email-body p:nth-child(6) span').text().trim() }).appendTo(form);
-                $('<input>').attr({ type: 'hidden', name: `aiCheck`, value: '' }).appendTo(form);
             }
             form.submit();
         }
@@ -376,9 +375,7 @@ block content
                                 button.btn.btn-blacklist(title="Blacklist Sender" onclick=`handleListing(this)` data-mailkey=encodeURIComponent(email.filepath)) 
                                     i.material-icons block
                                 button.btn.btn-whitelist(title="Whitelist Sender" onclick=`handleListing(this)` data-mailkey=encodeURIComponent(email.filepath)) 
-                                    i.material-icons check_circle
-                                button.btn.btn-ai-check(title="AI Review" onclick=`performAICheck("${email.filepath}")`) 
-                                    i.material-icons smart_toy
+                                    i.material-icons check_circle                               
             .swiper-button-next
             .swiper-button-prev
     else
@@ -386,7 +383,7 @@ block content
             h4 No messages in quarantine
             p There are currently no messages to review.
 
-    form#actionForm(action='/mailqCard/action', method="POST" style="display:none;")
+    form#actionForm(action='/mailq/action', method="POST" style="display:none;")
         input(type='hidden' name='action')
 
     

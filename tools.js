@@ -1,8 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const simpleParser = require('mailparser').simpleParser;
-const MMDBReader = require('mmdb-reader');
-const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
 //Supress output of this command
 require('dotenv').config({ quiet: true });
 
@@ -68,13 +66,13 @@ module.exports = {
       let newText = text.charAt(0).toUpperCase() + text.slice(1);
       return newText;
     },
-    logError: function(data, ipAddress) {
-        this.logData(data, "ERROR", ipAddress);
+    logError: function(data) {
+        this.logData(data, "ERROR");
     },
-    logWarn: function(data, ipAddress) {
-      this.logData(data, "WARN", ipAddress);
+    logWarn: function(data) {
+      this.logData(data, "WARN");
     },
-    logData: function(data, level, ipAddress) {
+    logData: function(data, level) {
       let message;
 
       if (!level)
@@ -84,24 +82,7 @@ module.exports = {
         data = "";
 
       let timestamp = new Date().toLocaleString();
-      if (ipAddress)
-      {        
-        ipAddress = ipAddress.replace('::ffff:', '');
-        try
-        {
-          let query = mmdb.lookup(ipAddress);
-          if (query !== null && data.includes(query.country.names.en) == false && query.country.iso_code != "US") {
-            ipAddress += ` (${query.country.iso_code})`;
-          }
-        }
-        catch (exp)
-        {
-          console.log(`Failed on country code lookup: ${exp}`);
-        }
-        message = `${timestamp}\t[${level}]\tPID: ${process.pid}, IP: ${ipAddress}\t${data}`;
-      }
-      else
-        message = `${timestamp}\t[${level}]\tPID: ${process.pid}, IP: N/A\t${data}`;
+      message = `${timestamp}\t[${level}]\tPID: ${process.pid}, IP: N/A\t${data}`;
 
       //Don't log debug messages unless debugging..
       if (level == "ERROR") {

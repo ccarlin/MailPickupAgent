@@ -41,8 +41,7 @@ router.get('/', function(req, res) {
                         if ((isNaN(Date.parse(dateTime))) || (lineParts.length < 13))
                             continue;
                         
-                        let ipAddress = lineParts[5];
-                        let agent = lineParts[2];                    
+                        let ipAddress = lineParts[5];               
 
                         obj = {};                     
                         obj.ipAddress = ipAddress;   
@@ -75,7 +74,7 @@ router.get('/', function(req, res) {
         let endTime = performance.now()    
         let totalTime = endTime - startTime;
         let results = `SPAM Log Analyzer: Call to lookup ${logList.length.toLocaleString("en-US")} IP Addresses took ${totalTime} milliseconds `;
-        tools.logData(results, "INFO", req.socket.remoteAddress);
+        tools.logData(results, "INFO");
         
         let title = "Quarantine Log";
         res.render('QuarantineLog', { title, logData: logList});

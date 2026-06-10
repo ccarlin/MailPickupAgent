@@ -1,19 +1,20 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { buildAllTestEmails, processEmail } = require('./index.js');
-const { buildFilePaths } = require('./tools');
-
 const app = express();
+const { buildAllTestEmails, processEmail } = require('./index.js');
+const tools = require('./tools');
+
 const PORT = process.env.PORT || 3000;
 
 // View engine setup
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 
-// Middleware to parse incoming JSON request bodies
-app.use(express.json());
+// Middleware to parse incoming request bodies
 app.use(express.static(__dirname + '/public'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Default landing page
 app.get('/', (req, res) => {
@@ -38,9 +39,9 @@ function initializeConfiguration() {
   try {
     const rulesData = fs.readFileSync('./config/rules.json', 'utf8');
     config.rules = JSON.parse(rulesData);
-    console.log('Configuration loaded successfully');
+    tools.logData('Configuration loaded successfully');
   } catch (error) {
-    console.error('Error loading configuration:', error.message);
+    tools.logError(`Error loading configuration: ${error.message}`);
     config.rules = { whitelist: {}, blacklist: {} };
   }
   
@@ -134,14 +135,14 @@ app.get('/api/test-emails', async (req, res) => {
         const t = tests[index];
         try {
           // Would send via transporter here
-          console.log(`Test email: ${t.name} would be sent to ${recipient}`);
+          tools.logData(`Test email: ${t.name} would be sent to ${recipient}`);
           testResults.push({ name: t.name, status: 'sent' });
         } catch (err) {
-          console.error(`Failed to send test '${t.name}':`, err.message);
+          tools.logError(`Failed to send test '${t.name}': ${err.message}`);
           testResults.push({ name: t.name, status: 'failed', error: err.message });
         }
       }
-      console.log('All test emails processed:', testResults);
+      tools.logData(`All test emails processed: ${JSON.stringify(testResults)}`, "INFO");
     })();
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -160,7 +161,7 @@ app.post('/api/dry-run', async (req, res) => {
       });
     }
 
-    const { messagePath, controlFilePath } = buildFilePaths(messageID, queueType);
+    const { messagePath, controlFilePath } = tools.buildFilePaths(messageID, queueType);
     const dryRunDir = process.env.DRY_RUN_COPY_DEST || './dry-run-output';
     
     // Verify files exist
@@ -221,7 +222,7 @@ app.post('/api/process', async (req, res) => {
       });
     }
 
-    const { messagePath, controlFilePath } = buildFilePaths(messageID, queueType);
+    const { messagePath, controlFilePath } = tools.buildFilePaths(messageID, queueType);
 
     // Verify files exist
     if (!fs.existsSync(controlFilePath)) {
@@ -255,12 +256,12 @@ initializeConfiguration();
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    console.log(`Configuration loaded at startup`);
-    console.log(`API endpoints available:`);
-    console.log(`  GET  /api/help`);
-    console.log(`  GET  /api/config`);
-    console.log(`  GET  /api/test-emails`);
-    console.log(`  POST /api/dry-run`);
-    console.log(`  POST /api/process`);
+    tools.logData(`Server is running on http://localhost:${PORT}`);
+    tools.logData(`Configuration loaded at startup`);
+    tools.logData(`API endpoints available:`);
+    tools.logData(`  GET  /api/help`);
+    tools.logData(`  GET  /api/config`);
+    tools.logData(`  GET  /api/test-emails`);
+    tools.logData(`  POST /api/dry-run`);
+    tools.logData(`  POST /api/process`);
 });

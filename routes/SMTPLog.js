@@ -77,7 +77,7 @@ router.get('/', function(req, res) {
                             }
                             catch (err)
                             {
-                                tools.logData(`Error trying to extract email address. Error: ${err}`, "ERROR", req.socket.remoteAddress);
+                                tools.logData(`Error trying to extract email address. Error: ${err}`, "ERROR");
                             }
                         }
                         username = username.trim();
@@ -207,7 +207,7 @@ router.get('/', function(req, res) {
         let endTime = performance.now()    
         let totalTime = endTime - startTime;
         let results = `SMTP Log Analyzer: Call to lookup ${logList.length.toLocaleString("en-US")} IP Addresses took ${totalTime} milliseconds `;
-        tools.logData(results, "INFO", req.socket.remoteAddress);
+        tools.logData(results, "INFO");
         
         let title = "SMTPLog Analyzer";
         res.render('SMTPLog', { title, logData: logList});

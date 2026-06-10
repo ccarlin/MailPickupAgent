@@ -5,7 +5,7 @@ const axios = require('axios');
 const { simpleParser } = require('mailparser');
 const nodemailer = require('nodemailer');
 const { buildAllTestEmails } = require('./testEmails');
-const { buildFilePaths } = require('./tools');
+const tools = require('./tools');
 const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
 //Supress output of this command
@@ -120,18 +120,18 @@ function extractOriginatingIp(commandData) {
 // Returns { matched: boolean, country: string|null } so callers can use either value.
 function matchCountry(originatingIp, countries) {
   if (originatingIp) {
-    console.log(`Checking originating country for IP: ${originatingIp}`);
+    tools.logData(`Checking originating country for IP: ${originatingIp}`);
     try {
       const lookup = mmdb.lookup(originatingIp);
       if (lookup && lookup.country && lookup.country.iso_code) {
         const code = lookup.country.iso_code.toUpperCase();
-        console.log(`Originating country code: ${code}`);
+        tools.logData(`Originating country code: ${code}`);
         const matched = countries.some(c => c.toUpperCase() === code);
         return { matched, country: code };
       }
     } catch (err) {
       // Ignore MMDB errors
-      console.error(`GeoIP lookup failed for IP: ${originatingIp}.  Error: ${err.message}`);
+      tools.logError(`GeoIP lookup failed for IP: ${originatingIp}.  Error: ${err.message}`);
     }
   }
   return { matched: false, country: null };
@@ -183,7 +183,7 @@ function getKeywordText(parsed, filter) {
         }
         return headers.join('\n');
       } catch (e) {
-        console.error(`Error occurred while extracting headers: ${e}`);
+        tools.logError(`Error occurred while extracting headers: ${e}`);
         return '';
       }
     }
@@ -220,7 +220,7 @@ function matchKeywordFilter(parsed, filter) {
         const rx = new RegExp(expr, flags);
         return rx.test(text);
       } catch (e) {
-        console.error(`Error occurred while testing regex: ${e}`);
+        tools.logError(`Error occurred while testing regex: ${e}`);
         return false;
       }
     }
@@ -259,7 +259,7 @@ function scoreKeywordFilters(parsed, filters) {
     if (matchKeywordFilter(parsed, filter)) {
       const score = Number(filter.Score) || 0;
       const filterName = filter.FilterName || 'Keyword';
-      console.log(`Keyword filter matched: "${filterName}", score: ${score}`);
+      tools.logData(`Keyword filter matched: "${filterName}", score: ${score}`);
       if (score > 0) {
         acc.score += score;
         acc.matches.push(filterName);
@@ -281,7 +281,7 @@ async function queryOllama(prompt) {
     timeout: 15000,
   });
   if (resp && resp.data) {
-    console.log(`Ollama response: ${resp.data.response}`);
+    tools.logData(`Ollama response: ${resp.data.response}`);
     return resp.data.response || '';
   }
   return '';
@@ -341,17 +341,17 @@ function checkSpamAssassin(rawEmail) {
       });
 
       socket.on('error', (err) => {
-        console.error(`SpamAssassin connection error: ${err.message}`);
+        tools.logError(`SpamAssassin connection error: ${err.message}`);
         resolve(null); // Return null on error so email is still processed
       });
 
       socket.setTimeout(5000, () => {
         socket.destroy();
-        console.error('SpamAssassin connection timeout');
+        tools.logError('SpamAssassin connection timeout');
         resolve(null); // Return null on timeout
       });
     } catch (err) {
-      console.error(`SpamAssassin check failed: ${err.message}`);
+      tools.logError(`SpamAssassin check failed: ${err.message}`);
       resolve(null); // Return null on error so email is still processed
     }
   });
@@ -370,7 +370,7 @@ function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, 
   try {
     fs.appendFileSync(processingLogPath(), line + '\n', 'utf8');
   } catch (err) {
-    console.error(`Failed to write processing log: ${err.message}`);
+    tools.logError(`Failed to write processing log: ${err.message}`);
   }
 }
 
@@ -380,7 +380,7 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     let message = fs.readFileSync(messagePath, 'utf8');
     const headerEndIndex = message.indexOf(HEADER_SEPARATOR);
     if (headerEndIndex === -1) {
-      console.error(`Invalid email format, no header-body separation found`);
+      tools.logError(`Invalid email format, no header-body separation found`);
       return;
     }
     let headers = message.substring(0, headerEndIndex);
@@ -394,9 +394,9 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
       headers += `X-MPA-Country: ${country}\r\n`;
     }
     fs.writeFileSync(messagePath, headers + HEADER_SEPARATOR + body, 'utf8');
-    console.log(`Updated email headers with quarantine reasons`);
+    tools.logData(`Updated email headers with quarantine reasons`);
   } catch (err) {
-    console.error(`Failed to update email headers: ${err.message}`);
+    tools.logError(`Failed to update email headers: ${err.message}`);
   }
 }
 
@@ -408,7 +408,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const fromAddr = parsed.from?.value?.[0]?.address || 'unknown';
     const subjectText = parsed.subject || '(no subject)';
 
-    console.log(`Processing email: ${subjectText} from ${fromAddr}`);
+    tools.logData(`Processing email: ${subjectText} from ${fromAddr}`);
 
     // const rules = loadRules();
     const destMessageName = path.basename(messagePath);
@@ -420,7 +420,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const recipientStr = recipientAddresses.join(', ');
     const recipients = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
     const originatingIp = extractOriginatingIp(commandData);
-    console.log(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`);
+    tools.logData(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`);
 
     // Country lookup — used for blacklist matching and MPA-Country header on quarantined emails
     const bl = rules.blacklist || {};
@@ -431,13 +431,13 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (matchSender(fromAddr, wl.senders, recipients)) {
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Sender whitelisted', 0);
-      console.log(`Sender ${fromAddr} is whitelisted, releasing`);
+      tools.logData(`Sender ${fromAddr} is whitelisted, releasing`);
       return;
     }
     if (ipInRange(originatingIp, wl.ipRanges)) {
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Originating IP is whitelisted', 0);
-      console.log(`Originating IP is whitelisted, releasing`);
+      tools.logData(`Originating IP is whitelisted, releasing`);
       return;
     }
 
@@ -447,7 +447,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (allowed.length > 0) {
       const fromTld = extractTLD(fromAddr);
       if (fromTld && !allowed.includes(fromTld)) {
-        console.log(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
+        tools.logData(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
         const elapsed = (Date.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
         await deleteEmail(controlFilePath, messagePath, destMessageName);
@@ -457,7 +457,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 2. Blacklist check — delete immediately if matched
     if (matchSender(fromAddr, bl.senders)) {
-      console.log(`Sender ${fromAddr} is blacklisted, deleting`);
+      tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
@@ -465,7 +465,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     if (ipInRange(originatingIp, bl.ipRanges)) {
-      console.log(`Originating IP ${originatingIp} is blacklisted, deleting`);
+      tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
@@ -473,7 +473,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     if (countryResult.matched) {
-      console.log(`Originating country ${countryResult.country} is blacklisted, deleting`);
+      tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
@@ -481,7 +481,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
-      console.log(`Combo rule matched, deleting`);
+      tools.logData(`Combo rule matched, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
@@ -502,13 +502,13 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (SPAMASSASSIN_ENABLED) {
       saResult = await checkSpamAssassin(message);
       if (saResult) {
-        console.log(`SpamAssassin score: ${saResult.score}/${saResult.threshold}, isSpam: ${saResult.isSpam}`);
+        tools.logData(`SpamAssassin score: ${saResult.score}/${saResult.threshold}, isSpam: ${saResult.isSpam}`);
         spamScore += saResult.score;
         if (saResult.isSpam) {
           quarantineReasons.push('SpamAssassin flagged as spam');
         }
       } else if (SPAMASSASSIN_ENABLED) {
-        console.log(`SpamAssassin check unavailable, continuing with other checks`);
+        tools.logData(`SpamAssassin check unavailable, continuing with other checks`);
       }
     }
 
@@ -523,7 +523,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
           quarantineReasons.push('AI classified as spam');
         }
       } catch (err) {
-        console.error(`Ollama query failed, not assigning score for AI check:`, err.message);
+        tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
       }
     }
 
@@ -537,25 +537,25 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
     let spamDetailInfo = spamInfoParts.join('; ');
 
-    console.log(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
+    tools.logData(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
 
     if (spamScore >= THRESHOLD_DELETE) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Blacklisted', spamDetailInfo, spamScore);
-      console.log(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
+      tools.logData(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
     } else if (spamScore >= THRESHOLD_QUARANTINE) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo, spamScore);
-      console.log(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
+      tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country);
       await quarantineEmail(controlFilePath, messagePath, destMessageName);
     } else {
       if (spamDetailInfo.length == 0) spamDetailInfo = 'No significant spam indicators';
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Released', spamDetailInfo, spamScore);
-      console.log(`Releasing email with score ${spamScore}.`);
+      tools.logData(`Releasing email with score ${spamScore}.`);
     }
   } catch (error) {
-    console.error(`Error processing ${controlFilePath} and ${messagePath}:`, error);
+    tools.logError(`Error processing ${controlFilePath} and ${messagePath}: ${error}`);
   }
 
 }
@@ -566,7 +566,7 @@ async function quarantineEmail(controlFilePath, messagePath, destMessageName) {
   const destMessage = path.join(QUARANTINE_DIR, destMessageName);
   fs.renameSync(controlFilePath, destHeader);
   fs.renameSync(messagePath, destMessage);
-  console.log(`Email quarantined: ${destHeader}, ${destMessage}`);
+  tools.logData(`Email quarantined: ${destHeader}, ${destMessage}`);
 }
 
 // Moves email to deleted directory, effectively deleting it from the pickup queue
@@ -576,18 +576,18 @@ async function deleteEmail(controlFilePath, messagePath, destMessageName) {
   const destMessage = path.join(DELETED_DIR, destMessageName);
   fs.renameSync(controlFilePath, destHeader);
   fs.renameSync(messagePath, destMessage);
-  console.log(`Email deleted: ${destHeader}, ${destMessage}`);
+  tools.logData(`Email deleted: ${destHeader}, ${destMessage}`);
 }
 
 //Show usage instructions when no arguments or --help is provided, or when arguments are invalid. Also supports a --test mode to send a test email to verify configuration.
 function printUsage() {
-  console.log('Usage: node index.js <messageID> <queue-type>');
-  console.log('Usage: node index.js --test [good|quarantine|blacklist]');
-  console.log('Usage: node server.js (to start the web server)');
-  console.log('--test : Send a test email to verify configuration (defaults to good)');
-  console.log('--help : Show this help message');
-  console.log('Example: node index.js "B935428C1B4A4B8FADC12BC6A4358875.MAI" "SMTP"');
-  console.log('Example: node index.js --test quarantine');
+  tools.logData('Usage: node index.js <messageID> <queue-type>');
+  tools.logData('Usage: node index.js --test [good|quarantine|blacklist]');
+  tools.logData('Usage: node server.js (to start the web server)');
+  tools.logData('--test : Send a test email to verify configuration (defaults to good)');
+  tools.logData('--help : Show this help message');
+  tools.logData('Example: node index.js "B935428C1B4A4B8FADC12BC6A4358875.MAI" "SMTP"');
+  tools.logData('Example: node index.js --test quarantine');
 }
 
 // Export functions for use by server and other modules
@@ -638,12 +638,12 @@ if (require.main === module) {
             headers: t.mail.headers || {},
           };
           await transporter.sendMail(mailOpts);
-          console.log(`Sent test '${t.name}' to ${mailOpts.to}`);
+          tools.logData(`Sent test '${t.name}' to ${mailOpts.to}`);
         } catch (err) {
-          console.error(`Failed to send test '${t.name}': ${err.message}`);
+          tools.logError(`Failed to send test '${t.name}': ${err.message}`);
         }
         if (index < tests.length - 1) {
-          console.log(`Sleeping ${TEST_EMAIL_SLEEP_SECONDS} seconds before sending next test email...`);
+          tools.logData(`Sleeping ${TEST_EMAIL_SLEEP_SECONDS} seconds before sending next test email...`);
           await sleep(TEST_EMAIL_SLEEP_SECONDS * 1000);
         }
       }
@@ -657,7 +657,7 @@ if (require.main === module) {
   else {
     // Normal processing mode - expects message file and queue type as arguments
     const [messageFile, queueType] = args;
-    const { messagePath, controlFilePath } = buildFilePaths(messageFile, queueType);
+    const { messagePath, controlFilePath } = tools.buildFilePaths(messageFile, queueType);
     // Normal processing of the email with all checks and potential quarantine or deletion based on rules and AI/spam checks.
     processEmail(controlFilePath, messagePath, loadRules()).then(() => process.exit(0));
   }

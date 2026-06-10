@@ -38,8 +38,7 @@ block scripts
     
 block content
     script.    
-        $(document).ready(function ()
-        {     
+        $(document).ready(function () {     
             var timeout = setTimeout("location.reload(true);", 600000);
             $('#chkSelectAll').click(function ()
             {
@@ -60,8 +59,7 @@ block content
             });             
         });      
 
-        function ConfirmFunction(action)
-        {           
+        function ConfirmFunction(action) {           
             if (action == 'clear')
             {
                $('#chkSelectAll').click();
@@ -96,8 +94,7 @@ block content
             $('#emailPreviewModal').show();
         });
 
-        function changeIcon()
-        { 
+        function changeIcon() { 
             var emailCount = $("table[id*=GridView1] input[type=checkbox]").length - 1;        
             //Reset to normal if no emails..
             if (emailCount < 1)
