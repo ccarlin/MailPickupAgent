@@ -11,20 +11,26 @@ const prefixUTF = '=?UTF-8?B?';
 const suffix = '?=';
 const prefixBase64 = '?BASE64?B?';
 const prefixLatin = "=?UTF-8?Q?";
-//TODO - Get these values from config or environment variables
-const mailLogFile = "FIX ME";
+const QUARANTINE_LOG_DIR = process.env.QUARANTINE_LOG || '.';
+const quarentineLogPath = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${QUARANTINE_LOG_DIR}/quarantine-${y}${m}${day}.log`;
+};
 const rulesConfigPath = path.join(__dirname, '..', 'config', 'rules.json');
 
 function reasonText(action) {
     const edActions = new Set(['whitelist', 'blacklist']);
-    return edActions.has(action) ? `Manually ${action}ed` : `Manually ${action}d`;
+    return edActions.has(action) ? `${action}ed` : `${action}d`;
 }
 
 router.post('/', async function(req, res) {   // changed to async
     let bodyPostBack = req.body;
     let action = bodyPostBack.action.toLowerCase().split(" ")[0];
-    let path = process.env.PROCESSING_LOG || './logs';
-    let mailLog = req.app.locals.logPath + "\\" + mailLogFile;
+    let path = process.env.QUARANTINE_DIR || './quarantine';
+    let mailLog = quarentineLogPath();
 
     let data = Object.entries(bodyPostBack);
     let emails = [];
@@ -55,9 +61,7 @@ router.post('/', async function(req, res) {   // changed to async
             }
             emails.push(email);
 
-            let msg = `${email.reason} email with subject: ${data[i+1][1]}, from ${data[i+2][1]}, to recipient(s): ${data[i+3][1]}, dkim: ${data[i+8][1]}<br>Spam Score: ${data[i+4][1]}, Spam Classification: ${data[i+5][1]}`;
-           
-            updateLogFile(mailLog, msg, ipAddress);
+            updateLogFile(mailLog, { reason: email.reason, subject: data[i+1][1], sender: data[i+2][1], recipients: data[i+3][1], spamScore: data[i+4][1], antiSpam: data[i+5][1], dkim: data[i+8][1], clientip: ipAddress });
             i=i+9;
         }
         else 
@@ -69,7 +73,7 @@ router.post('/', async function(req, res) {   // changed to async
     switch(action)
     {
         case "release":
-            ReleaseMessages(req, emails);
+            ReleaseMessages(emails);
             break;
         case "delete":
             DeleteMessages(emails, path);
@@ -80,7 +84,7 @@ router.post('/', async function(req, res) {   // changed to async
             return;
         case "whitelist":
             if (await addGoodEntries(emails))
-                ReleaseMessages(req, emails);
+                ReleaseMessages(emails);
             break;
         case "blacklist":
             if (await addBadComboEntries(emails))
@@ -97,8 +101,8 @@ router.post('/', async function(req, res) {   // changed to async
 router.post('/action', async function(req, res) {   // changed to async
     let bodyPostBack = req.body;
     let action = bodyPostBack.action.toLowerCase().split(" ")[0];
-    let path = req.app.locals.spamPath;
-    let mailLog = req.app.locals.logPath + "\\" + mailLogFile;
+    let path = process.env.QUARANTINE_DIR || './quarantine';
+    let mailLog = quarentineLogPath();
 
     let data = Object.entries(bodyPostBack);
     let email = {};
@@ -142,13 +146,12 @@ router.post('/action', async function(req, res) {   // changed to async
 
     let emails = [];
     emails.push(email);
-    let msg = `${email.reason} email with subject: ${email.subject}, from ${email.from}, to recipient(s): ${email.recipients}, dkim: ${email.dkim}<br>Spam Score: ${email.spamScore}, Spam Classification: ${email.antiSpam}`;
-    updateLogFile(mailLog, msg, "N/A");
+    updateLogFile(mailLog, { reason: email.reason, subject: email.subject, sender: email.sender, recipients: email.recipients, spamScore: email.spamScore, antiSpam: email.antiSpam, dkim: email.dkim, clientip: "N/A" });
         
     switch(action)
     {
         case "release":
-            ReleaseMessages(req, emails);
+            ReleaseMessages(emails);
             break;
         case "delete":
             DeleteMessages(emails, path);
@@ -159,7 +162,7 @@ router.post('/action', async function(req, res) {   // changed to async
             return;
         case "whitelist":
             if (await addGoodEntries(emails))
-                ReleaseMessages(req, emails);
+                ReleaseMessages(emails);
             break;
         case "blacklist":
             if (await addBadComboEntries(emails))
@@ -446,8 +449,8 @@ function DeleteMessages(emails, sourcePath)
 
 //Release the message back to the queue to be delivered
 function ReleaseMessages(emails)
-{
-    let spamPath = process.env.SPAM_PATH;
+{    
+    let spamPath = process.env.QUARANTINE_DIR || './quarantine';
     
     for (let i=0;i<emails.length;i++)
     {
@@ -474,12 +477,11 @@ function ReleaseMessages(emails)
     }  
 }
 
-//Add a new entry to the log file
-function updateLogFile(logFile, logLine, ipAddress)
+function updateLogFile(logFile, entry)
 {
-    tools.logWarn(logLine, ipAddress);
     let timestamp = new Date().toLocaleString();
-    let data = `${timestamp}\t${logLine}\n`;
+    let esc = v => String(v ?? '').replace(/\t/g, ' ').replace(/\r?\n/g, ' ');
+    let data = [timestamp, esc(entry.reason), esc(entry.subject), esc(entry.sender), esc(entry.recipients), esc(entry.spamScore), esc(entry.antiSpam), esc(entry.dkim), esc(entry.clientip)].join('\t') + '\n';
     if (fs.existsSync(logFile))
         fs.appendFileSync(logFile, data);
     else
