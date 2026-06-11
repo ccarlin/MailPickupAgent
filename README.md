@@ -1,100 +1,188 @@
 # Mail Pickup Agent for MailEnable
 
-A Node.js executable that acts as a mail pickup agent for MailEnable, intercepting emails and routing them to quarantine or release based on configurable rules.
+A Node.js email filtering agent that integrates with MailEnable's pickup event to intercept, scan, and route emails based on configurable rules.
 
 ## Features
 
-- Processes a single email from a MailEnable pickup invocation
-- Accepts separate header and message files as command-line arguments
-- Parses email content using mailparser
-- Applies routing rules (whitelist/blacklist by sender, subject, IP, country, and combos)
-- **SpamAssassin integration** with configurable enable/disable flag
-- AI-powered spam classification using Ollama
-- Routes to quarantine or release directories, or sends via SMTP
+- **MailEnable Pickup Integration** — invoked per-email via the pickup event
+- **Admin Web Server** — UI for configuration, log viewing, quarantine/deleted email management
+- **Multi-Layer Filtering** — whitelist/blacklist by sender, subject, IP, country, combo rules, and keyword filters
+- **SpamAssassin Integration** — optional spamd scoring with configurable enable/disable
+- **AI Classification** — Ollama-powered spam classification
+- **Geolocation Filtering** — GeoIP country lookup for origin-based rules
+- **Quarantine & Recovery** — suspicious emails held for review, deleted emails recoverable via web UI
+- **Automatic Purge** — configurable retention-based cleanup of old deleted emails and log files
 
 ## Installation
 
-1. Clone or download this project.
-2. Run `npm install` to install dependencies.
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18 or later
+- npm (included with Node.js)
+- MailEnable (for production use)
+
+### Setup
+
+```bash
+# Clone or download the project
+cd mailpickupagent
+
+# Install dependencies
+npm install
+```
 
 ## Configuration
 
-Set environment variables:
+All configuration is stored in JSON files under the `config/` directory. The system loads `config/default.json` as a base, then merges with `config/{NODE_ENV}.json` (where `NODE_ENV` defaults to `development`).
 
-- `QUARANTINE_DIR`: Directory for quarantined emails (default: ./quarantine)
-- `DELETED_DIR`: Directory for deleted/sent emails (default: ./deleted)
-- `SMTP_HOST`: SMTP host for releasing emails (default: localhost)
-- `SMTP_PORT`: SMTP port (default: 25)
-- `OLLAMA_HOST`: Ollama server host (default: localhost)
-- `OLLAMA_PORT`: Ollama server port (default: 11434)
-- `OLLAMA_MODEL`: Ollama model name (default: llama3.2)
-- `SPAMASSASSIN_ENABLED`: Set to 'true' to enable SpamAssassin checking (default: false)
-- `SPAMASSASSIN_HOST`: SpamAssassin (spamd) host (default: localhost)
-- `SPAMASSASSIN_PORT`: SpamAssassin (spamd) port (default: 783)
+### Production vs Development
+
+| File | Purpose |
+|---|---|
+| `config/default.json` | Base configuration with sensible defaults |
+| `config/development.json` | Overrides for local testing (overlapping paths, test credentials) |
+| `config/production.json` | Overrides for production MailEnable server |
+
+The active environment is determined by the `NODE_ENV` environment variable. If not set, `development` is used.
+
+### Editing Configuration
+
+**Option 1: Web UI** — Start the server and navigate to `/configEditor`:
+
+```bash
+node server.js
+```
+
+**Option 2: Direct file edit** — Edit `config/default.json` or `config/{NODE_ENV}.json` directly.
+
+### Key Settings
+
+| Setting | Default | Description |
+|---|---|---|
+| `PORT` | `3000` | Web server port |
+| `QUARANTINE_DIR` | `./mail/quarantine` | Directory for quarantined emails |
+| `DELETED_DIR` | `./mail/deleted` | Directory for deleted emails |
+| `SMTP_QUEUE_DIR` | *(MailEnable path)* | Inbound SMTP message queue |
+| `SMTP_COMMAND_DIR` | *(MailEnable path)* | Inbound SMTP control files |
+| `SMTP_LOG_DIR` | *(MailEnable path)* | MailEnable SMTP logs |
+| `THRESHOLD_QUARANTINE` | `5` | Score at or above this value quarantines the email |
+| `THRESHOLD_DELETE` | `15` | Score at or above this value deletes the email |
+| `SPAMASSASSIN_ENABLED` | `false` | Enable SpamAssassin spam checks |
+| `AI_CHECK_ENABLED` | `false` | Enable Ollama AI spam classification |
+| `OLLAMA_SERVER` | `localhost` | Ollama server hostname |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama model name |
+| `PURGE_EMAIL_AFTER_DAYS` | `30` | Retention for deleted emails (run `--purge`) |
+| `PURGE_LOG_AFTER_DAYS` | `30` | Retention for log files |
+| `PURGE_INCLUDE_SMTP_LOGS` | `false` | Also purge MailEnable SMTP log files |
 
 ## Usage
 
-Process a single email using header and message file paths:
+### Email Processing (Pickup Mode)
+
+Process an email from the MailEnable pickup queue:
 
 ```bash
-node index.js /path/to/header /path/to/message
+node index.js <messageID> <queueType>
 ```
 
-Or with the installed CLI name:
+Example:
 
 ```bash
-mailpickup /path/to/header /path/to/message
+node index.js "B935428C1B4A4B8FADC12BC6A4358875.MAI" "SMTP"
 ```
+
+### Web Server (Admin UI)
+
+Start the administration web interface:
+
+```bash
+node server.js
+```
+
+Then open `http://localhost:3000` in a browser. The web UI provides:
+
+- **Configuration Editor** (`/configEditor`) — view and edit all settings
+- **Quarantine Manager** (`/mailq`) — review, release, or delete quarantined emails
+- **Deleted Email Viewer** (`/deleted`) — browse and recover deleted emails
+- **Processing Log** (`/MailLog`) — view daily processing logs
+- **Quarantine Log** (`/QuarantineLog`) — view quarantine action logs
+- **SMTP Log Analyzer** (`/SMTPLog`) — analyze MailEnable SMTP logs
+- **Rules Editor** (`/rulesEditor`) — manage whitelist, blacklist, and keyword filters
+
+It is recommended that you use PM2 or a similar tool to ensure that the server is always running.  
+Make sure to exlude logging directories and quarentine/deleted directories from any watch settings to avoid unnecessary restarts.
+
+### Test Emails
+
+Send test emails to verify configuration:
+
+```bash
+node index.js --test
+```
+
+Optional types: `good`, `quarantine`, `blacklist`:
+
+```bash
+node index.js --test quarantine
+```
+
+### Purging Old Files
+
+Remove deleted emails and log files older than the configured retention period:
+
+```bash
+node index.js --purge
+```
+
+Schedule this command to run daily via Windows Task Scheduler or cron.
 
 ## Integration with MailEnable
 
-Configure MailEnable to invoke this agent directly with the header and message file paths for each email. The agent will process the message once and then exit.
+MailEnable's Pickup Event fires for each incoming email, passing the message ID and queue type as arguments. There are two integration approaches:
+
+### Option A: HTTP API (Requires Running Web Server)  (Recommended)
+
+Requires the web server (`node server.js`) to be running continuously. Set MailEnable's pickup event to call `mailServerPickup.bat`:
+
+```
+C:\path\to\mailpickupagent\mailServerPickup.bat [MSG] [QUEUE]
+```
+
+This batch file sends a POST request to `http://localhost:3000/api/process` with the message ID and queue type. The web server must already be started (consider installing it as a Windows service).
+
+If you are using a port other than the default you must edit the batch file to match the port number the server is running on. 
+
+### Option B: Direct Node.js Invocation
+
+Set MailEnable's pickup event to call `run-mailpickup.bat`:
+
+1. Open the **MailEnable Administration** program
+2. Navigate to **Servers > localhost > Services > Pickup Event**
+3. Set the **Command to execute** to:
+   ```
+   C:\path\to\mailpickupagent\run-mailpickup.bat [MSG] [QUEUE]
+   ```
+   where `[MSG]` and `[QUEUE]` are MailEnable's pickup event macros.
+
+The `run-mailpickup.bat` script runs `node index.js` directly with the provided arguments.
+
+### API Endpoints (when server is running)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/process` | Process an email (used by MailEnable pickup) |
+| `GET` | `/api/config` | Get current configuration |
+| `GET` | `/api/test-emails` | Trigger test email generation |
+| `GET` | `/api/help` | API help and documentation |
 
 ## Dependencies
 
-- nodemailer: For sending emails
-- mailparser: For parsing email content
-
-## SpamAssassin Integration
-
-This agent can integrate with a local SpamAssassin instance for spam detection. SpamAssassin must be running as a service (`spamd`).
-
-### Enabling SpamAssassin
-
-Set the environment variable to enable SpamAssassin checking:
-
-```bash
-set SPAMASSASSIN_ENABLED=true
-```
-
-### Setting up SpamAssassin on Windows
-
-1. **Install SpamAssassin** using a package manager or from [apache.org](https://spamassassin.apache.org/)
-2. **Start the spamd service**:
-   - Command line: `spamd.exe` (typically runs on localhost:783)
-   - Or configure as a Windows service for automatic startup
-
-3. **Test the connection**:
-   ```bash
-   node index.js /path/to/header /path/to/message
-   ```
-   With `SPAMASSASSIN_ENABLED=true`, you'll see SpamAssassin score logs in the console.
-
-### Custom SpamAssassin Host/Port
-
-If your SpamAssassin instance runs on a different host or port:
-
-```bash
-set SPAMASSASSIN_HOST=192.168.1.100
-set SPAMASSASSIN_PORT=783
-```
-
-### How It Works
-
-1. **Enabled Check**: If `SPAMASSASSIN_ENABLED` is set to 'true', the agent will attempt to connect to spamd
-2. **Availability Flag**: If the connection fails or times out, the agent logs a warning but continues with other checks
-3. **Spam Decision**: If SpamAssassin flags the email as spam (score >= threshold), the email is quarantined
-4. **Fallback**: If SpamAssassin is unavailable, emails proceed through other checks (rules, AI classification)
+- **express** — Web server framework
+- **pug** — Template engine for admin UI
+- **mailparser** — Email parsing
+- **nodemailer** — SMTP email sending
+- **axios** — HTTP client for Ollama API
+- **mmdb-reader** — GeoIP country lookup
 
 ## License
 

@@ -61,8 +61,7 @@ function initializeConfiguration() {
     smtpHost: appConfig.SMTP_HOST,
     smtpPort: appConfig.SMTP_PORT,
     spamAssassinEnabled: appConfig.SPAMASSASSIN_ENABLED,
-    aiCheckEnabled: appConfig.AI_CHECK_ENABLED,
-    dryRunEnabled: appConfig.DRY_RUN_COPY_LOG
+    aiCheckEnabled: appConfig.AI_CHECK_ENABLED
   };
 }
 
@@ -89,17 +88,7 @@ app.get('/api/help', (req, res) => {
         queryParams: {
           recipient: 'Email recipient (optional, defaults to TEST_EMAIL_RECIPIENT config value)'
         }
-      },
-      dryRun: {
-        method: 'POST',
-        path: '/api/dry-run',
-        description: 'Perform a dry run of email processing',
-        bodyParams: {
-          messageID: 'Message ID/filename (required)',
-          queueType: 'Queue type like SMTP (required)',
-          simulate: 'Boolean to simulate without actual file operations (optional)'
-        }
-      },
+      },      
       processEmail: {
         method: 'POST',
         path: '/api/process',
@@ -158,67 +147,6 @@ app.get('/api/test-emails', async (req, res) => {
   }
 });
 
-// POST Route - Dry run email processing
-app.post('/api/dry-run', async (req, res) => {
-  try {
-    const { messageID, queueType, simulate } = req.body;
-    
-    if (!messageID || !queueType) {
-      return res.status(400).json({
-        error: 'Missing required parameters',
-        required: ['messageID', 'queueType']
-      });
-    }
-
-    const { messagePath, controlFilePath } = tools.buildFilePaths(messageID, queueType);
-    const dryRunDir = appConfig.DRY_RUN_COPY_DEST || './dry-run-output';
-    
-    // Verify files exist
-    if (!fs.existsSync(controlFilePath)) {
-      return res.status(404).json({ error: 'Control file not found', path: controlFilePath });
-    }
-    if (!fs.existsSync(messagePath)) {
-      return res.status(404).json({ error: 'Message file not found', path: messagePath });
-    }
-
-    // Create dry-run directory if needed
-    if (!fs.existsSync(dryRunDir)) {
-      fs.mkdirSync(dryRunDir, { recursive: true });
-    }
-
-    const result = {
-      timestamp: new Date().toISOString(),
-      messageID,
-      queueType,
-      messagePath,
-      controlFilePath,
-      dryRunDir,
-      filesProcessed: []
-    };
-
-    if (!simulate) {
-      // Copy files to dry-run output directory
-      const controlBasename = path.basename(controlFilePath);
-      const messageBasename = path.basename(messagePath);
-      const headerDest = path.join(dryRunDir, controlBasename).replace('.MAI', '.H00');
-      const messageDest = path.join(dryRunDir, messageBasename);
-
-      fs.copyFileSync(controlFilePath, headerDest);
-      fs.copyFileSync(messagePath, messageDest);
-
-      result.filesProcessed.push(headerDest, messageDest);
-    }
-
-    res.status(200).json({
-      message: 'Dry run completed successfully',
-      simulate: !!simulate,
-      ...result
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // POST Route - Process email
 app.post('/api/process', async (req, res) => {
   try {
@@ -271,6 +199,5 @@ app.listen(PORT, () => {
     tools.logData(`  GET  /api/help`);
     tools.logData(`  GET  /api/config`);
     tools.logData(`  GET  /api/test-emails`);
-    tools.logData(`  POST /api/dry-run`);
     tools.logData(`  POST /api/process`);
 });
