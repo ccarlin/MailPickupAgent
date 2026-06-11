@@ -15,3 +15,5 @@ config/rules*
 .env.deleteme
 config/development.json*
 config/production.json*
+.eslintrc.json
+eslint.config.mjs
