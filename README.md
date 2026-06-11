@@ -145,10 +145,10 @@ MailEnable's Pickup Event fires for each incoming email, passing the message ID 
 Requires the web server (`node server.js`) to be running continuously. Set MailEnable's pickup event to call `mailServerPickup.bat`:
 
 ```
-C:\path\to\mailpickupagent\mailServerPickup.bat [MSG] [QUEUE]
+C:\path\to\mailpickupagent\mailServerPickup.bat
 ```
 
-This batch file sends a POST request to `http://localhost:3000/api/process` with the message ID and queue type. The web server must already be started (consider installing it as a Windows service).
+This batch file sends a POST request to `http://localhost:3000/api/process` with the message ID and queue type. The web server must already be started (consider using PM2 to insure it is always running).
 
 If you are using a port other than the default you must edit the batch file to match the port number the server is running on. 
 
@@ -160,9 +160,8 @@ Set MailEnable's pickup event to call `run-mailpickup.bat`:
 2. Navigate to **Servers > localhost > Services > Pickup Event**
 3. Set the **Command to execute** to:
    ```
-   C:\path\to\mailpickupagent\run-mailpickup.bat [MSG] [QUEUE]
+   C:\path\to\mailpickupagent\run-mailpickup.bat
    ```
-   where `[MSG]` and `[QUEUE]` are MailEnable's pickup event macros.
 
 The `run-mailpickup.bat` script runs `node index.js` directly with the provided arguments.
 
@@ -174,6 +173,14 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 | `GET` | `/api/config` | Get current configuration |
 | `GET` | `/api/test-emails` | Trigger test email generation |
 | `GET` | `/api/help` | API help and documentation |
+
+## GeoIP Database
+
+This project includes a `GeoLite2-Country.mmdb` file for IP-to-country lookups used by country-based filtering rules. The database may become outdated over time. For the most up-to-date IP geolocation data, download a free copy from MaxMind:
+
+[https://www.maxmind.com/en/geolite-free-ip-geolocation-data](https://www.maxmind.com/en/geolite-free-ip-geolocation-data)
+
+Replace the existing `GeoLite2-Country.mmdb` file in the project root with the downloaded version.
 
 ## Dependencies
 
