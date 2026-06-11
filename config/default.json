@@ -2,13 +2,12 @@
   "NODE_ENV": "development",
   "PORT": 3000,
 
-  "QUARANTINE_DIR": "./quarantine",
-  "DELETED_DIR": "./deleted",
-  "RELEASE_DIR": "./release",
-
-  "SMTP_QUEUE_DIR": "",
-  "SMTP_COMMAND_DIR": "",
-  "SMTP_LOG_DIR": "./SMTPLog",
+  "QUARANTINE_DIR": "./mail/quarantine",
+  "DELETED_DIR": "./mail/deleted",
+  
+  "SMTP_QUEUE_DIR": "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound",
+  "SMTP_COMMAND_DIR": "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound",
+  "SMTP_LOG_DIR": "C:/Program Files (x86)/Mail Enable/Logs/SMTP",
 
   "SMTP_HOST": "localhost",
   "SMTP_PORT": 25,
@@ -29,10 +28,14 @@
   "THRESHOLD_QUARANTINE": 5,
   "THRESHOLD_DELETE": 15,
 
-  "PROCESSING_LOG": ".",
-  "QUARANTINE_LOG": ".",
+  "PROCESSING_LOG": "./logs",
+  "QUARANTINE_LOG": "./logs",
+
+  "PURGE_EMAIL_AFTER_DAYS": 30,
+  "PURGE_LOG_AFTER_DAYS": 30,
+  "PURGE_INCLUDE_SMTP_LOGS": false,
 
   "TEST_EMAIL_SLEEP_SECONDS": 3,
   "TEST_EMAIL_FROM": "\"MailPickupAgent\" <no-reply@localhost>",
-  "TEST_EMAIL_RECIPIENT": "chuck@ccarlin.com"
+  "TEST_EMAIL_RECIPIENT": "test@localhost"
 }

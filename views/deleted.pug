@@ -1,0 +1,78 @@
+extends adminLayout
+
+block css
+    link(href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css" rel="stylesheet" integrity="sha384-lidBvvi7oLJ2j9e3nFlBSXfo+giBJ9L7QnUdgjc3AvLiynS0HdKEEEZtvZ4izE46" crossorigin="anonymous")
+    link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
+    style.
+       body {
+            background-color: white;
+        }
+        .myMiniButton {
+            margin-left: 5px;
+        }
+
+    link(id="favicon" rel="icon" href="/img/email.png" type="image/png" sizes="16x16")
+block scripts
+    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
+    script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
+    script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
+
+block content
+    script.
+        $(document).ready(function () {
+            var timeout = setTimeout("location.reload(true);", 600000);
+            $('#chkSelectAll').click(function () {
+                $('input:checkbox').not(this).prop('checked', this.checked);
+            });
+            var table = $('#GridView1').DataTable({
+                 order: [[ 0, "asc" ]],
+                 paging: false,
+                 info: false,
+                 responsive: true,
+                 language: {"emptyTable": "No deleted messages found.", "zeroRecords": "No matches found."}
+            });
+        });
+
+        function ConfirmFunction(action) {
+            var selectCount = $("table[id*=GridView1] input[type=checkbox][id*=chkItem]:checked").length;
+            if (selectCount > 0) {
+                var msg = "Are you sure you wish to " + action + " " + selectCount + " email(s)?";
+                return confirm(msg);
+            } else {
+                alert("Please select one or more messages.");
+                return false;
+            }
+        };
+
+    form(action='/deleted', method="POST")
+        table(style='width: 100%')
+            tr
+                td(align="left")
+                    input#butRecover(type='submit' name='action' value='Recover' onclick="return ConfirmFunction('recover');" class="myMiniButton")
+                td(align="right")
+                    | #{currentTime}
+        div
+            table#GridView1(class="row-border compact order-column hover stripe nowrap" style='width: 100%; font-size: small')
+                thead
+                    th(scope='col')
+                        input#chkSelectAll(type='checkbox')
+                    th(scope='col') Sender
+                    th(scope='col') Recipient
+                    th(scope='col') Subject
+                    th(scope='col') SpamScore
+                    th(scope='col') Reason
+                each email, idx in emails
+                    tr
+                        td
+                            - var uniqueId = 'GridView1_chkItem_' + idx;
+                            input(type='checkbox' id=uniqueId name=email.filepath)
+                        td #{email.sender}
+                        td #{email.recipients}
+                        td #{email.subject}
+                        td #{email.spamScore}
+                        td #{email.antiSpam}
+                        input(type='hidden' name=email.filepath+'subject' value=email.subject)
+                        input(type='hidden' name=email.filepath+'sender' value=email.sender)
+                        input(type='hidden' name=email.filepath+'recipients' value=email.recipients)
+                        input(type='hidden' name=email.filepath+'spamScore' value=email.spamScore)
+                        input(type='hidden' name=email.filepath+'antiSpam' value=email.antiSpam)

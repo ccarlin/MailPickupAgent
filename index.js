@@ -578,12 +578,70 @@ async function deleteEmail(controlFilePath, messagePath, destMessageName) {
   tools.logData(`Email deleted: ${destHeader}, ${destMessage}`);
 }
 
+function purgeOldFiles() {
+  const emailRetentionDays = Number(config.PURGE_EMAIL_AFTER_DAYS) || 30;
+  const logRetentionDays = Number(config.PURGE_LOG_AFTER_DAYS) || 30;
+  const emailCutoff = Date.now() - emailRetentionDays * 24 * 60 * 60 * 1000;
+  const logCutoff = Date.now() - logRetentionDays * 24 * 60 * 60 * 1000;
+  let purgedCount = 0;
+
+  const emailDirs = [
+    { dir: DELETED_DIR, label: 'deleted emails' },
+  ];
+
+  const logDirs = [
+    { dir: config.PROCESSING_LOG, label: 'processing logs' },
+    { dir: config.QUARANTINE_LOG, label: 'quarantine logs' },
+  ];
+
+  if (config.PURGE_INCLUDE_SMTP_LOGS) {
+    logDirs.push({ dir: config.SMTP_LOG_DIR, label: 'SMTP logs' });
+  }
+
+  const purgeDir = (dirConfig, cutoff, label) => {
+    const { dir } = dirConfig;
+    if (!dir || !fs.existsSync(dir)) {
+      tools.logData(`Purge: directory not found, skipping ${label}: ${dir}`);
+      return;
+    }
+    let entries;
+    try {
+      entries = fs.readdirSync(dir);
+    } catch (err) {
+      tools.logError(`Purge: error reading ${label} directory ${dir}: ${err.message}`);
+      return;
+    }
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry);
+      try {
+        const stat = fs.statSync(fullPath);
+        if (stat.isFile() && stat.mtimeMs < cutoff) {
+          fs.unlinkSync(fullPath);
+          purgedCount++;
+          tools.logData(`Purge: removed ${fullPath}`);
+        }
+      } catch (err) {
+        tools.logError(`Purge: error processing ${fullPath}: ${err.message}`);
+      }
+    }
+  };
+
+  tools.logData(`Purge: email retention ${emailRetentionDays} days, log retention ${logRetentionDays} days, include SMTP logs: ${config.PURGE_INCLUDE_SMTP_LOGS}`);
+
+  emailDirs.forEach(d => purgeDir(d, emailCutoff, d.label));
+  logDirs.forEach(d => purgeDir(d, logCutoff, d.label));
+
+  tools.logData(`Purge complete: ${purgedCount} file(s) removed`);
+}
+
 //Show usage instructions when no arguments or --help is provided, or when arguments are invalid. Also supports a --test mode to send a test email to verify configuration.
 function printUsage() {
   tools.logData('Usage: node index.js <messageID> <queue-type>');
   tools.logData('Usage: node index.js --test [good|quarantine|blacklist]');
+  tools.logData('Usage: node index.js --purge');
   tools.logData('Usage: node server.js (to start the web server)');
   tools.logData('--test : Send a test email to verify configuration (defaults to good)');
+  tools.logData('--purge : Purge deleted emails and log files older than PURGE_AFTER_DAYS');
   tools.logData('--help : Show this help message');
   tools.logData('Example: node index.js "B935428C1B4A4B8FADC12BC6A4358875.MAI" "SMTP"');
   tools.logData('Example: node index.js --test quarantine');
@@ -598,7 +656,8 @@ module.exports = {
   extractOriginatingIp,
   deleteEmail,
   quarantineEmail,
-  scoreKeywordFilters
+  scoreKeywordFilters,
+  purgeOldFiles
 };
 
 // Main Processing begins here - only run if this file is executed directly, not when imported as a module
@@ -631,7 +690,7 @@ if (require.main === module) {
         try {
           const mailOpts = {
             from: t.mail.from || config.TEST_EMAIL_FROM || '"MailPickupAgent" <no-reply@localhost>',
-            to: t.mail.to || config.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com',
+            to: t.mail.to || config.TEST_EMAIL_RECIPIENT || 'test@localhost',
             subject: t.mail.subject || 'MailPickupAgent test email',
             html: t.mail.html || '',
             headers: t.mail.headers || {},
@@ -648,6 +707,10 @@ if (require.main === module) {
       }
       process.exit(0);
     })();
+  }
+  else if (args.includes('--purge')) {
+    purgeOldFiles();
+    process.exit(0);
   }
   else if (args.length !== 2 || ['-h', '--help'].includes(args[0])) {
     printUsage();

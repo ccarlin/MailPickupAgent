@@ -22,11 +22,9 @@ A Node.js executable that acts as a mail pickup agent for MailEnable, intercepti
 Set environment variables:
 
 - `QUARANTINE_DIR`: Directory for quarantined emails (default: ./quarantine)
-- `RELEASE_DIR`: Directory for released emails (default: ./release)
 - `DELETED_DIR`: Directory for deleted/sent emails (default: ./deleted)
 - `SMTP_HOST`: SMTP host for releasing emails (default: localhost)
 - `SMTP_PORT`: SMTP port (default: 25)
-- `RELEASE_METHOD`: 'smtp' to send via SMTP, otherwise move to `RELEASE_DIR`
 - `OLLAMA_HOST`: Ollama server host (default: localhost)
 - `OLLAMA_PORT`: Ollama server port (default: 11434)
 - `OLLAMA_MODEL`: Ollama model name (default: llama3.2)

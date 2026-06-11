@@ -14,5 +14,5 @@ quarantine/
 release/
 config/rules*
 .env.deleteme
-config/development.json
-config/production.json
+config/development.json*
+config/production.json*

@@ -36,6 +36,7 @@ app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
 app.use('/QuarantineLog', require('./routes/QuarantineLog'));
 app.use('/emailPreview', require('./routes/emailPreview'));
+app.use('/deleted', require('./routes/deletedRoute'));
 
 // Configuration loaded at startup
 let config = {
@@ -86,7 +87,7 @@ app.get('/api/help', (req, res) => {
         path: '/api/test-emails',
         description: 'Send all test emails to verify configuration',
         queryParams: {
-          recipient: 'Email recipient (optional, defaults to TEST_EMAIL_RECIPIENT env var)'
+          recipient: 'Email recipient (optional, defaults to TEST_EMAIL_RECIPIENT config value)'
         }
       },
       dryRun: {

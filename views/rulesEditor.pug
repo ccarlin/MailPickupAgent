@@ -67,8 +67,8 @@ block scripts
     script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")    
     script.
         let rulesData = null;
-        let collapsedSections = { whitelist: true, blacklist: true, allowedTLDs: true };
-        let collapsedSubsections = { 'whitelist.senders': true, 'whitelist.ipRanges': true, 'blacklist.senders': true, 'blacklist.ipRanges': true, 'blacklist.countries': true, 'blacklist.combos': true, 'blacklist.keywordFilters': true, 'allowedTLDs.allowedTLDs': true };
+        let collapsedSections = { whitelist: true, blacklist: true, allowedTLDs: true, scoredRules: true };
+        let collapsedSubsections = { 'whitelist.senders': true, 'whitelist.ipRanges': true, 'blacklist.senders': true, 'blacklist.ipRanges': true, 'blacklist.countries': true, 'blacklist.combos': true, 'scoredRules.keywordFilters': true, 'allowedTLDs.allowedTLDs': true };
 
         function showToast(message, type) {
             const existing = document.querySelector('.toast');
@@ -152,7 +152,10 @@ block scripts
                 { key: 'senders', label: 'Senders', type: 'string-array', parent: 'blacklist' },
                 { key: 'ipRanges', label: 'IP Ranges', type: 'string-array', parent: 'blacklist' },
                 { key: 'countries', label: 'Countries', type: 'string-array', parent: 'blacklist' },
-                { key: 'combos', label: 'Combos', type: 'combos', parent: 'blacklist' },
+                { key: 'combos', label: 'Combos', type: 'combos', parent: 'blacklist' }
+            ]);
+
+            renderSection(container, 'Scored Rules', 'scoredRules', [
                 { key: 'keywordFilters', label: 'Keyword Filters', type: 'keywordFilters', parent: 'blacklist' }
             ]);
 

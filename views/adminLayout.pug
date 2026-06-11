@@ -379,6 +379,15 @@ html(lang='en')
               )
               span Mail Queue
           li.menu-item
+            a(href='/deleted')
+              img(src="/img/email.png" 
+                alt="Deleted" 
+                title="Deleted Messages" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/deleted', '_blank'); return false;"
+              )
+              span Deleted
+          li.menu-item
             a(href='/smtplog?today=true')
               img.menu-icon(
                 src="/img/smtplog.png"

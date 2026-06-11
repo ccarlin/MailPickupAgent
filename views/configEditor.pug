@@ -38,7 +38,7 @@ block css
 block scripts
     script.
         let configData = null;
-        let collapsedSections = {};
+        let collapsedSections = { server: true, paths: true, smtp: true, ai: true, spamassassin: true, thresholds: true, purge: true, test: true };
 
         function showToast(message, type) {
             const existing = document.querySelector('.toast');
@@ -58,41 +58,46 @@ block scripts
             if (!configData) return;
 
             const groups = [
-                { key: 'server', title: 'Server', icon: '&#x1F5A5;', fields: [
+                { key: 'server', title: 'Server', icon: '&#x1F5A5;', description: 'General web server settings', fields: [
                     { key: 'PORT', label: 'HTTP Port', type: 'number', hint: 'Port for the web server' },
+                    { key: 'HOSTNAME', label: 'Hostname', hint: 'Hostname for logging' },
                 ]},
-                { key: 'paths', title: 'Directory Paths', icon: '&#x1F4C1;', fields: [
+                { key: 'paths', title: 'Directory Paths', icon: '&#x1F4C1;', description: 'File system paths for email storage and logs', fields: [
                     { key: 'QUARANTINE_DIR', label: 'Quarantine Directory', hint: 'Where quarantined emails are stored' },
                     { key: 'DELETED_DIR', label: 'Deleted Directory', hint: 'Where deleted emails are moved' },
-                    { key: 'RELEASE_DIR', label: 'Release Directory', hint: 'Where released emails are placed (non-SMTP mode)' },
                     { key: 'SMTP_QUEUE_DIR', label: 'SMTP Queue Directory', hint: 'Inbound SMTP message queue' },
                     { key: 'SMTP_COMMAND_DIR', label: 'SMTP Command Directory', hint: 'Inbound SMTP control files' },
                     { key: 'SMTP_LOG_DIR', label: 'SMTP Log Directory', hint: 'Mail Enable SMTP logs location' },
                     { key: 'PROCESSING_LOG', label: 'Processing Log Directory', hint: 'Where processing-YYYYMMDD.log files go' },
                     { key: 'QUARANTINE_LOG', label: 'Quarantine Log Directory', hint: 'Where quarantine-YYYYMMDD.log files go' },
                 ]},
-                { key: 'smtp', title: 'SMTP Settings', icon: '&#x2709;', fields: [
+                { key: 'smtp', title: 'SMTP Settings', icon: '&#x2709;', description: 'Outbound mail server connection for sending test emails', fields: [
                     { key: 'SMTP_HOST', label: 'SMTP Host', hint: 'Mail server for releasing emails' },
                     { key: 'SMTP_PORT', label: 'SMTP Port', type: 'number', hint: 'Usually 25' },
                     { key: 'SMTP_USER', label: 'SMTP Username', hint: 'Authentication user (if required)' },
                     { key: 'SMTP_PASS', label: 'SMTP Password', type: 'password', hint: 'Authentication password' },                   
                 ]},
-                { key: 'ai', title: 'AI / Ollama', icon: '&#x1F916;', fields: [
+                { key: 'ai', title: 'AI / Ollama', icon: '&#x1F916;', description: 'AI-powered spam classification via Ollama SPAM messages given 5 points', fields: [
                     { key: 'AI_CHECK_ENABLED', label: 'AI Check Enabled', type: 'checkbox', hint: 'Enable Ollama AI spam classification' },
                     { key: 'OLLAMA_SERVER', label: 'Ollama Server', hint: 'Hostname or IP of Ollama server' },
                     { key: 'OLLAMA_PORT', label: 'Ollama Port', type: 'number', hint: 'Default 11434' },
                     { key: 'OLLAMA_MODEL', label: 'Ollama Model', hint: 'Model name like llama3.2, mistral, etc.' },
                 ]},
-                { key: 'spamassassin', title: 'SpamAssassin', icon: '&#x1F6E1;', fields: [
+                { key: 'spamassassin', title: 'SpamAssassin', icon: '&#x1F6E1;', description: 'Spam filtering via SpamAssassin daemon 0-15 score range', fields: [
                     { key: 'SPAMASSASSIN_ENABLED', label: 'SpamAssassin Enabled', type: 'checkbox', hint: 'Enable SpamAssassin spam checks' },
                     { key: 'SPAMASSASSIN_HOST', label: 'SpamAssassin Host', hint: 'Hostname or IP of spamd' },
                     { key: 'SPAMASSASSIN_PORT', label: 'SpamAssassin Port', type: 'number', hint: 'Default 783' },
                 ]},
-                { key: 'thresholds', title: 'Spam Thresholds', icon: '&#x2699;', fields: [
+                { key: 'thresholds', title: 'Spam Thresholds', icon: '&#x2699;', description: 'Score boundaries for quarantine and delete actions', fields: [
                     { key: 'THRESHOLD_QUARANTINE', label: 'Quarantine Threshold', type: 'number', hint: 'Score at or above this value quarantines the email' },
                     { key: 'THRESHOLD_DELETE', label: 'Delete Threshold', type: 'number', hint: 'Score at or above this value deletes the email' },
+                ]},
+                { key: 'purge', title: 'Purge / Retention', icon: '&#x1F9F9;', description: 'Automatic cleanup of old deleted emails and log files (run node index.js --purge)', fields: [
+                    { key: 'PURGE_EMAIL_AFTER_DAYS', label: 'Email Retention (days)', type: 'number', hint: 'Remove deleted emails older than this many days' },
+                    { key: 'PURGE_LOG_AFTER_DAYS', label: 'Log Retention (days)', type: 'number', hint: 'Remove log files older than this many days' },
+                    { key: 'PURGE_INCLUDE_SMTP_LOGS', label: 'Include SMTP Logs', type: 'checkbox', hint: 'Also purge files in SMTP_LOG_DIR with log retention' },
                 ]},              
-                { key: 'test', title: 'Test Emails', icon: '&#x1F514;', fields: [
+                { key: 'test', title: 'Test Emails', icon: '&#x1F514;', description: 'Configuration for automated test email generation', fields: [
                     { key: 'TEST_EMAIL_SLEEP_SECONDS', label: 'Sleep Between Tests', type: 'number', hint: 'Seconds to wait between test emails' },
                     { key: 'TEST_EMAIL_FROM', label: 'Test Email From Address', hint: 'Sender address for test emails' },
                     { key: 'TEST_EMAIL_RECIPIENT', label: 'Test Email Recipient', hint: 'Default recipient for test emails' },
@@ -107,7 +112,9 @@ block scripts
 
                 const header = document.createElement('div');
                 header.className = 'section-header';
-                header.innerHTML = '<h2><span class="toggle-icon">' + (isCollapsed ? '&#9654;' : '&#9660;') + '</span>' + group.icon + ' ' + group.title + '</h2>';
+                header.style.flexDirection = 'column';
+                header.style.alignItems = 'flex-start';
+                header.innerHTML = '<h2><span class="toggle-icon">' + (isCollapsed ? '&#9654;' : '&#9660;') + '</span>' + group.icon + ' ' + group.title + '</h2><div style="font-size:12px;color:#777;padding: 2px 0 0 18px;">' + group.description + '</div>';
                 header.addEventListener('click', (e) => {
                     if (e.target.closest('.actions')) return;
                     collapsedSections[group.key] = !collapsedSections[group.key];
