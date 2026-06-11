@@ -14,8 +14,6 @@
   "SMTP_USER": "",
   "SMTP_PASS": "",
 
-  "RELEASE_METHOD": "",
-
   "AI_CHECK_ENABLED": false,
   "OLLAMA_SERVER": "localhost",
   "OLLAMA_PORT": 11434,
