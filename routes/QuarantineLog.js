@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const tools = require("../tools");
 const fs = require("fs");
+const config = require('../config');
 
 /* Display Main page */
 router.get('/', function(req, res) {
-    const logPath = process.env.QUARANTINE_LOG || '.';
+    const logPath = config.QUARANTINE_LOG;
     const fileTypes = ".log";
    
     tools.getSortedFiles(logPath, fileTypes, "ByLastUpdateDesc", function (err, files) {

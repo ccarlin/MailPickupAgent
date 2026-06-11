@@ -8,26 +8,25 @@ const { buildAllTestEmails } = require('./testEmails');
 const tools = require('./tools');
 const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
-//Supress output of this command
-require('dotenv').config({ quiet: true });
+const config = require('./config');
 
-const QUARANTINE_DIR = process.env.QUARANTINE_DIR || './quarantine';
-const DELETED_DIR = process.env.DELETED_DIR || './deleted';
-const SMTP_HOST = process.env.SMTP_HOST || 'localhost';
-const SMTP_PORT = process.env.SMTP_PORT || 25;
+const QUARANTINE_DIR = config.QUARANTINE_DIR;
+const DELETED_DIR = config.DELETED_DIR;
+const SMTP_HOST = config.SMTP_HOST;
+const SMTP_PORT = config.SMTP_PORT;
 const RULES_FILE = './config/rules.json';
-const AI_CHECK_ENABLED = (process.env.AI_CHECK_ENABLED || 'false').toLowerCase() === 'true';
-const OLLAMA_HOST = process.env.OLLAMA_SERVER || 'localhost';
-const OLLAMA_PORT = process.env.OLLAMA_PORT || 11434;
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2';
-const SPAMASSASSIN_ENABLED = (process.env.SPAMASSASSIN_ENABLED || 'false').toLowerCase() === 'true';
-const SPAMASSASSIN_HOST = process.env.SPAMASSASSIN_HOST || 'localhost';
-const SPAMASSASSIN_PORT = process.env.SPAMASSASSIN_PORT || 783;
-const TEST_EMAIL_SLEEP_SECONDS = Number(process.env.TEST_EMAIL_SLEEP_SECONDS || 10) || 10;
-const THRESHOLD_QUARANTINE = Number(process.env.THRESHOLD_QUARANTINE || 5);
-const THRESHOLD_DELETE = Number(process.env.THRESHOLD_DELETE || 15);
+const AI_CHECK_ENABLED = config.AI_CHECK_ENABLED;
+const OLLAMA_HOST = config.OLLAMA_SERVER;
+const OLLAMA_PORT = config.OLLAMA_PORT;
+const OLLAMA_MODEL = config.OLLAMA_MODEL;
+const SPAMASSASSIN_ENABLED = config.SPAMASSASSIN_ENABLED;
+const SPAMASSASSIN_HOST = config.SPAMASSASSIN_HOST;
+const SPAMASSASSIN_PORT = config.SPAMASSASSIN_PORT;
+const TEST_EMAIL_SLEEP_SECONDS = Number(config.TEST_EMAIL_SLEEP_SECONDS || 10) || 10;
+const THRESHOLD_QUARANTINE = Number(config.THRESHOLD_QUARANTINE || 5);
+const THRESHOLD_DELETE = Number(config.THRESHOLD_DELETE || 15);
 const HEADER_SEPARATOR = '\r\n\r\n';
-const PROCESSING_LOG_DIR = process.env.PROCESSING_LOG || '.';
+const PROCESSING_LOG_DIR = config.PROCESSING_LOG;
 const processingLogPath = () => {
   const d = new Date();
   const y = d.getFullYear();
@@ -386,7 +385,7 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     let headers = message.substring(0, headerEndIndex);
     let body = message.substring(headerEndIndex + HEADER_SEPARATOR.length);
     // Let's add some MPA-specific headers
-    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${process.env.HOSTNAME || 'localhost'}\r\n`;
+    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${config.HOSTNAME || process.env.HOSTNAME || 'localhost'}\r\n`;
     headers += `X-MPA-Msgid: ${destMessageName}\r\n`;
     headers += `X-MPA-AntiSpam: ${quarantineReasons.join('; ')}\r\n`;
     headers += `X-MPA-SpamScore: ${spamScore}\r\n`;
@@ -631,8 +630,8 @@ if (require.main === module) {
         const t = tests[index];
         try {
           const mailOpts = {
-            from: t.mail.from || process.env.TEST_EMAIL_FROM || '"MailPickupAgent" <no-reply@localhost>',
-            to: t.mail.to || process.env.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com',
+            from: t.mail.from || config.TEST_EMAIL_FROM || '"MailPickupAgent" <no-reply@localhost>',
+            to: t.mail.to || config.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com',
             subject: t.mail.subject || 'MailPickupAgent test email',
             html: t.mail.html || '',
             headers: t.mail.headers || {},

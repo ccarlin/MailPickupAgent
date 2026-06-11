@@ -1,0 +1,231 @@
+extends adminLayout
+
+block css
+    style.
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { margin-bottom: 8px; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .header-bar h1 { margin: 0; }
+        .env-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        .env-badge.development { background: #e8f5e9; color: #2e7d32; }
+        .env-badge.production { background: #fce4ec; color: #c62828; }
+        .btn { display: inline-block; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #1a73e8; color: #fff; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-success { background: #0d9e4e; color: #fff; }
+        .btn-success:hover { background: #0a7e3e; }
+        .section { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+        .section-header { background: #f0f4f8; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; cursor: pointer; }
+        .section-header h2 { font-size: 15px; margin: 0; }
+        .toggle-icon { font-size: 12px; margin-right: 6px; }
+        .section-body { padding: 16px; }
+        .section-body.collapsed { display: none; }
+        .field-row { display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+        .field { flex: 1; min-width: 200px; }
+        .field label { display: block; font-weight: 600; font-size: 12px; color: #555; margin-bottom: 4px; word-break: break-all; }
+        .field input, .field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: 'Consolas', 'Courier New', monospace; background: #fafafa; }
+        .field input:focus, .field select:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26,115,232,0.2); background: #fff; }
+        .field input[type="checkbox"] { width: auto; margin-top: 6px; }
+        .field .hint { font-size: 11px; color: #999; margin-top: 2px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 6px; color: #fff; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+        .toast.show { opacity: 1; }
+        .toast.success { background: #0d9e4e; }
+        .toast.error { background: #d93025; }
+        .toast.info { background: #1a73e8; }
+
+block scripts
+    script.
+        let configData = null;
+        let collapsedSections = {};
+
+        function showToast(message, type) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2500);
+        }
+
+        function renderConfig() {
+            const container = document.getElementById('configContainer');
+            container.innerHTML = '';
+
+            if (!configData) return;
+
+            const groups = [
+                { key: 'server', title: 'Server', icon: '&#x1F5A5;', fields: [
+                    { key: 'PORT', label: 'HTTP Port', type: 'number', hint: 'Port for the web server' },
+                ]},
+                { key: 'paths', title: 'Directory Paths', icon: '&#x1F4C1;', fields: [
+                    { key: 'QUARANTINE_DIR', label: 'Quarantine Directory', hint: 'Where quarantined emails are stored' },
+                    { key: 'DELETED_DIR', label: 'Deleted Directory', hint: 'Where deleted emails are moved' },
+                    { key: 'RELEASE_DIR', label: 'Release Directory', hint: 'Where released emails are placed (non-SMTP mode)' },
+                    { key: 'SMTP_QUEUE_DIR', label: 'SMTP Queue Directory', hint: 'Inbound SMTP message queue' },
+                    { key: 'SMTP_COMMAND_DIR', label: 'SMTP Command Directory', hint: 'Inbound SMTP control files' },
+                    { key: 'SMTP_LOG_DIR', label: 'SMTP Log Directory', hint: 'Mail Enable SMTP logs location' },
+                    { key: 'PROCESSING_LOG', label: 'Processing Log Directory', hint: 'Where processing-YYYYMMDD.log files go' },
+                    { key: 'QUARANTINE_LOG', label: 'Quarantine Log Directory', hint: 'Where quarantine-YYYYMMDD.log files go' },
+                ]},
+                { key: 'smtp', title: 'SMTP Settings', icon: '&#x2709;', fields: [
+                    { key: 'SMTP_HOST', label: 'SMTP Host', hint: 'Mail server for releasing emails' },
+                    { key: 'SMTP_PORT', label: 'SMTP Port', type: 'number', hint: 'Usually 25' },
+                    { key: 'SMTP_USER', label: 'SMTP Username', hint: 'Authentication user (if required)' },
+                    { key: 'SMTP_PASS', label: 'SMTP Password', type: 'password', hint: 'Authentication password' },                   
+                ]},
+                { key: 'ai', title: 'AI / Ollama', icon: '&#x1F916;', fields: [
+                    { key: 'AI_CHECK_ENABLED', label: 'AI Check Enabled', type: 'checkbox', hint: 'Enable Ollama AI spam classification' },
+                    { key: 'OLLAMA_SERVER', label: 'Ollama Server', hint: 'Hostname or IP of Ollama server' },
+                    { key: 'OLLAMA_PORT', label: 'Ollama Port', type: 'number', hint: 'Default 11434' },
+                    { key: 'OLLAMA_MODEL', label: 'Ollama Model', hint: 'Model name like llama3.2, mistral, etc.' },
+                ]},
+                { key: 'spamassassin', title: 'SpamAssassin', icon: '&#x1F6E1;', fields: [
+                    { key: 'SPAMASSASSIN_ENABLED', label: 'SpamAssassin Enabled', type: 'checkbox', hint: 'Enable SpamAssassin spam checks' },
+                    { key: 'SPAMASSASSIN_HOST', label: 'SpamAssassin Host', hint: 'Hostname or IP of spamd' },
+                    { key: 'SPAMASSASSIN_PORT', label: 'SpamAssassin Port', type: 'number', hint: 'Default 783' },
+                ]},
+                { key: 'thresholds', title: 'Spam Thresholds', icon: '&#x2699;', fields: [
+                    { key: 'THRESHOLD_QUARANTINE', label: 'Quarantine Threshold', type: 'number', hint: 'Score at or above this value quarantines the email' },
+                    { key: 'THRESHOLD_DELETE', label: 'Delete Threshold', type: 'number', hint: 'Score at or above this value deletes the email' },
+                ]},              
+                { key: 'test', title: 'Test Emails', icon: '&#x1F514;', fields: [
+                    { key: 'TEST_EMAIL_SLEEP_SECONDS', label: 'Sleep Between Tests', type: 'number', hint: 'Seconds to wait between test emails' },
+                    { key: 'TEST_EMAIL_FROM', label: 'Test Email From Address', hint: 'Sender address for test emails' },
+                    { key: 'TEST_EMAIL_RECIPIENT', label: 'Test Email Recipient', hint: 'Default recipient for test emails' },
+                ]},
+            ];
+
+            groups.forEach(group => {
+                const section = document.createElement('div');
+                section.className = 'section';
+
+                const isCollapsed = collapsedSections[group.key];
+
+                const header = document.createElement('div');
+                header.className = 'section-header';
+                header.innerHTML = '<h2><span class="toggle-icon">' + (isCollapsed ? '&#9654;' : '&#9660;') + '</span>' + group.icon + ' ' + group.title + '</h2>';
+                header.addEventListener('click', (e) => {
+                    if (e.target.closest('.actions')) return;
+                    collapsedSections[group.key] = !collapsedSections[group.key];
+                    renderConfig();
+                });
+
+                const body = document.createElement('div');
+                body.className = 'section-body' + (isCollapsed ? ' collapsed' : '');
+
+                group.fields.forEach(field => {
+                    const value = configData[field.key];
+
+                    const row = document.createElement('div');
+                    row.className = 'field-row';
+
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'field';
+
+                    const label = document.createElement('label');
+                    label.setAttribute('for', 'cfg-' + field.key);
+                    label.textContent = field.key;
+                    fieldDiv.appendChild(label);
+
+                    if (field.type === 'checkbox') {
+                        const cb = document.createElement('input');
+                        cb.type = 'checkbox';
+                        cb.id = 'cfg-' + field.key;
+                        cb.checked = value === true || value === 'true';
+                        cb.dataset.key = field.key;
+                        fieldDiv.appendChild(cb);
+                    } else {
+                        const input = document.createElement('input');
+                        input.type = field.type || 'text';
+                        input.id = 'cfg-' + field.key;
+                        input.value = value != null ? String(value) : '';
+                        input.dataset.key = field.key;
+                        if (field.type === 'password') {
+                            input.type = 'password';
+                        }
+                        fieldDiv.appendChild(input);
+                    }
+
+                    if (field.hint) {
+                        const hint = document.createElement('div');
+                        hint.className = 'hint';
+                        hint.textContent = field.hint;
+                        fieldDiv.appendChild(hint);
+                    }
+
+                    row.appendChild(fieldDiv);
+                    body.appendChild(row);
+                });
+
+                section.appendChild(header);
+                section.appendChild(body);
+                container.appendChild(section);
+            });
+        }
+
+        function collectValues() {
+            const values = {};
+            document.querySelectorAll('#configContainer input').forEach(input => {
+                const key = input.dataset.key;
+                if (!key) return;
+                if (input.type === 'checkbox') {
+                    values[key] = input.checked;
+                } else {
+                    values[key] = input.value;
+                }
+            });
+            return values;
+        }
+
+        async function fetchConfig() {
+            try {
+                const resp = await fetch('/configEditor/api/config');
+                if (!resp.ok) throw new Error('Failed to fetch config');
+                configData = await resp.json();
+                renderConfig();
+                document.getElementById('lastSaved').textContent = 'Loaded';
+            } catch (err) {
+                console.error('Error fetching config:', err);
+                showToast('Could not load configuration', 'error');
+            }
+        }
+
+        async function saveConfig() {
+            const values = collectValues();
+            try {
+                const resp = await fetch('/configEditor/api/config/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ values })
+                });
+                if (!resp.ok) {
+                    const errData = await resp.json();
+                    throw new Error(errData.message || 'Save failed');
+                }
+                document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
+                showToast('Configuration saved and reloaded!', 'success');
+            } catch (err) {
+                console.error('Error saving config:', err);
+                showToast('Failed to save: ' + err.message, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('saveButton').addEventListener('click', saveConfig);
+            fetchConfig();
+        });
+
+block content
+    .container
+        .header-bar
+            div
+                h1 Configuration Editor
+                span#lastSaved(style='font-size:13px;color:#888;')
+            div(style='display:flex;align-items:center;gap:12px;')
+                span.env-badge(class= envClass || 'development')= envLabel || 'development'
+                button#saveButton.btn.btn-primary Save Changes
+        #configContainer

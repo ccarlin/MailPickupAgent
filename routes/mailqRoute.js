@@ -5,19 +5,19 @@ const path = require("path");
 const axios = require("axios");
 const dns = require('dns');
 const tools = require("../tools");
+const config = require('../config');
 const dnsPromises = dns.promises;
 
 const prefixUTF = '=?UTF-8?B?';
 const suffix = '?=';
 const prefixBase64 = '?BASE64?B?';
 const prefixLatin = "=?UTF-8?Q?";
-const QUARANTINE_LOG_DIR = process.env.QUARANTINE_LOG || '.';
 const quarentineLogPath = () => {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `${QUARANTINE_LOG_DIR}/quarantine-${y}${m}${day}.log`;
+  return `${config.QUARANTINE_LOG}/quarantine-${y}${m}${day}.log`;
 };
 const rulesConfigPath = path.join(__dirname, '..', 'config', 'rules.json');
 
@@ -26,10 +26,10 @@ function reasonText(action) {
     return edActions.has(action) ? `${action}ed` : `${action}d`;
 }
 
-router.post('/', async function(req, res) {   // changed to async
+router.post('/', async function(req, res) {
     let bodyPostBack = req.body;
     let action = bodyPostBack.action.toLowerCase().split(" ")[0];
-    let path = process.env.QUARANTINE_DIR || './quarantine';
+    let path = config.QUARANTINE_DIR;
     let mailLog = quarentineLogPath();
 
     let data = Object.entries(bodyPostBack);
@@ -98,10 +98,10 @@ router.post('/', async function(req, res) {   // changed to async
     res.redirect(req.get('Referrer') || '/');
 });
 
-router.post('/action', async function(req, res) {   // changed to async
+router.post('/action', async function(req, res) {
     let bodyPostBack = req.body;
     let action = bodyPostBack.action.toLowerCase().split(" ")[0];
-    let path = process.env.QUARANTINE_DIR || './quarantine';
+    let path = config.QUARANTINE_DIR;
     let mailLog = quarentineLogPath();
 
     let data = Object.entries(bodyPostBack);
@@ -197,7 +197,7 @@ router.get('/', function(req, res) {
         filterUser = String(req.cookies.MailQUserFilter).toLowerCase();        
     }
 
-    getEmails(process.env.QUARANTINE_DIR, async function(err, emails)
+    getEmails(config.QUARANTINE_DIR, async function(err, emails)
     {
         // If a filter was provided, restrict the set of emails before processing
         if (filterUser) {
@@ -425,7 +425,7 @@ function GetEmailRecipient(emailList, bFirstOnly)
 //Delete the email permenantly
 function DeleteMessages(emails, sourcePath)
 {
-    const deletedDir = process.env.DELETED_DIR || './deleted';
+    const deletedDir = config.DELETED_DIR;
     if (!fs.existsSync(deletedDir)) {
         fs.mkdirSync(deletedDir, { recursive: true });
     }
@@ -450,15 +450,15 @@ function DeleteMessages(emails, sourcePath)
 //Release the message back to the queue to be delivered
 function ReleaseMessages(emails)
 {    
-    let spamPath = process.env.QUARANTINE_DIR || './quarantine';
+    let spamPath = config.QUARANTINE_DIR;
     
     for (let i=0;i<emails.length;i++)
     {
         let email = emails[i];
         let headerFile = spamPath + "\\" + email.filepath + ".H00";
         let emailFile = spamPath + "\\" + email.filepath + ".MAI";
-        let newEmailFile = emailFile.replace(spamPath, process.env.SMTP_QUEUE_DIR);
-        let commandFile = emailFile.replace(spamPath, process.env.SMTP_COMMAND_DIR);
+        let newEmailFile = emailFile.replace(spamPath, config.SMTP_QUEUE_DIR);
+        let commandFile = emailFile.replace(spamPath, config.SMTP_COMMAND_DIR);
             
         //Change the status of the message
         try {

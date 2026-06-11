@@ -1,8 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const simpleParser = require('mailparser').simpleParser;
-//Supress output of this command
-require('dotenv').config({ quiet: true });
+const config = require('./config');
 
 module.exports = {
     getSortedFiles: function(imageDir, fileType, sortType, callback) {        
@@ -88,7 +87,7 @@ module.exports = {
       if (level == "ERROR") {
         console.error(message);
       }
-      else if ((process.env.NODE_ENV == "development") || (level != "DEBUG"))
+      else if ((config.NODE_ENV == "development") || (level != "DEBUG"))
         console.info(message);      
     },    
     // Async: parse email file and return HTML/text as HTML.
@@ -112,9 +111,10 @@ module.exports = {
     },
     buildFilePaths: function(messageID, queueType) {
         const qt = (queueType || '').toString().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
-        const envDir = (suffix) => `${qt}_${suffix}`;
-        const messagePath = process.env[envDir('QUEUE_DIR')] ? path.join(process.env[envDir('QUEUE_DIR')], messageID) : messageID;
-        const controlFilePath = process.env[envDir('COMMAND_DIR')] ? path.join(process.env[envDir('COMMAND_DIR')], messageID) : messageID;
+        const queueDirKey = `${qt}_QUEUE_DIR`;
+        const commandDirKey = `${qt}_COMMAND_DIR`;
+        const messagePath = config[queueDirKey] ? path.join(config[queueDirKey], messageID) : messageID;
+        const controlFilePath = config[commandDirKey] ? path.join(config[commandDirKey], messageID) : messageID;
         console.log(`Built file paths for messageID: ${messageID}, queueType: ${queueType}`);
         console.log(`Resolved message path: ${messagePath}`);
         console.log(`Resolved control file path: ${controlFilePath}`);

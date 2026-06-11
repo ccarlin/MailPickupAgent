@@ -4,8 +4,9 @@ const path = require('path');
 const app = express();
 const { buildAllTestEmails, processEmail } = require('./index.js');
 const tools = require('./tools');
+const appConfig = require('./config');
 
-const PORT = process.env.PORT || 3000;
+const PORT = appConfig.PORT || 3000;
 
 // View engine setup
 app.set('view engine', 'pug');
@@ -16,12 +17,20 @@ app.use(express.static(__dirname + '/public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Make env info available to all views
+app.use((req, res, next) => {
+  res.locals.envLabel = appConfig.NODE_ENV || 'development';
+  res.locals.envClass = appConfig.NODE_ENV || 'development';
+  next();
+});
+
 // Default landing page
 app.get('/', (req, res) => {
   res.render('default');
 });
 
 app.use('/rulesEditor', require('./routes/rulesEditor'));
+app.use('/configEditor', require('./routes/configEditor'));
 app.use('/mailq', require('./routes/mailQRoute'));
 app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
@@ -45,15 +54,14 @@ function initializeConfiguration() {
     config.rules = { whitelist: {}, blacklist: {} };
   }
   
-  // Store common settings
   config.settings = {
-    quarantineDir: process.env.QUARANTINE_DIR || './quarantine',
-    deletedDir: process.env.DELETED_DIR || './deleted',
-    smtpHost: process.env.SMTP_HOST || 'localhost',
-    smtpPort: process.env.SMTP_PORT || 25,
-    spamAssassinEnabled: (process.env.SPAMASSASSIN_ENABLED || 'false').toLowerCase() === 'true',
-    aiCheckEnabled: (process.env.AI_CHECK_ENABLED || 'false').toLowerCase() === 'true',
-    dryRunEnabled: (process.env.DRY_RUN_COPY_LOG || 'false').toLowerCase() === 'true'
+    quarantineDir: appConfig.QUARANTINE_DIR,
+    deletedDir: appConfig.DELETED_DIR,
+    smtpHost: appConfig.SMTP_HOST,
+    smtpPort: appConfig.SMTP_PORT,
+    spamAssassinEnabled: appConfig.SPAMASSASSIN_ENABLED,
+    aiCheckEnabled: appConfig.AI_CHECK_ENABLED,
+    dryRunEnabled: appConfig.DRY_RUN_COPY_LOG
   };
 }
 
@@ -115,7 +123,7 @@ app.get('/api/config', (req, res) => {
 // GET Route - Send test emails
 app.get('/api/test-emails', async (req, res) => {
   try {
-    const recipient = req.query.recipient || process.env.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com';
+    const recipient = req.query.recipient || appConfig.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com';
     const tests = buildAllTestEmails();
     const testResults = [];
     
@@ -162,7 +170,7 @@ app.post('/api/dry-run', async (req, res) => {
     }
 
     const { messagePath, controlFilePath } = tools.buildFilePaths(messageID, queueType);
-    const dryRunDir = process.env.DRY_RUN_COPY_DEST || './dry-run-output';
+    const dryRunDir = appConfig.DRY_RUN_COPY_DEST || './dry-run-output';
     
     // Verify files exist
     if (!fs.existsSync(controlFilePath)) {

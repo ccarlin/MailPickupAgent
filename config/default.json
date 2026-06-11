@@ -1,0 +1,38 @@
+{
+  "NODE_ENV": "development",
+  "PORT": 3000,
+
+  "QUARANTINE_DIR": "./quarantine",
+  "DELETED_DIR": "./deleted",
+  "RELEASE_DIR": "./release",
+
+  "SMTP_QUEUE_DIR": "",
+  "SMTP_COMMAND_DIR": "",
+  "SMTP_LOG_DIR": "./SMTPLog",
+
+  "SMTP_HOST": "localhost",
+  "SMTP_PORT": 25,
+  "SMTP_USER": "",
+  "SMTP_PASS": "",
+
+  "RELEASE_METHOD": "",
+
+  "AI_CHECK_ENABLED": true,
+  "OLLAMA_SERVER": "localhost",
+  "OLLAMA_PORT": 11434,
+  "OLLAMA_MODEL": "llama3.2",
+
+  "SPAMASSASSIN_HOST": "localhost",
+  "SPAMASSASSIN_PORT": 783,
+  "SPAMASSASSIN_ENABLED": true,
+
+  "THRESHOLD_QUARANTINE": 5,
+  "THRESHOLD_DELETE": 15,
+
+  "PROCESSING_LOG": ".",
+  "QUARANTINE_LOG": ".",
+
+  "TEST_EMAIL_SLEEP_SECONDS": 3,
+  "TEST_EMAIL_FROM": "\"MailPickupAgent\" <no-reply@localhost>",
+  "TEST_EMAIL_RECIPIENT": "chuck@ccarlin.com"
+}

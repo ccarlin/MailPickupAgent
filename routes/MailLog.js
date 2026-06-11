@@ -6,11 +6,12 @@ const fs = require("fs");
 const xss = require("xss");
 const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, '../GeoLite2-Country.mmdb'));
+const config = require('../config');
 
 /* Display Main page */
 router.get('/', function(req, res) {
 
-    const logPath = process.env.PROCESSING_LOG || './logs';
+    const logPath = config.PROCESSING_LOG;
     const fileTypes = ".log";
    
     tools.getSortedFiles(logPath, fileTypes, "ByLastUpdateDesc", function (err, files) {

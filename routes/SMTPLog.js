@@ -8,11 +8,12 @@ const moment = require("moment");
 const Set = require("collections/set");
 const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, '../GeoLite2-Country.mmdb'));
+const config = require('../config');
 
 /* Display Main page */
 router.get('/', function(req, res) {
 
-    const logPath = process.env.SMTP_LOG_DIR || "./SMTPLog";    
+    const logPath = config.SMTP_LOG_DIR;    
     const fileTypes = ".log";  
 
     tools.getSortedFiles(logPath, fileTypes, "ByLastUpdateDesc", function (err, files) {
