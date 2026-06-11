@@ -15,7 +15,7 @@ if "%~2"=="" (
 
 echo [%date% %time%] Running %~nx0 "%~1" "%~2" >> "%LOGFILE%"
 
-curl -X POST "http://localhost:3000/api/process" ^
+curl -X POST "http://localhost:6245/api/process" ^
   -H "Content-Type: application/json" ^
   -d "{\"messageID\": \"%PARAM_ONE%\", \"queueType\": \"%PARAM_TWO%\"}" >> "%LOGFILE%" 2>&1
 set "EXITCODE=%ERRORLEVEL%"

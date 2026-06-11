@@ -1,6 +1,6 @@
 {
   "NODE_ENV": "development",
-  "PORT": 3000,
+  "PORT": 6245,
 
   "QUARANTINE_DIR": "./mail/quarantine",
   "DELETED_DIR": "./mail/deleted",

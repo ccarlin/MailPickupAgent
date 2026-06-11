@@ -6,7 +6,7 @@ const { buildAllTestEmails, processEmail } = require('./index.js');
 const tools = require('./tools');
 const appConfig = require('./config');
 
-const PORT = appConfig.PORT || 3000;
+const PORT = appConfig.PORT || 6245;
 
 // View engine setup
 app.set('view engine', 'pug');

@@ -59,7 +59,7 @@ node server.js
 
 | Setting | Default | Description |
 |---|---|---|
-| `PORT` | `3000` | Web server port |
+| `PORT` | `6245` | Web server port |
 | `QUARANTINE_DIR` | `./mail/quarantine` | Directory for quarantined emails |
 | `DELETED_DIR` | `./mail/deleted` | Directory for deleted emails |
 | `SMTP_QUEUE_DIR` | *(MailEnable path)* | Inbound SMTP message queue |
@@ -99,7 +99,7 @@ Start the administration web interface:
 node server.js
 ```
 
-Then open `http://localhost:3000` in a browser. The web UI provides:
+Then open `http://localhost:6245` in a browser. The web UI provides:
 
 - **Configuration Editor** (`/configEditor`) — view and edit all settings
 - **Quarantine Manager** (`/mailq`) — review, release, or delete quarantined emails
@@ -148,7 +148,7 @@ Requires the web server (`node server.js`) to be running continuously. Set MailE
 C:\path\to\mailpickupagent\mailServerPickup.bat
 ```
 
-This batch file sends a POST request to `http://localhost:3000/api/process` with the message ID and queue type. The web server must already be started (consider using PM2 to insure it is always running).
+This batch file sends a POST request to `http://localhost:6245/api/process` with the message ID and queue type. The web server must already be started (consider using PM2 to insure it is always running).
 
 If you are using a port other than the default you must edit the batch file to match the port number the server is running on. 
 
