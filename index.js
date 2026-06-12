@@ -375,7 +375,7 @@ function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, 
 }
 
 // Updates email headers with quarantine reasons and spam score for better tracking and compatibility with existing rules
-async function updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, country) {
+async function updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, country, spamDetailInfo) {
   try {
     let message = fs.readFileSync(messagePath, 'utf8');
     const headerEndIndex = message.indexOf(HEADER_SEPARATOR);
@@ -388,11 +388,12 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     // Let's add some MPA-specific headers
     headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${config.HOSTNAME || process.env.HOSTNAME || 'localhost'}\r\n`;
     headers += `X-MPA-Msgid: ${destMessageName}\r\n`;
-    headers += `X-MPA-AntiSpam: ${quarantineReasons.replace(':', ' ').join('; ')}\r\n`;
+    headers += `X-MPA-SpamReason: ${quarantineReasons.join('; ')}\r\n`;
     headers += `X-MPA-SpamScore: ${spamScore}\r\n`;
+    headers += `X-MPA-SpamDetail: ${spamDetailInfo.replace(':', ' ')}\r\n`;
     if (country) {
       headers += `X-MPA-Country: ${country}\r\n`;
-    }
+    }    
     fs.writeFileSync(messagePath, headers + HEADER_SEPARATOR + body, 'utf8');
     tools.logData(`Updated email headers with quarantine reasons`);
   } catch (err) {
@@ -530,10 +531,10 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const processElapsed = (Date.now() - processStartTime) / 1000;
     const spamInfoParts = [];
     if (keywordResult.matches.length > 0) {
-      spamInfoParts.push(`Keyword [${keywordResult.matches.join(', ')}]`);
+      spamInfoParts.push(`Keyword: ${keywordResult.matches.join(', ')}`);
     }
     if (SPAMASSASSIN_ENABLED && saResult) {
-      spamInfoParts.push(`SpamAssassin [${saResult.score}]`);
+      spamInfoParts.push(`SpamAssassin: ${saResult.score}`);
     }
     let spamDetailInfo = spamInfoParts.join('; ');
 
@@ -542,12 +543,12 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (spamScore >= THRESHOLD_DELETE) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Blacklisted', spamDetailInfo, spamScore);
       tools.logData(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
-      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country);
+      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
     } else if (spamScore >= THRESHOLD_QUARANTINE) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo, spamScore);
       tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
-      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country);
+      await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await quarantineEmail(controlFilePath, messagePath, destMessageName);
     } else {
       if (spamDetailInfo.length == 0) spamDetailInfo = 'No significant spam indicators';

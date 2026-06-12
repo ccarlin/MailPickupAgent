@@ -295,10 +295,13 @@ function getEmails(emailPath, callback)
                                     emailInfo.spamScore = value;
                                     nFound++;
                                     break;
-                                case "AntiSpam":
+                                case "SpamDetail":
                                     emailInfo.antiSpam = value.replace("KEYWORD [Pass], ", "").replace("RDNSBL [Pass], ", "").replace("URLBL [Pass], ", "").replace("SPAMASSASSIN [0.0], ", "").replace(", DCC_CHECK [NA]", "").replace(", DCC_CHECK [Pass]", "");
                                     nFound++;            
-                                    break;                               
+                                    break;       
+                                case "SpamReason":
+                                    emailInfo.reason = value;
+                                    nFound++;                        
                             }                
                         }
                         else if (lines[j].startsWith("DKIM-Signature"))
@@ -307,7 +310,7 @@ function getEmails(emailPath, callback)
                             emailInfo.from = lines[j].substring(6);
 
                         //Abort once all values are found
-                        if (nFound > 2)
+                        if (nFound > 3)
                             break;
                     }
                     emailList.push(emailInfo);                    
