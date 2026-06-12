@@ -21,17 +21,9 @@ router.post('/', function(req, res) {
     for(let i=1;i<data.length;i++) {
         if (data[i][1] == "on") {
             let email = {};
-            email.filepath = data[i][0];
-            email.subject = data[i+1][1];
-            email.sender = data[i+2][1];
-            email.recipients = data[i+3][1];
-            email.spamScore = data[i+4][1];
-            email.antiSpam = data[i+5][1];
+            email.filepath = data[i][0];           
             emails.push(email);
-            i = i + 5;
-        } else {
-            i = i + 5;
-        }
+        } 
     }
 
     if (action === "recover") {

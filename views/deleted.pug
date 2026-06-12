@@ -70,9 +70,4 @@ block content
                         td #{email.recipients}
                         td #{email.subject}
                         td #{email.spamScore}
-                        td #{email.antiSpam}
-                        input(type='hidden' name=email.filepath+'subject' value=email.subject)
-                        input(type='hidden' name=email.filepath+'sender' value=email.sender)
-                        input(type='hidden' name=email.filepath+'recipients' value=email.recipients)
-                        input(type='hidden' name=email.filepath+'spamScore' value=email.spamScore)
-                        input(type='hidden' name=email.filepath+'antiSpam' value=email.antiSpam)
+                        td #{email.antiSpam}                       
