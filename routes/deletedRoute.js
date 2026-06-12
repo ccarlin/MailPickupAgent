@@ -115,9 +115,10 @@ function RecoverMessages(emails) {
         let emailFile = path.join(deletedPath, email.filepath + ".MAI");
         tools.logData(`Recovering email ${email.filepath} from ${deletedPath}`, "INFO");
         try {
-            let commandText = fs.readFileSync(headerFile).toString();
-            commandText = commandText.replace("Status=Delivering", "Status=UnDelivered");
-            fs.writeFileSync(headerFile, commandText);
+            //Test without modifying the header first - if the email is still undelivered, then we can try modifying the header and moving back to the queue
+            // let commandText = fs.readFileSync(headerFile).toString();
+            // commandText = commandText.replace("Status=Delivering", "Status=UnDelivered");
+            // fs.writeFileSync(headerFile, commandText);
 
             let newEmailFile = path.join(config.SMTP_QUEUE_DIR, email.filepath + ".MAI");
             let commandFile = path.join(config.SMTP_COMMAND_DIR, email.filepath + ".H00");
