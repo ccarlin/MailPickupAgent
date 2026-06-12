@@ -28,6 +28,7 @@ router.get('/', function(req, res) {
                 continue;
             if (fs.existsSync(filePath))
             {            
+                tools.logData(`Processing file ${filePath}`, "INFO");
                 let logText = fs.readFileSync(filePath).toString();
                 logText = xss(logText);
                 let logLines = logText.split('\n');
