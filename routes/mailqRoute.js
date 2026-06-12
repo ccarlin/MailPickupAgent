@@ -49,7 +49,6 @@ router.post('/', async function(req, res) {
             email.antiSpam = data[i+5][1];
             email.date = data[i+7][1];
             email.dkim = data[i+8][1];
-            email.aiCheck = data[i+9][1];
             email.reason = reasonText(action);
             let ipAddress = "N/A";
             try {
