@@ -5,9 +5,9 @@
   "QUARANTINE_DIR": "./mail/quarantine",
   "DELETED_DIR": "./mail/deleted",
   
-  "SMTP_QUEUE_DIR": "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound",
+  "SMTP_QUEUE_DIR": "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound/Messages",
   "SMTP_COMMAND_DIR": "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound",
-  "SMTP_LOG_DIR": "C:/Program Files (x86)/Mail Enable/Logs/SMTP",
+  "SMTP_LOG_DIR": "C:/Program Files (x86)/Mail Enable/Logging/SMTP",
 
   "SMTP_HOST": "localhost",
   "SMTP_PORT": 25,
