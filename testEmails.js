@@ -67,7 +67,18 @@ function buildBlacklistTest(rules) {
 
 function buildWhitelistTest(rules) {
   const wl = rules.whitelist || {};
-  const goodSender = (Array.isArray(wl.senders) && wl.senders.find(s => typeof s === 'string')) || 'good@example.com';
+  let goodSender = (Array.isArray(wl.senders) && wl.senders.find(s => typeof s === 'string')) || 'good@example.com';
+  // If sender starts with a dot, prepend a subdomain so the domain is valid (e.g., .dummy.com → test.dummy.com)
+  if (goodSender.startsWith('.')) {
+    goodSender = `test${goodSender}`;
+  }
+  // Ensure sender is a valid email address since whitelist entries are often partial matches (domain, @domain, etc.)
+  if (!goodSender.includes('@')) {
+    goodSender = `good@${goodSender}`;
+  }
+  if (goodSender.startsWith('@')) {
+    goodSender = `good${goodSender}`;
+  }
   return {
     name: 'whitelist-sender',
     mail: {
