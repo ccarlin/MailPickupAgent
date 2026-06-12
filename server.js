@@ -51,12 +51,13 @@ function initializeConfiguration() {
     config.rules = JSON.parse(rulesData);
     tools.logData('Configuration loaded successfully');
   } catch (error) {
-    tools.logError(`Error loading configuration: ${error.message}`);
     config.rules = { whitelist: {}, blacklist: {} };
     if (error.code === 'ENOENT') {
       try {
         fs.writeFileSync('./config/rules.json', JSON.stringify(config.rules, null, 2), 'utf8');
         tools.logData('Created new blank rules.json');
+        tools.logData('Open http://localhost:' + PORT + '/rulesEditor to configure your rules.');
+        tools.logData('See config/rules.json.sample for the full rules structure and examples.');
       } catch (writeError) {
         tools.logError(`Error creating rules.json: ${writeError.message}`);
       }
@@ -203,6 +204,7 @@ initializeConfiguration();
 app.listen(PORT, () => {
     tools.logData(`Server is running on http://localhost:${PORT}`);
     tools.logData(`Configuration loaded at startup`);
+    tools.logData(`Open http://localhost:${PORT}/rulesEditor to configure your rules.`);
     tools.logData(`API endpoints available:`);
     tools.logData(`  GET  /api/help`);
     tools.logData(`  GET  /api/config`);

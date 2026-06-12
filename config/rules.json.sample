@@ -1,0 +1,724 @@
+{
+  "whitelist": {
+    "senders": [
+      ".usaa.com",
+      "@facebookmail.com",
+      ".ml.com",
+      "@proxyvote.com",
+      "@wellsfargo.com",
+      "@united.com",
+      "@contact.opentable.com",
+      ".walgreens.com",
+      "@mail.instagram.com",
+      "homedepot.com",
+      "@bounces.amazon.com",
+      ".netflix.com",
+      ".ticketmaster.com",
+      ".nextdoor.com",
+      "@github.com",
+      ".aa.com",
+      "@amazon.com",
+      "@spotify.com",
+      "@amtrak.com",
+      "indeed.com"
+    ],
+    "ipRanges": [
+      "10.0.0.0/8",
+      "172.16.0.0/12",
+      "192.168.0.0/16"
+    ]
+  },
+  "blacklist": {
+    "senders": [
+      "BROWNSTONERESEARCH.COM",
+      "MODERNINVESTINGNEWS.COM",
+      "CRYPTORETIREMENTNEWS.COM",
+      ".onmicrosoft.com"      
+    ],
+    "ipRanges": [],
+    "countries": [
+      "RU",
+      "CN",
+      "KP"
+    ],
+    "combos": [
+      {
+        "recipient": "ADMIN",
+        "sender": "BAD.ORG"
+      },
+      {
+        "recipient": "POSTMASTER",
+        "ipAddress": "13.110.0.0/16"
+      }      
+    ],
+    "keywordFilters": [
+      {
+        "FilterName": "FREE_PORN",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bfree (?:porn|xxx|adult)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "2",
+        "Comment": "Possible porn - Free Porn"
+      },
+      {
+        "FilterName": "CUM_SHOT",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bcum[ -]?shots?\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "2"
+      },
+      {
+        "FilterName": "LIVE_PORN",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\blive .{0,9}(?:fuck(?:ing)?|sex|naked|girls?|virgins?|teens?|porno?)\\b",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "2"
+      },
+      {
+        "FilterName": "BODY_ENHANCEMENT",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\b(?:enlarge|increase|grow|lengthen|larger\\b|bigger\\b|longer\\b|thicker\\b|\\binches\\b).{0,50}\\b(?:penis|male organ|pee[ -]?pee|dick|sc?hlong|wh?anger|breast(?!\\s+cancer))",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "2"
+      },
+      {
+        "FilterName": "BODY_ENHANCEMENT2",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\b(?:penis|male organ|pee[ -]?pee|dick|sc?hlong|wh?anger|breast(?!\\s+cancer)).{0,50}\\b(?:enlarge|increase|grow|lengthen|larger\\b|bigger\\b|longer\\b|thicker\\b|\\binches\\b|size)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "STOCK_ALERT",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bstock alert",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "IMPOTENCE",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\b(?:impotence (?:problem|cure|solution)|Premature Ejaculation|erectile dysfunction)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "URG_BIZ",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "urgent.{0,16}(?:assistance|business|buy|confidential|notice|proposal|reply|request|response)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "BAD_CREDIT",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\b(?:bad|poor|no\\b|eliminate|repair|(?:re)?establish|damag).{0,10} (?:credit|debt)\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "REFINANCE_YOUR_HOME",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\brefinance your(?: current)? (?:home|house)\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "DIET_1",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\b(?:(?:without|no) (?:exercis(?:e(?! price)|ing)|dieting)|weight.?loss|(?:extra|lose|lost|losing).{0,10}(?:pounds|weight|inches|lbs)|burn.{1,10}fat)\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "INVESTMENT_ADVICE",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\binvestment advice",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "MALE_ENHANCE",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "male enhancement",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "REPLICA_WATCH",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\breplica.{1,20}rolex",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "EM_ROLEX",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "[^\\s\\w.]rolex",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "DRUG_ED_CAPS",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\b(?:CIALIS|LEVITRA|VIAGRA)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "1",
+        "Score": "3"
+      },
+      {
+        "FilterName": "DRUG_ED_SILD",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bsildenafil\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "DRUG_ED_GENERIC",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bGeneric Viagra\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "DRUG_ED_ONLINE",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bviagra .{0,25}(?:express|online|overnight)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "ONLINE_PHARMACY",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bonline pharmacy|\\b(?:drugs|medications) online",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "NO_PRESCRIPTION",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "No prescription needed",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "VIA_GAP_GRA",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bvia.gra\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "2"
+      },
+      {
+        "FilterName": "SUBJECT_DRUG_GAP_C",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "\\bc.{0,2}i.{0,2}a.{0,2}l.{0,2}i.{0,2}s\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "3"
+      },
+      {
+        "FilterName": "SUBJECT_DRUG_GAP_VA",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "v.{0,2}a.{0,2}l.{0,2}i.{0,2}u.{0,2}m",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "3"
+      },
+      {
+        "FilterName": "SUBJECT_DRUG_GAP_X",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "x.{0,2}a.{0,2}n.{0,2}a.{0,2}x",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "3"
+      },
+      {
+        "FilterName": "SUBJECT_SEXUAL",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "[s5][e3\\xE8-\\xEB]x[u\\xB5\\xF9-\\xFC][a4\\xE0-\\xE6@][l!|1](?:[l!|1]y)?.{0,3}[e3\\xE8-\\xEB]xp[l!|1][i1!|l\\xEC-\\xEF]c[i1!|l\\xEC-\\xEF]t",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "EXCUSE_24",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "you(?:'ve|'re| have| are)? receiv(?:e|ed|ing) this (?:advertisement|offer|special|recurring|paid).{0,16}\\b(?:by either|because)",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "EXCUSE_REMOVE",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "to be removed from.{0,20}(?:mailings|offers)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "PREST_NON_ACCREDITED",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "prestigi?ous\\b.{0,20}\\bnon-accredited\\b.{0,20}\\buniversities",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "NA_DOLLARS",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\b(?:\\d{1,3})?Million\\b.{0,40}\\b(?:Canadian Dollar?s?|US\\$|U\\.? ?S\\.? Dollar)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "US_DOLLARS_3",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "(?:\\$|usd).?\\d{1,3}[,.]\\d{3}[,.]\\d{3}(?:[,.]\\d\\d)?",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "MILLION_USD",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "Million\\b.{0,40}\\b(?:United States? Dollars?|USD)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "URG_BIZ",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "urgent.{0,16}(?:assistance|business|buy|confidential|notice|proposal|reply|request|response)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "MONEY_BACK",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "money back guarantee",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "FREE_QUOTE_INSTANT",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "free.{0,12}(?:(?:instant|express|online|no.?obligation).{0,4})+.{0,32}\\bquote",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "NO_MEDICAL",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bno medical exam",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "FIN_FREE",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bfinancial(?:ly)? free",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "FORWARD_LOOKING",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bcontains forward-looking statements\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "LOW_PRICE",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\blow.{0,4} (?-i:P)rice",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "UNCLAIMED_MONEY",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bunclaimed (?:funds|money|prizes?|rewards?)\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "MORE_SEX",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "increased?.{0,9}(?:sex|stamina)",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "BANG_GUAR",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\bguaranteed?\\!",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "PRICES_ARE_AFFORDABLE",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "\\baffordable .{0,10}prices\\b",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "SUBJECT_DRUG_GAP_L",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "l.{0,2}e.{0,2}v.{0,2}i.{0,2}t.{0,2}r.{0,2}a",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "3"
+      },
+      {
+        "FilterName": "CHAR_CYRILLIC",
+        "FilterType": "1",
+        "SearchScope": "4",
+        "FilterExpression": "EULzF2G7L7ozMkmH3+lXpwVar2/uDuceG3BB1ALxGfgEupV0+6aIVWtRa12xVefRGEA3Twu0JJ5RFjiV4dxdinlJ1BK4VvCgj/jPV7VffnohsUHWwLaxY+31eKiB5+Cn",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "10"
+      },
+      {
+        "FilterName": "CHAR_KOREAN",
+        "FilterType": "1",
+        "SearchScope": "4",
+        "FilterExpression": "EfkrwGAwsT/B98uw6jLHVg9RhP4gFywoYissOSD0eNxiEhdv7+Q5VV3d0QbzUss32UYVsv2iIpSm0FoB4YmdWI1xFblYGP4fUfQMxdGaHPg0ZBqt4oFY1MSyC+YE/QT6D1N2gd5ZVYLMqs5Z+ErWsjfh0gGQIdRYSyQT3+A7ZlMTPAiDBd+tGkNjyVuf7Gohl/0NHYkV7i9qe3SzxGjsxWtdFCGaP4VkhDrtRdqkmuvbcEi4kfuPb/RAiOzsOy15yy5BHGc7f1zOAIp84MJo+LtNiDx6eZfD+s2reRcVLBc=",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "10"
+      },
+      {
+        "FilterName": "CHAR_CHINESE",
+        "FilterType": "1",
+        "SearchScope": "4",
+        "FilterExpression": "8FVp8tSelZJPZSumBEDLlmrYszzuPGCkMzXiLARm8tgwtlwOfiHPDpdJBbHQginivpB4VUXo35V3Vom7ABni1BsoRQ/uQNipO/G+vyavn7ycdNflhpKa/P6N8xCUnCKihQ+9VwuBRv0AOsCjhxMgnQC9lkg5sQ4cUOcTD8XfWh4YySAzAnO/ESYvqK1lnPfJd+cNDsKm/49SlxO8aPm9kheuBIJewILBaQnmme+zA1e/GmkcTha5tLcVp6tLT73j",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "10"
+      },
+      {
+        "FilterName": "CHAR_JAPAN",
+        "FilterType": "1",
+        "SearchScope": "4",
+        "FilterExpression": "Pe8bwH9AOvIusMjszgSmluc9wps2+5+/Pwa3lbkC9P8MILT/9DCvqGIPhoND6kkBZkyOEIteJadii5akC5BlkfO2zyBIRg9Af2BXjDv8Mz++HK+FtPooEVqt1Q479miA",
+        "FilterExpressionType": "1",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "10"
+      },
+      {
+        "FilterName": "Mailer-Daemon",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "mailer-daemon",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "12.1"
+      },
+      {
+        "FilterName": "Rolex",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "Rolex",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "4"
+      },
+      {
+        "FilterName": "REWARD_JUNK",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "Reward",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "10"
+      },
+      {
+        "FilterName": "FILTER_TRUMP",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "Donald Trump",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "6.5"
+      },
+      {
+        "FilterName": "HEMSWORTH",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "Hemsworth",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "3"
+      },
+      {
+        "FilterName": "Warranty",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "auto warranty",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "1"
+      },
+      {
+        "FilterName": "SIGN_UP",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "sign up today",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "6"
+      },
+      {
+        "FilterName": "FILTER_Message",
+        "FilterType": "0",
+        "SearchScope": "3",
+        "FilterExpression": "personal message",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "5"
+      },      
+      {
+        "FilterName": "Carepoint Junk",
+        "FilterType": "0",
+        "SearchScope": "4",
+        "FilterExpression": "carepoint",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "5.2"
+      },
+      {
+        "FilterName": "Carepoint_Trye2",
+        "FilterType": "0",
+        "SearchScope": "2",
+        "FilterExpression": "time for a refill",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "5.1"
+      },
+      {
+        "FilterName": "FILTER_Squirt",
+        "FilterType": "0",
+        "SearchScope": "3",
+        "FilterExpression": "squirt",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "6"
+      },
+      {
+        "FilterName": "Geek Squad",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "Geek Squad",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "7"
+      },
+      {
+        "FilterName": "Camp_Lejeune",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "camp lejeune",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "12"
+      },
+      {
+        "FilterName": "RandomSpam",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "Farmington Hills",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "10"
+      },
+      {
+        "FilterName": "Amount Filter",
+        "FilterType": "0",
+        "SearchScope": "3",
+        "FilterExpression": "Amount: ",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "1",
+        "Score": "6"
+      },
+      {
+        "FilterName": "NORTON_CRAP",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "Norton",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "6"
+      },
+      {
+        "FilterName": "PAYPAL_CRAP",
+        "FilterType": "0",
+        "SearchScope": "1",
+        "FilterExpression": "Payment Method: PayPal",
+        "FilterExpressionType": "0",
+        "FilterMatchType": "0",
+        "FilterCaseSensitive": "0",
+        "Score": "6"
+      }
+    ]
+  },
+  "allowedTLDs": [
+    "edu",
+    "gov",
+    "me",
+    "org",
+    "net",
+    "com",
+    "io",
+    "is",
+    "tv",
+    "it",
+    "co",
+    "uk",
+    "au",
+    "us"
+  ]
+}

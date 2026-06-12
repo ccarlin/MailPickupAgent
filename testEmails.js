@@ -7,7 +7,11 @@ function loadRules() {
     return JSON.parse(data);
   } catch (e) {
     console.error(`Error loading rules: ${e}`);
-    return { whitelist: {}, blacklist: {} };
+    const defaultRules = { whitelist: {}, blacklist: {} };
+    try {
+      fs.writeFileSync(path.join(__dirname, 'config', 'rules.json'), JSON.stringify(defaultRules, null, 2), 'utf8');
+    } catch {}
+    return defaultRules;
   }
 }
 

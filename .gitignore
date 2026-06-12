@@ -10,7 +10,7 @@ pnpm-lock.yaml
 deleted/
 quarantine/
 release/
-config/rules*
+config/rules.json
 .env.deleteme
 config/development.json*
 config/production.json*
