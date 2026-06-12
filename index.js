@@ -433,6 +433,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (recentlyReleased.has(messageId)) {
       recentlyReleased.delete(messageId);
       tools.logData(`Skipping recently released/recovered email ${messageId}`);
+      logProcessingEntry(messageId, 0, null, fromAddr, '', subjectText, 0, 'Skipped', 'Recently released/recovered email - skipping processing', 0);
       return;
     }
     const fileStats = fs.statSync(messagePath);
