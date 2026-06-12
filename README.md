@@ -20,6 +20,7 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - [Node.js](https://nodejs.org/) 18 or later
 - npm (included with Node.js)
 - MailEnable (for production use)
+- Read/Write access to the install folder or location of files and logs
 
 ### Setup
 

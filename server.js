@@ -53,6 +53,14 @@ function initializeConfiguration() {
   } catch (error) {
     tools.logError(`Error loading configuration: ${error.message}`);
     config.rules = { whitelist: {}, blacklist: {} };
+    if (error.code === 'ENOENT') {
+      try {
+        fs.writeFileSync('./config/rules.json', JSON.stringify(config.rules, null, 2), 'utf8');
+        tools.logData('Created new blank rules.json');
+      } catch (writeError) {
+        tools.logError(`Error creating rules.json: ${writeError.message}`);
+      }
+    }
   }
   
   config.settings = {
