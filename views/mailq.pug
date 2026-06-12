@@ -10,6 +10,7 @@ block css
         .myMiniButton {
             margin-left: 5px;
         }
+        #GridView1 td { white-space: normal; word-break: break-word; }
         .preview-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.7); z-index: 100;
@@ -49,13 +50,7 @@ block content
                  order: [[ 6, "asc" ]],  
                  paging: false,
                  info: false,
-                 responsive: true,
-                 language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."}, 
-                 columnDefs: [ 
-                    { targets: 2, render: $.fn.dataTable.render.ellipsis(40, true)},
-                    { targets: 3, render: $.fn.dataTable.render.ellipsis(30, true)},
-                    { targets: 5, render: $.fn.dataTable.render.ellipsis(30, true)}
-                ] 
+                 language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."}                 
             });             
         });      
 
@@ -157,7 +152,7 @@ block content
                 td(align="right")                
                     | #{currentTime}        
         div
-            table#GridView1(class="row-border compact order-column hover stripe nowrap" style='width: 100%; font-size: small')
+            table#GridView1(class="row-border compact order-column hover stripe" style='width: 100%; font-size: small')
                 thead
                     th(scope='col')
                         input#chkSelectAll(type='checkbox')
@@ -176,7 +171,7 @@ block content
                             // Use a unique id for each checkbox
                             - var uniqueId = 'GridView1_chkItem_' + idx;
                             input(type='checkbox' id=uniqueId name=email.filepath)                           
-                        td(style='white-space:nowrap;') #{email.recipients}                            
+                        td #{email.recipients}                            
                         if email.safe 
                             td #{email.sender}                                
                         else 
@@ -184,11 +179,11 @@ block content
                         td #{email.subject}
                         td #{email.spamScore}                            
                         td #{email.antiSpam}
-                        td(style='white-space:nowrap;') #{email.date}
-                        td(style='white-space:nowrap;') 
+                        td #{email.date}
+                        td 
                             a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}  
                         td #{email.dkim}  
-                        td(style='white-space:nowrap;') 
+                        td 
                             a(href="#" data-mailkey=email.filepath data-view="text").preview-link safe
                             if (email.safe)
                                 | 

@@ -9,6 +9,7 @@ block css
         body {
             background-color: white;
         }         
+        #myTable td { white-space: normal; word-break: break-word; }
         .hideChat {
             display: none;
         }   
@@ -42,11 +43,7 @@ block content
                     bottomEnd: 'paging'                
                 },                          
                 language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."},
-                columnDefs: [ 
-                    { targets: 2, render: $.fn.dataTable.render.ellipsis(30, true)},
-                    { targets: 4, render: $.fn.dataTable.render.ellipsis(30, true)},
-                    { targets: 6, render: $.fn.dataTable.render.ellipsis(40, true)},                    
-                ], 
+                columnDefs: [ ], 
                 initComplete: function () {
                     var btns = $('.dt-button');
                     btns.addClass('myMiniButton');
