@@ -28,11 +28,9 @@ router.get('/', function(req, res) {
                 continue;
             if (fs.existsSync(filePath))
             {            
-                tools.logData(`Processing file ${filePath}`, "INFO");
                 let logText = fs.readFileSync(filePath).toString();
                 logText = xss(logText);
                 let logLines = logText.split('\n');
-                tools.logData(`File ${filePath} has ${logLines.length.toLocaleString("en-US")} lines`, "INFO");
                 //Process each log line
                 for(let i=0;i<logLines.length;i++)
                 {
@@ -41,19 +39,22 @@ router.get('/', function(req, res) {
                     if ((line.trim().length > 0) && (line.startsWith("#") == false)) 
                     {
                         let lineParts = line.split(' ');
-                        tools.logData(`Processing line ${i+1} of file ${filePath} with length of ${lineParts.length}`, "INFO");
                         if (lineParts.length < 10)
                             continue;            
                         
                         //Only analyzing inbound attempts
                         let agent = lineParts[3];                
-                        if (agent != "SMTP-IN")
+                        if (agent != "SMTP-IN") {
+                            tools.logData(`Skipping line as agent is not SMTP-IN. Line: ${line}`, "INFO");
                             continue;
+                        }
 
                         //Skip internal addresses..
                         let ipAddress = lineParts[2];                        
-                        if (ipAddress.startsWith("10.1.10.") || ipAddress.startsWith("192.168.") || ipAddress=="127.0.0.1")
+                        if (ipAddress.startsWith("10.1.10.") || ipAddress.startsWith("192.168.") || ipAddress=="127.0.0.1") {
+                            tools.logData(`Skipping line as IP address is internal. Line: ${line}`, "INFO");    
                             continue;
+                        }
                         
                         let dateTime = moment(lineParts[0] + " " + lineParts[1]).valueOf();
                         let date = moment(lineParts[0]).valueOf();
@@ -64,12 +65,16 @@ router.get('/', function(req, res) {
                         let username = lineParts[13];                       
 
                         //Only trakcing authentication issues
-                        if ((method != "AUTH") && (method != "MAIL") && (method != "RCPT"))
+                        if ((method != "AUTH") && (method != "MAIL") && (method != "RCPT")) {
+                            tools.logData(`Skipping line as method is not AUTH, MAIL, or RCPT. Line: ${line}`, "INFO");
                             continue;
+                        }
 
                         //Skip normal email receipt
-                        if (method == "MAIL" && query.includes("Requested+mail+action+okay"))
+                        if (method == "MAIL" && query.includes("Requested+mail+action+okay")) {
+                            tools.logData(`Skipping line as it is a normal email receipt. Line: ${line}`, "INFO");
                             continue;
+                        }
 
                         if (method == "MAIL")
                         {
@@ -180,7 +185,8 @@ router.get('/', function(req, res) {
                         if (query.includes("Sender+domain+is+invalid"))
                             obj.FailedSend++;
                                      
-                        logData[ipGroup] = obj;                    
+                        logData[ipGroup] = obj;    
+                        tools.logData(`Processed line ${i+1} of file ${filePath}. IP: ${ipAddress}, Method: ${method}, Query: ${query}`, "INFO");                
                     }
                 }
             }
