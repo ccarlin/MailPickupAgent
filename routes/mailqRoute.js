@@ -32,41 +32,35 @@ router.post('/', async function(req, res) {
     let path = config.QUARANTINE_DIR;
     let mailLog = quarentineLogPath();
 
-    let data = Object.entries(bodyPostBack);
+    let allData = bodyPostBack.data || {};
     let emails = [];
-    for(let i=1;i<data.length;i++)
-    {
-        //Only grab the email fields
-        if (data[i][1] == "on")
-        {
-            let email = {};
+    for (let filepath of Object.keys(allData)) {
+        if (bodyPostBack[filepath] !== "on") continue;
+        let entry = allData[filepath];
+        let email = {
+            filepath: filepath,
+            subject: entry.subject || '',
+            sender: entry.sender || '',
+            recipients: entry.recipients || '',
+            spamScore: entry.spamScore || '',
+            antiSpam: entry.antiSpam || '',
+            clientip: entry.clientip || 'N/A',
+            date: entry.datetime || '',
+            dkim: entry.dkim || '',
+            reason: reasonText(action),
+        };
+        emails.push(email);
 
-            email.filepath = data[i][0];
-            email.subject = data[i+1][1];
-            email.sender = data[i+2][1];
-            email.recipients = data[i+3][1];
-            email.spamScore = data[i+4][1];
-            email.antiSpam = data[i+5][1];
-            email.date = data[i+7][1];
-            email.dkim = data[i+8][1];
-            email.reason = reasonText(action);
-            let ipAddress = "N/A";
-            try {
-                email.clientip = data[i+6][1];
-            }
-            catch (err)
-            {
-                tools.logWarn(err, "N/A");
-            }
-            emails.push(email);
-
-            updateLogFile(mailLog, { reason: email.reason, subject: data[i+1][1], sender: data[i+2][1], recipients: data[i+3][1], spamScore: data[i+4][1], antiSpam: data[i+5][1], dkim: data[i+8][1], clientip: ipAddress });
-            i=i+9;
-        }
-        else 
-        {
-            i=i+8;
-        }
+        updateLogFile(mailLog, {
+            reason: email.reason,
+            subject: email.subject,
+            sender: email.sender,
+            recipients: email.recipients,
+            spamScore: email.spamScore,
+            antiSpam: email.antiSpam,
+            dkim: email.dkim,
+            clientip: email.clientip
+        });
     }
 
     switch(action)

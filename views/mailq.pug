@@ -168,34 +168,33 @@ block content
                 each email, idx in emails
                     tr(title=email.clientipinfo)
                         td
-                            // Use a unique id for each checkbox
                             - var uniqueId = 'GridView1_chkItem_' + idx;
-                            input(type='checkbox' id=uniqueId name=email.filepath)                           
-                        td #{email.recipients}                            
-                        if email.safe 
-                            td #{email.sender}                                
-                        else 
+                            input(type='checkbox' id=uniqueId name=email.filepath)
+                        td #{email.recipients}
+                        if email.safe
+                            td #{email.sender}
+                        else
                             td(style='color: red;font-weight:bold;') #{email.sender}
                         td #{email.subject}
-                        td #{email.spamScore}                            
+                        td #{email.spamScore}
                         td #{email.antiSpam}
                         td #{email.date}
-                        td 
-                            a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}  
-                        td #{email.dkim}  
-                        td 
+                        td
+                            a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}
+                        td #{email.dkim}
+                        td
                             a(href="#" data-mailkey=email.filepath data-view="text").preview-link safe
                             if (email.safe)
-                                | 
-                                a(href="#" data-mailkey=email.filepath data-view="html").preview-link html          
-                            input(type='hidden' name=email.filepath+'subject' value=email.subject)
-                            input(type='hidden' name=email.filepath+'sender' value=email.sender)
-                            input(type='hidden' name=email.filepath+'recipients' value=email.recipients)
-                            input(type='hidden' name=email.filepath+'spamScore' value=email.spamScore)
-                            input(type='hidden' name=email.filepath+'antiSpam' value=email.antiSpam)
-                            input(type='hidden' name=email.filepath+'clientip' value=email.clientip)
-                            input(type='hidden' name=email.filepath+'datetime' value=email.date)
-                            input(type='hidden' name=email.filepath+'dkim' value=email.dkim)
+                                |
+                                a(href="#" data-mailkey=email.filepath data-view="html").preview-link html
+                            input(type='hidden' name='data[' + email.filepath + '][subject]' value=email.subject)
+                            input(type='hidden' name='data[' + email.filepath + '][sender]' value=email.sender)
+                            input(type='hidden' name='data[' + email.filepath + '][recipients]' value=email.recipients)
+                            input(type='hidden' name='data[' + email.filepath + '][spamScore]' value=email.spamScore)
+                            input(type='hidden' name='data[' + email.filepath + '][antiSpam]' value=email.antiSpam)
+                            input(type='hidden' name='data[' + email.filepath + '][clientip]' value=email.clientip)
+                            input(type='hidden' name='data[' + email.filepath + '][datetime]' value=email.date)
+                            input(type='hidden' name='data[' + email.filepath + '][dkim]' value=email.dkim)
         
     #emailPreviewModal.preview-modal
         .preview-modal-content
