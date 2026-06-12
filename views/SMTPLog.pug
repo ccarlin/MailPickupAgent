@@ -30,11 +30,7 @@ block scripts
 block content
     script.           
         $(document).ready(function ()
-        {   
-            $('#chkSelectAll').click(function ()
-            {
-                $('input:checkbox').not(this).prop('checked', this.checked);
-            }); 
+        {              
             var table = $('#myTable').DataTable({ 
                 order: [[ 6, "desc" ]], 
                 pageLength: 22,  
@@ -49,7 +45,7 @@ block content
                     var btns = $('.dt-button');
                     btns.addClass('myMiniButton');
                     btns.removeClass('dt-button');  
-                    [2,11].forEach(idx => multiFilterSetup(this.api().column(idx)));                     
+                    [1].forEach(idx => multiFilterSetup(this.api().column(idx)));                     
                  },
                 footerCallback: function (row, data, start, end, display) {
                     var api = this.api();
