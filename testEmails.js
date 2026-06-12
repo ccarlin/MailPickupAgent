@@ -50,7 +50,11 @@ function extractTldFromAllowed(allowed) {
 
 function buildBlacklistTest(rules) {
   const bl = rules.blacklist || {};
-  const badSender = (Array.isArray(bl.senders) && bl.senders.find(s => typeof s === 'string')) || 'bad@spam.test';
+  let badSender = (Array.isArray(bl.senders) && bl.senders.find(s => typeof s === 'string')) || 'bad@spam.test';
+  // If sender is a partial email or just a domain let's make it a full email for testing
+  if (!badSender.includes('@')) {
+    badSender = `spammer@${badSender}`;
+  }
   const mail = {
     from: badSender,
     to: TEST_RECIPIENT,

@@ -262,7 +262,7 @@ function scoreKeywordFilters(parsed, filters) {
       tools.logData(`Keyword filter matched: "${filterName}", score: ${score}`);
       if (score > 0) {
         acc.score += score;
-        acc.matches.push(filterName);
+        acc.matches.push({ name: filterName, score: score });
       }
     }
     return acc;
@@ -333,10 +333,13 @@ function checkSpamAssassin(rawEmail) {
       });
 
       socket.on('end', () => {
+        const separatorIndex = responseData.indexOf('\r\n\r\n');
+        const fullReport = separatorIndex !== -1 ? responseData.substring(separatorIndex + 4).trim() : '';
         resolve({
           isSpam: isSpam,
           score: score,
           threshold: threshold,
+          fullReport: fullReport,
         });
       });
 
@@ -500,7 +503,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters);
     if (keywordResult.score > 0) {
       spamScore += keywordResult.score;
-      quarantineReasons.push(`Keyword matches: ${keywordResult.matches.join(', ')}`);
+      quarantineReasons.push(`Keyword matches: ${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}`);
     }
 
     // 3. SpamAssassin check (if enabled)
@@ -536,10 +539,14 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const processElapsed = (Date.now() - processStartTime) / 1000;
     const spamInfoParts = [];
     if (keywordResult.matches.length > 0) {
-      spamInfoParts.push(`Keyword: ${keywordResult.matches.join(', ')}`);
+      spamInfoParts.push(`Keyword - [${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}]`);
     }
     if (SPAMASSASSIN_ENABLED && saResult) {
-      spamInfoParts.push(`SpamAssassin: ${saResult.score}`);
+      let saInfo = `SpamAssassin: ${saResult.score}`;
+      if (saResult.fullReport) {
+        saInfo += `\n${saResult.fullReport}`;
+      }
+      spamInfoParts.push(saInfo);
     }
     let spamDetailInfo = spamInfoParts.join('; ');
 
