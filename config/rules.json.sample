@@ -492,47 +492,7 @@
         "FilterMatchType": "0",
         "FilterCaseSensitive": "0",
         "Score": "3"
-      },
-      {
-        "FilterName": "CHAR_CYRILLIC",
-        "FilterType": "1",
-        "SearchScope": "4",
-        "FilterExpression": "EULzF2G7L7ozMkmH3+lXpwVar2/uDuceG3BB1ALxGfgEupV0+6aIVWtRa12xVefRGEA3Twu0JJ5RFjiV4dxdinlJ1BK4VvCgj/jPV7VffnohsUHWwLaxY+31eKiB5+Cn",
-        "FilterExpressionType": "1",
-        "FilterMatchType": "0",
-        "FilterCaseSensitive": "0",
-        "Score": "10"
-      },
-      {
-        "FilterName": "CHAR_KOREAN",
-        "FilterType": "1",
-        "SearchScope": "4",
-        "FilterExpression": "EfkrwGAwsT/B98uw6jLHVg9RhP4gFywoYissOSD0eNxiEhdv7+Q5VV3d0QbzUss32UYVsv2iIpSm0FoB4YmdWI1xFblYGP4fUfQMxdGaHPg0ZBqt4oFY1MSyC+YE/QT6D1N2gd5ZVYLMqs5Z+ErWsjfh0gGQIdRYSyQT3+A7ZlMTPAiDBd+tGkNjyVuf7Gohl/0NHYkV7i9qe3SzxGjsxWtdFCGaP4VkhDrtRdqkmuvbcEi4kfuPb/RAiOzsOy15yy5BHGc7f1zOAIp84MJo+LtNiDx6eZfD+s2reRcVLBc=",
-        "FilterExpressionType": "1",
-        "FilterMatchType": "0",
-        "FilterCaseSensitive": "0",
-        "Score": "10"
-      },
-      {
-        "FilterName": "CHAR_CHINESE",
-        "FilterType": "1",
-        "SearchScope": "4",
-        "FilterExpression": "8FVp8tSelZJPZSumBEDLlmrYszzuPGCkMzXiLARm8tgwtlwOfiHPDpdJBbHQginivpB4VUXo35V3Vom7ABni1BsoRQ/uQNipO/G+vyavn7ycdNflhpKa/P6N8xCUnCKihQ+9VwuBRv0AOsCjhxMgnQC9lkg5sQ4cUOcTD8XfWh4YySAzAnO/ESYvqK1lnPfJd+cNDsKm/49SlxO8aPm9kheuBIJewILBaQnmme+zA1e/GmkcTha5tLcVp6tLT73j",
-        "FilterExpressionType": "1",
-        "FilterMatchType": "0",
-        "FilterCaseSensitive": "0",
-        "Score": "10"
-      },
-      {
-        "FilterName": "CHAR_JAPAN",
-        "FilterType": "1",
-        "SearchScope": "4",
-        "FilterExpression": "Pe8bwH9AOvIusMjszgSmluc9wps2+5+/Pwa3lbkC9P8MILT/9DCvqGIPhoND6kkBZkyOEIteJadii5akC5BlkfO2zyBIRg9Af2BXjDv8Mz++HK+FtPooEVqt1Q479miA",
-        "FilterExpressionType": "1",
-        "FilterMatchType": "0",
-        "FilterCaseSensitive": "0",
-        "Score": "10"
-      },
+      },      
       {
         "FilterName": "Mailer-Daemon",
         "FilterType": "0",
