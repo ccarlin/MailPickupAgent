@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node index.js",
     "server": "node server.js",
+    "postinstall": "node -e \"const f=require('fs'),p=f.existsSync('config/rules.json'),s=f.existsSync('config/rules.json.sample');if(!p&&s){f.copyFileSync('config/rules.json.sample','config/rules.json');console.log('Created config/rules.json from sample. Edit it or use the rules editor to configure your rules.');}\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

@@ -1,5 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const config = require('./config');
+const TEST_RECIPIENT = config.TEST_EMAIL_RECIPIENT || 'test@localhost';
+const HOSTNAME = config.HOSTNAME || 'localhost';
 const FALL_BACK_SPAM_FILLER = '\n\ncamp lejeune';
 function loadRules() {
   try {
@@ -45,7 +48,7 @@ function buildBlacklistTest(rules) {
   const badSender = (Array.isArray(bl.senders) && bl.senders.find(s => typeof s === 'string')) || 'bad@spam.test';
   const mail = {
     from: badSender,
-    to: 'chuck@ccarlin.com',
+    to: TEST_RECIPIENT,
     subject: 'Test blacklist sender',
     html: 'This email should be deleted due to blacklist sender match.'
   };
@@ -60,7 +63,7 @@ function buildWhitelistTest(rules) {
     name: 'whitelist-sender',
     mail: {
       from: goodSender,
-      to: 'chuck@ccarlin.com',
+      to: TEST_RECIPIENT,
       subject: 'Test whitelist sender',
       html: 'This email should be released due to whitelist sender match.'
     }
@@ -72,7 +75,7 @@ function buildTldTest(rules) {
   const badTld = extractTldFromAllowed(allowed);
   const mail = {
     from: `tester@domain.${badTld}`,
-    to: 'chuck@ccarlin.com',
+    to: TEST_RECIPIENT,
     subject: `Test TLD ${badTld}`,
     html: `This email has sender TLD ${badTld} which should be rejected if not in allowedTLDs.`
   };
@@ -91,7 +94,7 @@ function buildComboTest(rules) {
   }
   const mail = {
     from,
-    to: (combo && combo.recipient) ? `${combo.recipient.toLowerCase()}@ccarlin.com` : 'chuck@ccarlin.com',
+    to: (combo && combo.recipient) ? `${combo.recipient.toLowerCase()}@${HOSTNAME}` : TEST_RECIPIENT,
     subject,
     html: 'This email should trigger a combo rule.'
   };
@@ -129,7 +132,7 @@ function buildKeywordTests(rules) {
   if (regexFilter) {
     const sample = sampleFromRegex(String(regexFilter.FilterExpression || ''));
     const scope = String(regexFilter.SearchScope || '3').trim();
-    const mail = { from: 'kw-regex@example.com', to: 'chuck@ccarlin.com', subject: 'Regex keyword test', html: '' , headers: {}};
+    const mail = { from: 'kw-regex@example.com', to: TEST_RECIPIENT, subject: 'Regex keyword test', html: '' , headers: {}};
     if (scope === '2') mail.subject = sample;
     else if (scope === '1') mail.html = sample;
     else if (scope === '3') { mail.subject = sample; mail.html = sample; }
@@ -141,7 +144,7 @@ function buildKeywordTests(rules) {
   if (textFilter) {
     const sample = String(textFilter.FilterExpression || 'test');
     const scope = String(textFilter.SearchScope || '3').trim();
-    const mail = { from: 'kw-text@example.com', to: 'chuck@ccarlin.com', subject: 'Text keyword test', html: '' , headers: {}};
+    const mail = { from: 'kw-text@example.com', to: TEST_RECIPIENT, subject: 'Text keyword test', html: '' , headers: {}};
     if (scope === '2') mail.subject = sample;
     else if (scope === '1') mail.html = sample;
     else if (scope === '3') { mail.subject = sample; mail.html = sample; }
@@ -154,7 +157,7 @@ function buildKeywordTests(rules) {
   // Each email gets injectSpamFiller which adds ~10 from HACKER_CRAP2
   for (const s of ['1','2','3','4']) {
     if (!tests.some(t => (s === '1' && t.mail.html) || (s === '2' && t.mail.subject && !t.mail.html) || (s === '3' && t.mail.subject && t.mail.html) || (s === '4' && t.mail.headers && Object.keys(t.mail.headers).length))) {
-      const mail = { from: `scope${s}@example.com`, to: 'chuck@ccarlin.com', subject: 'Scope test', html: '', headers: {} };
+      const mail = { from: `scope${s}@example.com`, to: TEST_RECIPIENT, subject: 'Scope test', html: '', headers: {} };
       if (s === '1') mail.html = 'Body scope test content.';
       if (s === '2') mail.subject = 'Subject scope test content.';
       if (s === '3') { mail.subject = 'Scope 3 test'; mail.html = 'Body content for combined scope.'; }
