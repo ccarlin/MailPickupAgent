@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 function getEnv() {
-  return process.env.NODE_ENV || 'development';
+  return process.env.NODE_ENV || 'production';
 }
 
 function loadConfig() {

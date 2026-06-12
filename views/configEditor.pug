@@ -53,6 +53,7 @@ block scripts
 
         function renderConfig() {
             const container = document.getElementById('configContainer');
+            const previousValues = collectValues();
             container.innerHTML = '';
 
             if (!configData) return;
@@ -172,6 +173,19 @@ block scripts
                 section.appendChild(body);
                 container.appendChild(section);
             });
+
+            const savedKeys = Object.keys(previousValues);
+            if (savedKeys.length) {
+                savedKeys.forEach(key => {
+                    const input = document.getElementById('cfg-' + key);
+                    if (!input) return;
+                    if (input.type === 'checkbox') {
+                        input.checked = previousValues[key] === true || previousValues[key] === 'true';
+                    } else {
+                        input.value = previousValues[key] != null ? String(previousValues[key]) : '';
+                    }
+                });
+            }
         }
 
         function collectValues() {

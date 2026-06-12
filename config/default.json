@@ -1,5 +1,5 @@
 {
-  "NODE_ENV": "development",
+  "NODE_ENV": "production",
   "PORT": 6245,
 
   "QUARANTINE_DIR": "./mail/quarantine",

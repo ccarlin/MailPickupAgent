@@ -1,9 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('./config');
+const tools = require('./tools');
 const TEST_RECIPIENT = config.TEST_EMAIL_RECIPIENT || 'test@localhost';
 const HOSTNAME = config.HOSTNAME || 'localhost';
 const FALL_BACK_SPAM_FILLER = '\n\ncamp lejeune';
+
 function loadRules() {
   try {
     const data = fs.readFileSync(path.join(__dirname, 'config', 'rules.json'), 'utf8');
@@ -13,7 +15,10 @@ function loadRules() {
     const defaultRules = { whitelist: {}, blacklist: {} };
     try {
       fs.writeFileSync(path.join(__dirname, 'config', 'rules.json'), JSON.stringify(defaultRules, null, 2), 'utf8');
-    } catch {}
+    } 
+    catch(err) {
+      tools.logError(`Error creating default rules.json: ${err}`);
+    }
     return defaultRules;
   }
 }

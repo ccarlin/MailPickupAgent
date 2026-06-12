@@ -36,7 +36,7 @@ router.post('/api/config/save', (req, res) => {
       }
     });
 
-    const env = process.env.NODE_ENV || 'development';
+    const env = process.env.NODE_ENV || 'production';
     const configPath = path.resolve(__dirname, '..', 'config', `${env}.json`);
 
     // Backup current config

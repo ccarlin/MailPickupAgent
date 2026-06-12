@@ -19,8 +19,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Make env info available to all views
 app.use((req, res, next) => {
-  res.locals.envLabel = appConfig.NODE_ENV || 'development';
-  res.locals.envClass = appConfig.NODE_ENV || 'development';
+  res.locals.envLabel = appConfig.NODE_ENV || 'production';
+  res.locals.envClass = appConfig.NODE_ENV || 'production';
   next();
 });
 

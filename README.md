@@ -34,7 +34,7 @@ npm install
 
 ## Configuration
 
-All configuration is stored in JSON files under the `config/` directory. The system loads `config/default.json` as a base, then merges with `config/{NODE_ENV}.json` (where `NODE_ENV` defaults to `development`).
+All configuration is stored in JSON files under the `config/` directory. The system loads `config/default.json` as a base, then merges with `config/{NODE_ENV}.json` (where `NODE_ENV` defaults to `production`).
 
 ### Production vs Development
 
@@ -44,7 +44,7 @@ All configuration is stored in JSON files under the `config/` directory. The sys
 | `config/development.json` | Overrides for local testing (overlapping paths, test credentials) |
 | `config/production.json` | Overrides for production MailEnable server |
 
-The active environment is determined by the `NODE_ENV` environment variable. If not set, `development` is used.
+The active environment is determined by the `NODE_ENV` environment variable. If not set, `production` is used.
 
 ### Editing Configuration
 
