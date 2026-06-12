@@ -105,6 +105,7 @@ router.post('/action', async function(req, res) {
     let mailLog = quarentineLogPath();
 
     let data = Object.entries(bodyPostBack);
+    tools.logData(`Received action ${action} data_dump: ${data.join(', ')}`, "INFO");
     let email = {};
     
     email.reason = reasonText(action);
@@ -137,10 +138,7 @@ router.post('/action', async function(req, res) {
                 break;
             case "dkim":
                 email.dkim = data[i][1];
-                break;
-            case "aiCheck":
-                email.aiCheck = data[i][1];
-                break;
+                break;          
         }
     }
 
