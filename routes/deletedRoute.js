@@ -87,7 +87,7 @@ function getDeletedEmails(callback) {
                                         case "SpamScore":
                                             emailInfo.spamScore = value;
                                             break;
-                                        case "AntiSpam":
+                                        case "SpamDetail":
                                             emailInfo.antiSpam = value;
                                             break;
                                     }
