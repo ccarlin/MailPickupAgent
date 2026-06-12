@@ -113,18 +113,29 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 It is recommended that you use PM2 or a similar tool to ensure that the server is always running.  
 Make sure to exlude logging directories and quarentine/deleted directories from any watch settings to avoid unnecessary restarts.
 
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm start` | Run email processing (pickup mode) |
+| `npm run server` | Start the admin web server |
+| `npm test` | Send test emails to verify configuration |
+| `npm run purge` | Remove old deleted emails and log files |
+| `npm run wipeall` | Delete all quarantined and deleted emails |
+| `npm run lint` | Lint the codebase with ESLint |
+
 ### Test Emails
 
 Send test emails to verify configuration:
 
 ```bash
-node index.js --test
+npm test
 ```
 
 Optional types: `good`, `quarantine`, `blacklist`:
 
 ```bash
-node index.js --test quarantine
+npm test -- quarantine
 ```
 
 ### Purging Old Files
@@ -132,10 +143,20 @@ node index.js --test quarantine
 Remove deleted emails and log files older than the configured retention period:
 
 ```bash
-node index.js --purge
+npm run purge
 ```
 
 Schedule this command to run daily via Windows Task Scheduler or cron.
+
+### Wipe All Data
+
+Delete all emails in the quarantine and deleted directories:
+
+```bash
+npm run wipeall
+```
+
+Use with caution — wiped emails cannot be recovered.
 
 ## Integration with MailEnable
 

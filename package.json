@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "node index.js --test",
-    "wipeall": "node index.js --wipeall"
+    "wipeall": "node index.js --wipeall",
+    "purge": "node index.js --purge"
   },
   "keywords": [
     "mail",
