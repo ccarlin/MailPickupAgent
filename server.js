@@ -72,6 +72,14 @@ function initializeConfiguration() {
     spamAssassinEnabled: appConfig.SPAMASSASSIN_ENABLED,
     aiCheckEnabled: appConfig.AI_CHECK_ENABLED
   };
+
+  // Ensure required directories exist
+  [appConfig.QUARANTINE_DIR, appConfig.DELETED_DIR, appConfig.PROCESSING_LOG, appConfig.QUARANTINE_LOG].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      tools.logData(`Created directory: ${dir}`);
+    }
+  });
 }
 
 // GET Route - Help/Info

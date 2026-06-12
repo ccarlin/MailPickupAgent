@@ -27,6 +27,7 @@ const THRESHOLD_QUARANTINE = Number(config.THRESHOLD_QUARANTINE || 5);
 const THRESHOLD_DELETE = Number(config.THRESHOLD_DELETE || 15);
 const HEADER_SEPARATOR = '\r\n\r\n';
 const PROCESSING_LOG_DIR = config.PROCESSING_LOG;
+const QUARANTINE_LOG_DIR = config.QUARANTINE_LOG;
 const processingLogPath = () => {
   const d = new Date();
   const y = d.getFullYear();
@@ -35,7 +36,7 @@ const processingLogPath = () => {
   return `${PROCESSING_LOG_DIR}/processing-${y}${m}${day}.log`;
 };
 
-[QUARANTINE_DIR, DELETED_DIR].forEach(dir => {
+[QUARANTINE_DIR, DELETED_DIR, PROCESSING_LOG_DIR, QUARANTINE_LOG_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
