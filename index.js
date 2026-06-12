@@ -28,6 +28,17 @@ const THRESHOLD_DELETE = Number(config.THRESHOLD_DELETE || 15);
 const HEADER_SEPARATOR = '\r\n\r\n';
 const PROCESSING_LOG_DIR = config.PROCESSING_LOG;
 const QUARANTINE_LOG_DIR = config.QUARANTINE_LOG;
+
+// Cache of recently released/recovered email MessageIDs to prevent re-processing
+const RECENTLY_RELEASED_TTL = 5 * 60 * 1000; // 5 minutes
+const recentlyReleased = new Map();
+
+function purgeExpiredCacheEntries() {
+  const cutoff = Date.now() - RECENTLY_RELEASED_TTL;
+  for (const [id, timestamp] of recentlyReleased) {
+    if (timestamp < cutoff) recentlyReleased.delete(id);
+  }
+}
 const processingLogPath = () => {
   const d = new Date();
   const y = d.getFullYear();
@@ -418,6 +429,12 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const destMessageName = path.basename(messagePath);
     const processStartTime = Date.now();
     const messageId = path.parse(messagePath).name;
+    purgeExpiredCacheEntries();
+    if (recentlyReleased.has(messageId)) {
+      recentlyReleased.delete(messageId);
+      tools.logData(`Skipping recently released/recovered email ${messageId}`);
+      return;
+    }
     const fileStats = fs.statSync(messagePath);
     const sizeKb = fileStats.size / 1024;
     const recipientAddresses = (parsed.to?.value || []).map(v => v.address || '').filter(Boolean);
@@ -724,7 +741,8 @@ module.exports = {
   quarantineEmail,
   scoreKeywordFilters,
   purgeOldFiles,
-  wipeall
+  wipeall,
+  recentlyReleased
 };
 
 // Main Processing begins here - only run if this file is executed directly, not when imported as a module

@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const config = require('../config');
 const tools = require('../tools');
+const { recentlyReleased } = require('../index.js');
 
 router.get('/', function(req, res) {
     getDeletedEmails(function(err, emails) {
@@ -115,16 +116,16 @@ function RecoverMessages(emails) {
         let emailFile = path.join(deletedPath, email.filepath + ".MAI");
         tools.logData(`Recovering email ${email.filepath} from ${deletedPath}`, "INFO");
         try {
-            //Test without modifying the header first - if the email is still undelivered, then we can try modifying the header and moving back to the queue
-            // let commandText = fs.readFileSync(headerFile).toString();
-            // commandText = commandText.replace("Status=Delivering", "Status=UnDelivered");
-            // fs.writeFileSync(headerFile, commandText);
+            let commandText = fs.readFileSync(headerFile).toString();
+            commandText = commandText.replace("Status=Delivering", "Status=UnDelivered");
+            fs.writeFileSync(headerFile, commandText);
 
             let newEmailFile = path.join(config.SMTP_QUEUE_DIR, email.filepath + ".MAI");
             let commandFile = path.join(config.SMTP_COMMAND_DIR, email.filepath + ".H00");
             
             fs.renameSync(emailFile, newEmailFile);
             fs.renameSync(headerFile, commandFile);
+            recentlyReleased.set(email.filepath, Date.now());
         } catch(err) {
             tools.logData(`Unable to recover email ${email.filepath}. Error: ${err}`, "ERROR");
         }

@@ -6,6 +6,7 @@ const axios = require("axios");
 const dns = require('dns');
 const tools = require("../tools");
 const config = require('../config');
+const { recentlyReleased } = require('../index.js');
 const dnsPromises = dns.promises;
 
 const prefixUTF = '=?UTF-8?B?';
@@ -462,7 +463,8 @@ function ReleaseMessages(emails)
 
             //Clean up the files..
             fs.renameSync(emailFile, newEmailFile);
-            fs.renameSync(headerFile, commandFile);             
+            fs.renameSync(headerFile, commandFile);
+            recentlyReleased.set(email.filepath, Date.now());
         }
         catch (err)
         {
