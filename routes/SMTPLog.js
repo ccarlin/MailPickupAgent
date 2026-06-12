@@ -32,6 +32,7 @@ router.get('/', function(req, res) {
                 let logText = fs.readFileSync(filePath).toString();
                 logText = xss(logText);
                 let logLines = logText.split('\n');
+                tools.logData(`File ${filePath} has ${logLines.length.toLocaleString("en-US")} lines`, "INFO");
                 //Process each log line
                 for(let i=0;i<logLines.length;i++)
                 {
@@ -40,6 +41,7 @@ router.get('/', function(req, res) {
                     if ((line.trim().length > 0) && (line.startsWith("#") == false)) 
                     {
                         let lineParts = line.split(' ');
+                        tools.logData(`Processing line ${i+1} of file ${filePath} with length of ${lineParts.length}`, "INFO");
                         if (lineParts.length < 10)
                             continue;            
                         
