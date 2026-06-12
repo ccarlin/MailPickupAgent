@@ -113,17 +113,15 @@ function RecoverMessages(emails) {
         let email = emails[i];
         let headerFile = path.join(deletedPath, email.filepath + ".H00");
         let emailFile = path.join(deletedPath, email.filepath + ".MAI");
-        tools.logData(`Attempting to recover email ${email.filepath} from ${deletedPath}`, "INFO");
+        tools.logData(`Recovering email ${email.filepath} from ${deletedPath}`, "INFO");
         try {
             let commandText = fs.readFileSync(headerFile).toString();
             commandText = commandText.replace("Status=Delivering", "Status=UnDelivered");
             fs.writeFileSync(headerFile, commandText);
 
-            tools.logData(`Moving email ${email.filepath} back to SMTP queue`, "INFO");
             let newEmailFile = path.join(config.SMTP_QUEUE_DIR, email.filepath + ".MAI");
             let commandFile = path.join(config.SMTP_COMMAND_DIR, email.filepath + ".H00");
-            tools.logData(`Renaming ${emailFile} to ${newEmailFile} and ${headerFile} to ${commandFile}`, "INFO");
-
+            
             fs.renameSync(emailFile, newEmailFile);
             fs.renameSync(headerFile, commandFile);
         } catch(err) {
