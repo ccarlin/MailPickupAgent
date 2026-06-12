@@ -44,18 +44,14 @@ router.get('/', function(req, res) {
                         
                         //Only analyzing inbound attempts
                         let agent = lineParts[3];                
-                        if (agent != "SMTP-IN") {
-                            tools.logData(`Skipping line as agent is not SMTP-IN. Line: ${line}`, "INFO");
+                        if (agent != "SMTP-IN") 
                             continue;
-                        }
-
+                        
                         //Skip internal addresses..
                         let ipAddress = lineParts[2];                        
-                        if (ipAddress.startsWith("10.1.10.") || ipAddress.startsWith("192.168.") || ipAddress=="127.0.0.1") {
-                            tools.logData(`Skipping line as IP address is internal. Line: ${line}`, "INFO");    
+                        if (ipAddress.startsWith("10.1.10.") || ipAddress.startsWith("192.168.") || ipAddress=="127.0.0.1") 
                             continue;
-                        }
-                        
+                                                
                         let dateTime = moment(lineParts[0] + " " + lineParts[1]).valueOf();
                         let date = moment(lineParts[0]).valueOf();
                         
@@ -65,17 +61,13 @@ router.get('/', function(req, res) {
                         let username = lineParts[13];                       
 
                         //Only trakcing authentication issues
-                        if ((method != "AUTH") && (method != "MAIL") && (method != "RCPT")) {
-                            tools.logData(`Skipping line as method is not AUTH, MAIL, or RCPT. Line: ${line}`, "INFO");
+                        if ((method != "AUTH") && (method != "MAIL") && (method != "RCPT")) 
                             continue;
-                        }
-
+                        
                         //Skip normal email receipt
-                        if (method == "MAIL" && query.includes("Requested+mail+action+okay")) {
-                            tools.logData(`Skipping line as it is a normal email receipt. Line: ${line}`, "INFO");
+                        if (method == "MAIL" && query.includes("Requested+mail+action+okay")) 
                             continue;
-                        }
-
+                        
                         if (method == "MAIL")
                         {
                             try {
@@ -185,8 +177,7 @@ router.get('/', function(req, res) {
                         if (query.includes("Sender+domain+is+invalid"))
                             obj.FailedSend++;
                                      
-                        logData[ipGroup] = obj;    
-                        tools.logData(`Processed line ${i+1} of file ${filePath}. IP: ${ipAddress}, Method: ${method}, Query: ${query}`, "INFO");                
+                        logData[ipGroup] = obj;                            
                     }
                 }
             }
