@@ -121,7 +121,7 @@ function RecoverMessages(emails) {
             fs.writeFileSync(headerFile, commandText);
 
             let newEmailFile = path.join(config.SMTP_QUEUE_DIR, email.filepath + ".MAI");
-            let commandFile = path.join(config.SMTP_COMMAND_DIR, email.filepath + ".H00");
+            let commandFile = path.join(config.SMTP_COMMAND_DIR, email.filepath + ".MAI");
             
             fs.renameSync(emailFile, newEmailFile);
             fs.renameSync(headerFile, commandFile);
