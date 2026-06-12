@@ -41,12 +41,7 @@ block content
                     bottomStart: 'info',
                     bottomEnd: 'paging'                
                 },                          
-                language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."},
-                columnDefs: [ 
-                    { targets: 3, render: $.fn.dataTable.render.ellipsis(30, true)},
-                    { targets: 5, render: $.fn.dataTable.render.ellipsis(40, true)},
-                    { targets: 9, render: $.fn.dataTable.render.ellipsis(30, true)}
-                ], 
+                language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."},               
                 initComplete: function () {
                     var btns = $('.dt-button');
                     btns.addClass('myMiniButton');
@@ -60,8 +55,8 @@ block content
     form
         table#myTable(class="row-border compact order-column hover stripe" style="font-size: small;")
             thead    
-                th(align='left' scope='col') Time Stamp                    
-                th(align='left' scope='col') IP Address
+                th(align='left' scope='col' style='white-space: nowrap;') Time Stamp
+                th(align='left' scope='col' style='white-space: nowrap;') IP Address
                 th(align='left' scope='col') Country
                 th(align='left' scope='col') Sender
                 th(align='left' scope='col') Recipient
@@ -72,7 +67,7 @@ block content
                 th(align='left' scope='col') Details
             each logEntry in logData
                 tr
-                    td #{logEntry.dateTime}
+                    td(style='white-space: nowrap;') #{logEntry.dateTime}
                     td 
                         a(href=`${logEntry.ipLookup}`, target='_blank') #{logEntry.ipAddress}
                     td #{logEntry.Country}                       

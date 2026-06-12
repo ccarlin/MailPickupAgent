@@ -57,17 +57,17 @@ block content
     form
         table#myTable(class="row-border compact order-column hover stripe" style="font-size: small;")
             thead    
-                th(align='left' scope='col') Time Stamp                    
+                th(align='left' scope='col' style='white-space: nowrap;') Time Stamp                   
                 th(align='left' scope='col') Action
                 th(align='left' scope='col') Sender
                 th(align='left' scope='col') Recipient
                 th(align='left' scope='col') Subject
                 th(align='left' scope='col') Score
                 th(align='left' scope='col') SPAM Results
-                th(align='left' scope='col') IP Address
+                th(align='left' scope='col' style='white-space: nowrap;') IP Address
             each logEntry in logData
                 tr
-                    td #{logEntry.dateTime}
+                    td(style='white-space: nowrap;') #{logEntry.dateTime}
                     td #{logEntry.action}                                                
                     td #{logEntry.sender}
                     td #{logEntry.recipient}
