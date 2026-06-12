@@ -451,6 +451,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
         tools.logData(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
         const elapsed = (Date.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
+        await updateEmailHeaders(messagePath, destMessageName, ['TLD not allowed'], 99, countryResult.country, 'Sender TLD: ' + fromTld);
         await deleteEmail(controlFilePath, messagePath, destMessageName);
         return;
       }
@@ -461,6 +462,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
+      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted sender'], 99, countryResult.country, 'Sender: ' + fromAddr);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
       return;
     }
@@ -469,6 +471,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
+      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted IP'], 99, countryResult.country, 'Originating IP: ' + originatingIp);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
       return;
     }
@@ -477,6 +480,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
+      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted country'], 99, countryResult.country, 'Originating country: ' + countryResult.country);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
       return;
     }
@@ -485,6 +489,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Combo rule matched, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
+      await updateEmailHeaders(messagePath, destMessageName, ['Combo rule matched'], 99, countryResult.country, 'Combo rule matched');
       await deleteEmail(controlFilePath, messagePath, destMessageName);
       return;
     }
