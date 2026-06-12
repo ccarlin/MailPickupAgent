@@ -540,6 +540,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     // 4. Ollama AI spam check
+    let aiSpamResult = false;
     if (AI_CHECK_ENABLED) {
       try {
         const aiPrompt = `You are a spam classifier. Reply with only the word "spam" or "ham". Is the following email spam?\n\nFrom: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
@@ -548,6 +549,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
         if (isSpam) {
           spamScore += 5; // Assign a score for AI-detected spam - this can be adjusted based on testing and needs;
           quarantineReasons.push('AI classified as spam');
+          aiSpamResult = true;
         }
       } catch (err) {
         tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
@@ -558,6 +560,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const spamInfoParts = [];
     if (keywordResult.matches.length > 0) {
       spamInfoParts.push(`Keyword - [${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}]`);
+    }
+    if (aiSpamResult) {
+      spamInfoParts.push(`AI Check - AI classified as spam(5)`);
     }
     if (SPAMASSASSIN_ENABLED && saResult) {
       let saInfo = `SpamAssassin(${saResult.score})`;
