@@ -390,7 +390,7 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     headers += `X-MPA-Msgid: ${destMessageName}\r\n`;
     headers += `X-MPA-SpamReason: ${quarantineReasons.join('; ')}\r\n`;
     headers += `X-MPA-SpamScore: ${spamScore}\r\n`;
-    headers += `X-MPA-SpamDetail: ${spamDetailInfo.replace(':', ' ')}\r\n`;
+    headers += `X-MPA-SpamDetail: ${spamDetailInfo.replace(/:/g, '-')}\r\n`;
     if (country) {
       headers += `X-MPA-Country: ${country}\r\n`;
     }    
