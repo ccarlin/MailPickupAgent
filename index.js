@@ -304,7 +304,7 @@ function checkSpamAssassin(rawEmail) {
       let headerComplete = false;
       let isSpam = null;
       let score = 0;
-      let threshold = 15.0;
+      let threshold = 5.0;
 
       socket.on('data', (data) => {
         responseData += data.toString();
@@ -388,7 +388,7 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     // Let's add some MPA-specific headers
     headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${config.HOSTNAME || process.env.HOSTNAME || 'localhost'}\r\n`;
     headers += `X-MPA-Msgid: ${destMessageName}\r\n`;
-    headers += `X-MPA-AntiSpam: ${quarantineReasons.join('; ')}\r\n`;
+    headers += `X-MPA-AntiSpam: ${quarantineReasons.replace(':', ' ').join('; ')}\r\n`;
     headers += `X-MPA-SpamScore: ${spamScore}\r\n`;
     if (country) {
       headers += `X-MPA-Country: ${country}\r\n`;
@@ -530,10 +530,10 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const processElapsed = (Date.now() - processStartTime) / 1000;
     const spamInfoParts = [];
     if (keywordResult.matches.length > 0) {
-      spamInfoParts.push(`Keyword: ${keywordResult.matches.join(', ')}`);
+      spamInfoParts.push(`Keyword [${keywordResult.matches.join(', ')}]`);
     }
     if (SPAMASSASSIN_ENABLED && saResult) {
-      spamInfoParts.push(`SpamAssassin: ${saResult.score}`);
+      spamInfoParts.push(`SpamAssassin [${saResult.score}]`);
     }
     let spamDetailInfo = spamInfoParts.join('; ');
 
