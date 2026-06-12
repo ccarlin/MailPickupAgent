@@ -434,13 +434,13 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const wl = rules.whitelist || {};
     if (matchSender(fromAddr, wl.senders, recipients)) {
       const elapsed = (Date.now() - processStartTime) / 1000;
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Sender whitelisted', 0);
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Whitelisted Sender', 0);
       tools.logData(`Sender ${fromAddr} is whitelisted, releasing`);
       return;
     }
     if (ipInRange(originatingIp, wl.ipRanges)) {
       const elapsed = (Date.now() - processStartTime) / 1000;
-      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Originating IP is whitelisted', 0);
+      logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Whitelisted Originating IP', 0);
       tools.logData(`Originating IP is whitelisted, releasing`);
       return;
     }
@@ -454,7 +454,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
         tools.logData(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
         const elapsed = (Date.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
-        await updateEmailHeaders(messagePath, destMessageName, ['TLD not allowed'], 99, countryResult.country, 'Sender TLD: ' + fromTld);
+        await updateEmailHeaders(messagePath, destMessageName, ['TLD not allowed'], 99, countryResult.country, 'Blacklisted Sender TLD: ' + fromTld);
         await deleteEmail(controlFilePath, messagePath, destMessageName);
         return;
       }
@@ -465,7 +465,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
-      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted sender'], 99, countryResult.country, 'Sender: ' + fromAddr);
+      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted sender'], 99, countryResult.country, 'Blacklisted Sender: ' + fromAddr);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
       return;
     }
@@ -474,7 +474,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
-      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted IP'], 99, countryResult.country, 'Originating IP: ' + originatingIp);
+      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted IP'], 99, countryResult.country, 'Blacklisted Originating IP: ' + originatingIp);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
       return;
     }
@@ -542,9 +542,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
       spamInfoParts.push(`Keyword - [${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}]`);
     }
     if (SPAMASSASSIN_ENABLED && saResult) {
-      let saInfo = `SpamAssassin: ${saResult.score}`;
-      if (saResult.fullReport) {
-        saInfo += `\n${saResult.fullReport}`;
+      let saInfo = `SpamAssassin(${saResult.score})`;
+      if (saResult.fullReport && saResult.score > 0) {
+        saInfo += ` - ${saResult.fullReport}`;
       }
       spamInfoParts.push(saInfo);
     }
@@ -590,6 +590,57 @@ async function deleteEmail(controlFilePath, messagePath, destMessageName) {
   fs.renameSync(controlFilePath, destHeader);
   fs.renameSync(messagePath, destMessage);
   tools.logData(`Email deleted: ${destHeader}, ${destMessage}`);
+}
+
+function wipeall() {
+  let wipedCount = 0;
+  const dirs = [
+    { dir: QUARANTINE_DIR, label: 'quarantine' },
+    { dir: DELETED_DIR, label: 'deleted' },
+    { dir: PROCESSING_LOG_DIR, label: 'processing logs' },
+    { dir: QUARANTINE_LOG_DIR, label: 'quarantine logs' },
+  ];
+
+  dirs.forEach(({ dir, label }) => {
+    if (!dir || !fs.existsSync(dir)) {
+      tools.logData(`WipeAll: directory not found, skipping ${label}: ${dir}`);
+      return;
+    }
+    let entries;
+    try {
+      entries = fs.readdirSync(dir);
+    } catch (err) {
+      tools.logError(`WipeAll: error reading ${label} directory ${dir}: ${err.message}`);
+      return;
+    }
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry);
+      try {
+        const stat = fs.statSync(fullPath);
+        if (stat.isFile()) {
+          fs.unlinkSync(fullPath);
+          wipedCount++;
+          tools.logData(`WipeAll: removed ${fullPath}`);
+        }
+      } catch (err) {
+        tools.logError(`WipeAll: error processing ${fullPath}: ${err.message}`);
+      }
+    }
+  });
+
+  const rootLog = path.join(__dirname, 'mailpickup.log');
+  if (fs.existsSync(rootLog)) {
+    try {
+      fs.unlinkSync(rootLog);
+      wipedCount++;
+      tools.logData(`WipeAll: removed ${rootLog}`);
+    } catch (err) {
+      tools.logError(`WipeAll: error removing ${rootLog}: ${err.message}`);
+    }
+  }
+
+  tools.logData(`WipeAll complete: ${wipedCount} file(s) removed`);
+  return wipedCount;
 }
 
 function purgeOldFiles() {
@@ -656,6 +707,7 @@ function printUsage() {
   tools.logData('Usage: node server.js (to start the web server)');
   tools.logData('--test : Send a test email to verify configuration (defaults to good)');
   tools.logData('--purge : Purge deleted emails and log files older than PURGE_AFTER_DAYS');
+  tools.logData('--wipeall : Delete all log files and all emails in the queue and deleted folders');
   tools.logData('--help : Show this help message');
   tools.logData('Example: node index.js "B935428C1B4A4B8FADC12BC6A4358875.MAI" "SMTP"');
   tools.logData('Example: node index.js --test quarantine');
@@ -671,7 +723,8 @@ module.exports = {
   deleteEmail,
   quarantineEmail,
   scoreKeywordFilters,
-  purgeOldFiles
+  purgeOldFiles,
+  wipeall
 };
 
 // Main Processing begins here - only run if this file is executed directly, not when imported as a module
@@ -721,6 +774,10 @@ if (require.main === module) {
       }
       process.exit(0);
     })();
+  }
+  else if (args.includes('--wipeall')) {
+    wipeall();
+    process.exit(0);
   }
   else if (args.includes('--purge')) {
     purgeOldFiles();

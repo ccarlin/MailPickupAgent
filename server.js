@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const app = express();
-const { buildAllTestEmails, processEmail } = require('./index.js');
+const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
 const tools = require('./tools');
 const appConfig = require('./config');
 
@@ -114,6 +114,11 @@ app.get('/api/help', (req, res) => {
           messageID: 'Message ID/filename (required)',
           queueType: 'Queue type like SMTP (required)'
         }
+      },
+      wipeall: {
+        method: 'POST',
+        path: '/api/wipeall',
+        description: 'Delete all log files and all emails in the queue and deleted folders'
       }
     }
   });
@@ -200,6 +205,20 @@ app.post('/api/process', async (req, res) => {
     };
 
     res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST Route - Wipe all log files and emails in queue and deleted folders
+app.post('/api/wipeall', (req, res) => {
+  try {
+    const count = wipeall();
+    res.status(200).json({
+      success: true,
+      message: `WipeAll complete: ${count} file(s) removed`,
+      filesRemoved: count
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
