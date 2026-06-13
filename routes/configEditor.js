@@ -2,10 +2,11 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
+const { hashPassword } = require('../middleware/hash');
 
 const router = express.Router();
 
-const SENSITIVE_KEYS = ['SMTP_PASS'];
+const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW'];
 
 // GET - render the editor page
 router.get('/', (req, res) => {
@@ -28,6 +29,12 @@ router.post('/api/config/save', (req, res) => {
     if (!values || typeof values !== 'object') {
       return res.status(400).json({ message: 'Invalid config data' });
     }
+
+    // Hash the new password if provided, then remove plaintext field
+    if (values.AUTH_PASSWORD_NEW) {
+      values.AUTH_PASSWORD_HASH = hashPassword(values.AUTH_PASSWORD_NEW);
+    }
+    delete values.AUTH_PASSWORD_NEW;
 
     // Preserve sensitive fields if masked
     SENSITIVE_KEYS.forEach(k => {

@@ -35,5 +35,12 @@
 
   "TEST_EMAIL_SLEEP_SECONDS": 3,
   "TEST_EMAIL_FROM": "\"MailPickupAgent\" <no-reply@localhost>",
-  "TEST_EMAIL_RECIPIENT": "test@localhost"
+  "TEST_EMAIL_RECIPIENT": "test@localhost",
+
+  "CERT_KEY_PATH": "",
+  "CERT_PATH": "",
+
+  "AUTH_USERNAME": "admin",
+  "AUTH_PASSWORD_HASH": "bb4cdbf91e1b30bd3d65d50220b613ee:d63a56684b10aaf4587bbd5e744c62b5af9e905d3fd45bebce0e1171db9f138e36a9e2417a8a36b4b33cd8871ecc71cbe70d927c944bffb9704540d88dd67825",
+  "AUTH_SECRET": "change-this-to-a-random-secret-in-production"
 }
