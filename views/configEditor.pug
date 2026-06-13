@@ -40,7 +40,8 @@ block scripts
         let configData = null;
         let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, thresholds: true, purge: true, test: true };
 
-        function showToast(message, type) {
+        function showToast(message, type, duration) {
+            if (duration === undefined) duration = 2500;
             const existing = document.querySelector('.toast');
             if (existing) existing.remove();
             const toast = document.createElement('div');
@@ -48,7 +49,7 @@ block scripts
             toast.textContent = message;
             document.body.appendChild(toast);
             requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2500);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, duration);
         }
 
         function renderConfig() {
@@ -236,7 +237,11 @@ block scripts
                     throw new Error(errData.message || 'Save failed');
                 }
                 document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
-                showToast('Configuration saved and reloaded!', 'success');
+                if (values.CERT_PATH && values.CERT_PATH.trim() !== '') {
+                    showToast('Certificate configured \u2014 restart the service to run in secure mode (HTTPS). Remote access will require login.', 'info', 5000);
+                } else {
+                    showToast('Configuration saved and reloaded!', 'success');
+                }
             } catch (err) {
                 console.error('Error saving config:', err);
                 showToast('Failed to save: ' + err.message, 'error');
