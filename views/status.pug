@@ -66,12 +66,8 @@ block css
 
     .status-card.service-up .icon { color: #22c55e; }
     .status-card.service-down .icon { color: #ef4444; }
-    .status-card.service-up .count,
-    .status-card.service-up .count i,
-    .status-card.service-up .count i::before { color: #16a34a; font-size: 1rem; }
-    .status-card.service-down .count,
-    .status-card.service-down .count i,
-    .status-card.service-down .count i::before { color: #dc2626; font-size: 1rem; }
+    .status-card.service-up .count { color: #16a34a; font-size: 1rem; }
+    .status-card.service-down .count { color: #dc2626; font-size: 1rem; }
     .status-card.hidden { display: none; }
 
     #server-offline {
@@ -185,16 +181,16 @@ block scripts
           if (data.aiEnabled) {
             $('#card-ai').removeClass('hidden').toggleClass('service-up service-down', data.aiRunning);
             $('#count-ai').html(data.aiRunning
-              ? '<i class="fas fa-check-circle"></i> Running'
-              : '<i class="fas fa-times-circle"></i> Offline');
+              ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
+              : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
           } else {
             $('#card-ai').addClass('hidden');
           }
           if (data.saEnabled) {
             $('#card-sa').removeClass('hidden').toggleClass('service-up service-down', data.saRunning);
             $('#count-sa').html(data.saRunning
-              ? '<i class="fas fa-check-circle"></i> Running'
-              : '<i class="fas fa-times-circle"></i> Offline');
+              ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
+              : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
           } else {
             $('#card-sa').addClass('hidden');
           }
