@@ -66,8 +66,12 @@ block css
 
     .status-card.service-up .icon { color: #22c55e; }
     .status-card.service-down .icon { color: #ef4444; }
-    .status-card.service-up .count { color: #16a34a; font-size: 1rem; }
-    .status-card.service-down .count { color: #dc2626; font-size: 1rem; }
+    .status-card.service-up .count,
+    .status-card.service-up .count i,
+    .status-card.service-up .count i::before { color: #16a34a; font-size: 1rem; }
+    .status-card.service-down .count,
+    .status-card.service-down .count i,
+    .status-card.service-down .count i::before { color: #dc2626; font-size: 1rem; }
     .status-card.hidden { display: none; }
 
     #server-offline {
