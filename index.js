@@ -131,6 +131,10 @@ function extractOriginatingIp(commandData) {
 // Returns { matched: boolean, country: string|null } so callers can use either value.
 function matchCountry(originatingIp, countries) {
   if (originatingIp) {
+    //If this is a private IP address don't bother looking up just return N/A for country and don't match against any blacklists
+    if (tools.isPrivateIp(originatingIp)) {
+      return { matched: false, country: "N/A" };
+    }
     tools.logData(`Checking originating country for IP: ${originatingIp}`);
     try {
       const lookup = mmdb.lookup(originatingIp);
