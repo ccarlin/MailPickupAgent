@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
-const { hashPassword } = require('../middleware/hash');
+const { hashPassword, verifyPassword } = require('../middleware/hash');
 
 const router = express.Router();
 
@@ -28,6 +28,27 @@ router.post('/api/config/save', (req, res) => {
     const { values } = req.body;
     if (!values || typeof values !== 'object') {
       return res.status(400).json({ message: 'Invalid config data' });
+    }
+
+    // Require non-default password when enabling certificate
+    if (values.CERT_PATH && values.CERT_PATH.trim() !== '') {
+      const newPassword = values.AUTH_PASSWORD_NEW;
+      const currentHash = config.AUTH_PASSWORD_HASH;
+
+      let isDefault = false;
+      if (newPassword) {
+        if (newPassword === 'admin') {
+          isDefault = true;
+        }
+      } else {
+        if (!currentHash || verifyPassword('admin', currentHash)) {
+          isDefault = true;
+        }
+      }
+
+      if (isDefault) {
+        return res.status(400).json({ message: 'You must change the admin password from the default before enabling a certificate.' });
+      }
     }
 
     // Hash the new password if provided, then remove plaintext field
