@@ -16,3 +16,4 @@ config/development.json*
 config/production.json*
 .eslintrc.json
 eslint.config.mjs
+ecosystem.config.js
