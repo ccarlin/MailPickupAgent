@@ -47,7 +47,7 @@ app.use(authMiddleware);
 
 // Default landing page
 app.get('/', (req, res) => {
-  res.render('default');
+  res.redirect('/status');
 });
 
 app.use('/rulesEditor', require('./routes/rulesEditor'));

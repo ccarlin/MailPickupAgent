@@ -77,11 +77,11 @@ router.post('/', async function(req, res) {
             res.redirect('/mailq');
             return;
         case "whitelist":
-            if (await addGoodEntries(emails))
+            if (await addSenderWhitelist(emails, bodyPostBack.listType))
                 ReleaseMessages(emails);
             break;
         case "blacklist":
-            if (await addBadComboEntries(emails))
+            if (await addSenderBlacklist(emails, bodyPostBack.listType))
                 DeleteMessages(emails, path);
             break;
         default:
@@ -153,11 +153,11 @@ router.post('/action', async function(req, res) {
             res.redirect('/mailq');
             return;
         case "whitelist":
-            if (await addGoodEntries(emails))
+            if (await addSenderWhitelist(emails, bodyPostBack.listType))
                 ReleaseMessages(emails);
             break;
         case "blacklist":
-            if (await addBadComboEntries(emails))
+            if (await addSenderBlacklist(emails, bodyPostBack.listType))
                 DeleteMessages(emails, path);
             break;
         default:
@@ -554,7 +554,7 @@ function parseEmailAddress(email) {
     return match ? match[0] : null;
 }
 
-async function addGoodEntries(emails) {
+async function addSenderWhitelist(emails, listType) {
     try {
         const raw = fs.readFileSync(rulesConfigPath, 'utf8');
         const rules = JSON.parse(raw);
@@ -565,12 +565,13 @@ async function addGoodEntries(emails) {
         emails.forEach(email => {
             const sender = parseEmailAddress((email.sender || '').trim());
             if (!sender) return;
+            const entry = listType === 'domain' ? '@' + sender.split('@')[1].toUpperCase() : sender.toUpperCase();
             const duplicate = rules.whitelist.senders.some(s =>
-                    typeof s === 'string' && s.toLowerCase() === sender.toUpperCase().toLowerCase()
+                    typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
                 );
             if (!duplicate) {
-                rules.whitelist.senders.push(sender.toUpperCase());
-                added.push(sender.toUpperCase());
+                rules.whitelist.senders.push(entry);
+                added.push(entry);
             }
         });
         
@@ -588,39 +589,58 @@ async function addGoodEntries(emails) {
     }
 }
 
-async function addBadComboEntries(emails) {
+async function addSenderBlacklist(emails, listType) {
     try {
         const raw = fs.readFileSync(rulesConfigPath, 'utf8');
         const rules = JSON.parse(raw);
         rules.blacklist = rules.blacklist || {};
-        rules.blacklist.combos = rules.blacklist.combos || [];
 
-        const added = [];
-        emails.forEach(email => {
-            const sender = parseEmailAddress((email.sender || '').trim());            
-            if (!sender) return;
-            const recipients = String(email.recipients || '').split(',').map(r => r.trim()).filter(Boolean);
-            recipients.forEach(recipient => {
-                if (!recipient) return;
-                const duplicate = rules.blacklist.combos.some(c =>
-                    String(c.recipient || '').toLowerCase() === recipient.toLowerCase()
-                    && String(c.sender || '').toLowerCase() === sender.toLowerCase()
+        if (listType === 'domain') {
+            rules.blacklist.senders = rules.blacklist.senders || [];
+            const added = [];
+            emails.forEach(email => {
+                const sender = parseEmailAddress((email.sender || '').trim());
+                if (!sender) return;
+                const entry = '@' + sender.split('@')[1].toUpperCase();
+                const duplicate = rules.blacklist.senders.some(s =>
+                    typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
                 );
                 if (!duplicate) {
-                    const newEntry = { recipient: recipient.toUpperCase(), sender: sender.toUpperCase() };
-                    rules.blacklist.combos.push(newEntry);
-                    added.push(newEntry);
+                    rules.blacklist.senders.push(entry);
+                    added.push(entry);
                 }
             });
-        });
-
-        if (added.length > 0) {
-            fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
-            tools.logData(`Added ${added.length} bad combos`, "INFO");
-            return true;
+            if (added.length > 0) {
+                fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
+                tools.logData(`Added ${added.length} blacklist domain senders`, "INFO");
+                return true;
+            } else {
+                tools.logData(`No new blacklist domain senders to add`, "INFO");
+                return false;
+            }
         } else {
-            tools.logData(`No new bad combos to add`, "INFO");
-            return false;
+            rules.blacklist.senders = rules.blacklist.senders || [];
+            const added = [];
+            emails.forEach(email => {
+                const sender = parseEmailAddress((email.sender || '').trim());
+                if (!sender) return;
+                const entry = sender.toUpperCase();
+                const duplicate = rules.blacklist.senders.some(s =>
+                    typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
+                );
+                if (!duplicate) {
+                    rules.blacklist.senders.push(entry);
+                    added.push(entry);
+                }
+            });
+            if (added.length > 0) {
+                fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
+                tools.logData(`Added ${added.length} blacklist senders`, "INFO");
+                return true;
+            } else {
+                tools.logData(`No new blacklist senders to add`, "INFO");
+                return false;
+            }
         }
     } catch (err) {
         tools.logError(`Error adding bad combos: ${err}`);
