@@ -1,6 +1,7 @@
 extends adminLayout
 
 block css
+  link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png" sizes="16x16")
   style.
     .status-grid {
       display: grid;
@@ -42,6 +43,32 @@ block css
     .status-card.released .icon { color: #10b981; }
     .status-card.uptime .icon { color: #8b5cf6; }
     .status-card.pending .icon { color: #f97316; }
+    .status-card.users .icon { color: #06b6d4; }
+
+    .status-card .icon-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .status-card .icon-badge {
+      position: absolute;
+      top: -6px;
+      right: -12px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      line-height: 18px;
+      border-radius: 10px;
+      padding: 0 4px;
+      text-align: center;
+      box-shadow: 0 0 0 2px #fff;
+      display: none;
+    }
+    .status-card .icon-badge.show {
+      display: inline-block;
+    }
 
     .status-card.uptime .count {
       font-size: 1.4rem;
@@ -110,7 +137,7 @@ block css
       font-size: 0.7rem;
       color: #94a3b8;
       margin-top: 0.15rem;
-    }
+    }    
 
 block content
   h2 Server Status
@@ -138,7 +165,9 @@ block content
         .label Blacklisted
       .status-card.quarantined.clickable#card-quarantined
         .icon
-          i.fas.fa-shield-alt
+          .icon-wrap
+            i.fas.fa-shield-alt
+            span.icon-badge#badge-quarantined 0
         .count#count-quarantined 0
         .label Quarantined
       .status-card.released.clickable#card-released
@@ -171,6 +200,12 @@ block content
           |  Offline
         .label SpamAssassin
 
+      .status-card.users#card-users
+        .icon
+          i.fas.fa-users
+        .count#count-users 0
+        .label Logged In Users
+
       .status-card.purge-off.clickable#card-purge
         .icon
           i.fas.fa-broom
@@ -192,8 +227,10 @@ block scripts
           $('#count-whitelisted').text(data.whitelisted);
           $('#count-blacklisted').text(data.blacklisted);
           $('#count-quarantined').text(data.quarantined);
+          $('#badge-quarantined').text(data.quarantined).toggleClass('show', data.quarantined > 0);
           $('#count-released').text(data.released);
           $('#count-uptime').text(data.uptimeFormatted);
+          $('#count-users').text(data.loggedInUsers);
           $('#count-pending').text(data.pending);
           $('#card-pending').toggleClass('alert', data.pending > 0);
           if (data.aiEnabled) {
@@ -215,6 +252,7 @@ block scripts
           $('#last-update-time').text(new Date().toLocaleTimeString());
           $('#server-offline').hide();
           $('#status-content').show();
+          changeIcon(data.pending);
         })
         .fail(function() {
           $('#server-offline').show();
@@ -270,6 +308,48 @@ block scripts
         startAutoPurge();
         updatePurgeCard(true);
       }
+    }
+
+    function changeIcon(emailCount) {
+      emailCount = 2;
+      if (emailCount < 1) {
+        var oldLink = document.getElementById('favicon');
+        if (oldLink) document.head.removeChild(oldLink);
+        var link = document.createElement('link');
+        link.id = 'favicon';
+        link.rel = 'shortcut icon';
+        link.href = '/img/MailPickupAgent.png';
+        document.head.appendChild(link);
+        return;
+      }
+
+      var canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      var context = canvas.getContext('2d');
+
+      var img = new Image();
+      img.onload = function() {
+        context.drawImage(img, 0, 0, 16, 16);
+        context.beginPath();
+        context.arc(16 - 16 / 3, 16 / 3, 16 / 3, 0, 2 * Math.PI);
+        context.fillStyle = '#FF0000';
+        context.fill();
+        context.font = '10px "helvetica", sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillStyle = '#FFFFFF';
+        context.fillText(emailCount, 16 - 16 / 3, 16 / 3);
+
+        var oldLink = document.getElementById('favicon');
+        if (oldLink) document.head.removeChild(oldLink);
+        var link = document.createElement('link');
+        link.id = 'favicon';
+        link.rel = 'shortcut icon';
+        link.href = canvas.toDataURL('image/png');
+        document.head.appendChild(link);
+      };
+      img.src = '/img/MailPickupAgent.png';
     }
 
     $(document).ready(function() {

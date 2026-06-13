@@ -185,7 +185,7 @@ block content
                         td
                             a(href="#" data-mailkey=email.filepath data-view="text").preview-link safe
                             if (email.safe)
-                                |
+                                |&nbsp;
                                 a(href="#" data-mailkey=email.filepath data-view="html").preview-link html
                             input(type='hidden' name='data[' + email.filepath + '][subject]' value=email.subject)
                             input(type='hidden' name='data[' + email.filepath + '][sender]' value=email.sender)

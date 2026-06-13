@@ -23,6 +23,17 @@ router.get('/', function(req, res) {
   res.render('status', { title: 'Server Status' });
 });
 
+function countActiveUsers(sessionStore) {
+  try {
+    const sessions = sessionStore.sessions || {};
+    return Object.values(sessions).filter(s => {
+      try { return JSON.parse(s).authenticated === true; } catch { return false; }
+    }).length;
+  } catch {
+    return 0;
+  }
+}
+
 router.get('/api', async function(req, res) {
   const data = metrics.getMetrics();
   let pendingCount = 0;
@@ -54,7 +65,8 @@ router.get('/api', async function(req, res) {
     aiEnabled,
     aiRunning,
     saEnabled,
-    saRunning
+    saRunning,
+    loggedInUsers: countActiveUsers(req.sessionStore)
   });
 });
 
