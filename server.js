@@ -58,6 +58,7 @@ app.use('/SMTPLog', require('./routes/SMTPLog'));
 app.use('/QuarantineLog', require('./routes/QuarantineLog'));
 app.use('/emailPreview', require('./routes/emailPreview'));
 app.use('/deleted', require('./routes/deletedRoute'));
+app.use('/status', require('./routes/status'));
 
 // Configuration loaded at startup
 let config = {

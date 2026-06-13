@@ -9,6 +9,7 @@ const tools = require('./tools');
 const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
 const config = require('./config');
+const metrics = require('./metrics');
 
 const QUARANTINE_DIR = config.QUARANTINE_DIR;
 const DELETED_DIR = config.DELETED_DIR;
@@ -455,12 +456,14 @@ async function processEmail(controlFilePath, messagePath, rules) {
     // 1. Whitelist check — release immediately if matched
     const wl = rules.whitelist || {};
     if (matchSender(fromAddr, wl.senders, recipients)) {
+      metrics.increment('whitelisted');
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Whitelisted Sender', 0);
       tools.logData(`Sender ${fromAddr} is whitelisted, releasing`);
       return;
     }
     if (ipInRange(originatingIp, wl.ipRanges)) {
+      metrics.increment('whitelisted');
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Whitelisted Originating IP', 0);
       tools.logData(`Originating IP is whitelisted, releasing`);
@@ -473,6 +476,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (allowed.length > 0) {
       const fromTld = extractTLD(fromAddr);
       if (fromTld && !allowed.includes(fromTld)) {
+        metrics.increment('blacklisted');
         tools.logData(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
         const elapsed = (Date.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
@@ -484,6 +488,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 2. Blacklist check — delete immediately if matched
     if (matchSender(fromAddr, bl.senders)) {
+      metrics.increment('blacklisted');
       tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
@@ -493,6 +498,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     if (ipInRange(originatingIp, bl.ipRanges)) {
+      metrics.increment('blacklisted');
       tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
@@ -502,6 +508,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     if (countryResult.matched) {
+      metrics.increment('blacklisted');
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
@@ -511,6 +518,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
+      metrics.increment('blacklisted');
       tools.logData(`Combo rule matched, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
@@ -580,16 +588,19 @@ async function processEmail(controlFilePath, messagePath, rules) {
     tools.logData(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
 
     if (spamScore >= THRESHOLD_DELETE) {
+      metrics.increment('blacklisted');
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Blacklisted', spamDetailInfo, spamScore);
       tools.logData(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await deleteEmail(controlFilePath, messagePath, destMessageName);
     } else if (spamScore >= THRESHOLD_QUARANTINE) {
+      metrics.increment('quarantined');
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo, spamScore);
       tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await quarantineEmail(controlFilePath, messagePath, destMessageName);
     } else {
+      metrics.increment('released');
       if (spamDetailInfo.length == 0) spamDetailInfo = 'No significant spam indicators';
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Released', spamDetailInfo, spamScore);
       tools.logData(`Releasing email with score ${spamScore}.`);
