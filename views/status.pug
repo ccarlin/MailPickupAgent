@@ -1,0 +1,213 @@
+extends adminLayout
+
+block css
+  style.
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .status-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 1.25rem;
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+    .status-card:hover {
+      transform: translateY(-2px);
+    }
+    .status-card .icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    .status-card .count {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .status-card .label {
+      font-size: 0.85rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.25rem;
+    }
+    .status-card.total .icon { color: #3b82f6; }
+    .status-card.whitelisted .icon { color: #22c55e; }
+    .status-card.blacklisted .icon { color: #ef4444; }
+    .status-card.quarantined .icon { color: #f59e0b; }
+    .status-card.released .icon { color: #10b981; }
+    .status-card.uptime .icon { color: #8b5cf6; }
+    .status-card.pending .icon { color: #f97316; }
+
+    .status-card.uptime .count {
+      font-size: 1.4rem;
+    }
+
+    .status-card.clickable {
+      cursor: pointer;
+    }
+    .status-card.clickable:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .status-card.pending.alert {
+      background: #fff7ed;
+      border: 2px solid #f97316;
+      animation: pulse-alert 2s ease-in-out infinite;
+    }
+    @keyframes pulse-alert {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+      50% { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
+    }
+
+    .status-card.service-up .icon { color: #22c55e; }
+    .status-card.service-down .icon { color: #ef4444; }
+    .status-card.service-up .count { color: #16a34a; font-size: 1rem; }
+    .status-card.service-down .count { color: #dc2626; font-size: 1rem; }
+    .status-card.hidden { display: none; }
+
+    #server-offline {
+      display: none;
+      text-align: center;
+      padding: 3rem 1rem;
+      margin: 2rem 0;
+      border: 3px solid #ef4444;
+      border-radius: 12px;
+      background: #fef2f2;
+    }
+    #server-offline h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #dc2626;
+      margin: 0 0 0.5rem 0;
+      text-transform: uppercase;
+    }
+    #server-offline p {
+      font-size: 1.1rem;
+      color: #991b1b;
+    }
+
+    #status-content {
+      display: block;
+    }
+
+    .last-update {
+      text-align: right;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 1rem;
+    }
+
+block content
+  h2 Server Status
+
+  #server-offline
+    h1 &#9888; Server Offline
+    p The server is no longer responding. Check the service status.
+
+  #status-content
+    .status-grid
+      .status-card.total
+        .icon
+          i.fas.fa-envelope
+        .count#count-total 0
+        .label Total Processed
+      .status-card.whitelisted
+        .icon
+          i.fas.fa-check-circle
+        .count#count-whitelisted 0
+        .label Whitelisted
+      .status-card.blacklisted
+        .icon
+          i.fas.fa-ban
+        .count#count-blacklisted 0
+        .label Blacklisted
+      .status-card.quarantined
+        .icon
+          i.fas.fa-shield-alt
+        .count#count-quarantined 0
+        .label Quarantined
+      .status-card.released
+        .icon
+          i.fas.fa-paper-plane
+        .count#count-released 0
+        .label Released
+      .status-card.uptime
+        .icon
+          i.fas.fa-clock
+        .count#count-uptime 0
+        .label Uptime
+      .status-card.pending.clickable#card-pending
+        .icon
+          i.fas.fa-inbox
+        .count#count-pending 0
+        .label Pending
+      .status-card.service-down.hidden#card-ai
+        .icon
+          i.fas.fa-brain
+        .count#count-ai
+          i.fas.fa-times-circle
+          |  Offline
+        .label AI Check (Ollama)
+      .status-card.service-down.hidden#card-sa
+        .icon
+          i.fas.fa-shield-halved
+        .count#count-sa
+          i.fas.fa-times-circle
+          |  Offline
+        .label SpamAssassin
+
+    .last-update
+      | Last updated: <span id="last-update-time">--</span>
+
+block scripts
+  script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
+  script.
+    function fetchStatus() {
+      $.get('/status/api')
+        .done(function(data) {
+          $('#count-total').text(data.totalProcessed);
+          $('#count-whitelisted').text(data.whitelisted);
+          $('#count-blacklisted').text(data.blacklisted);
+          $('#count-quarantined').text(data.quarantined);
+          $('#count-released').text(data.released);
+          $('#count-uptime').text(data.uptimeFormatted);
+          $('#count-pending').text(data.pending);
+          $('#card-pending').toggleClass('alert', data.pending > 0);
+          if (data.aiEnabled) {
+            $('#card-ai').removeClass('hidden').toggleClass('service-up service-down', data.aiRunning);
+            $('#count-ai').html(data.aiRunning
+              ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
+              : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
+          } else {
+            $('#card-ai').addClass('hidden');
+          }
+          if (data.saEnabled) {
+            $('#card-sa').removeClass('hidden').toggleClass('service-up service-down', data.saRunning);
+            $('#count-sa').html(data.saRunning
+              ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
+              : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
+          } else {
+            $('#card-sa').addClass('hidden');
+          }
+          $('#last-update-time').text(new Date().toLocaleTimeString());
+          $('#server-offline').hide();
+          $('#status-content').show();
+        })
+        .fail(function() {
+          $('#server-offline').show();
+          $('#status-content').hide();
+        });
+    }
+
+    $(document).ready(function() {
+      fetchStatus();
+      setInterval(fetchStatus, 60000);
+      $('#card-pending').on('click', function() {
+        window.open('/mailq', '_blank');
+      });
+    });

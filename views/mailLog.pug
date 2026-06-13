@@ -31,7 +31,8 @@ block scripts
 block content
     script.            
         $(document).ready(function ()
-        {              
+        {           
+            var timeout = setTimeout("location.reload(true);", 600000);               
             var table = $('#myTable').DataTable({ 
                 pageLength: 22,  
                 order: [[0, "desc"]], 
@@ -53,6 +54,7 @@ block content
         });  
                
     form
+        div #{currentTime} 
         table#myTable(class="row-border compact order-column hover stripe" style="font-size: small;")
             thead    
                 th(align='left' scope='col' style='white-space: nowrap;') Time Stamp
