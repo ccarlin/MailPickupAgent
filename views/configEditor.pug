@@ -38,9 +38,10 @@ block css
 block scripts
     script.
         let configData = null;
-        let collapsedSections = { server: true, paths: true, smtp: true, ai: true, spamassassin: true, thresholds: true, purge: true, test: true };
+        let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, thresholds: true, purge: true, test: true };
 
-        function showToast(message, type) {
+        function showToast(message, type, duration) {
+            if (duration === undefined) duration = 2500;
             const existing = document.querySelector('.toast');
             if (existing) existing.remove();
             const toast = document.createElement('div');
@@ -48,7 +49,7 @@ block scripts
             toast.textContent = message;
             document.body.appendChild(toast);
             requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2500);
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, duration);
         }
 
         function renderConfig() {
@@ -62,6 +63,13 @@ block scripts
                 { key: 'server', title: 'Server', icon: '&#x1F5A5;', description: 'General web server settings', fields: [
                     { key: 'PORT', label: 'HTTP Port', type: 'number', hint: 'Port for the web server' },
                     { key: 'HOSTNAME', label: 'Hostname', hint: 'Hostname for logging' },
+                ]},
+                { key: 'security', title: 'Security', icon: '&#x1F512;', description: 'HTTPS certificate and authentication settings', fields: [
+                    { key: 'CERT_KEY_PATH', label: 'SSL Private Key Path', hint: 'Path to the private key file (.key). Set this + CERT_PATH to enable HTTPS' },
+                    { key: 'CERT_PATH', label: 'SSL Certificate Path', hint: 'Path to the certificate file (.crt or .pem)' },
+                    { key: 'AUTH_USERNAME', label: 'Admin Username', hint: 'Username for the admin login page' },
+                    { key: 'AUTH_PASSWORD_NEW', label: 'Admin Password', type: 'password', hint: 'Enter a new password to change it (leave blank to keep current)' },
+                    { key: 'AUTH_SECRET', label: 'Session Secret', type: 'password', hint: 'Random string used to sign session cookies' },
                 ]},
                 { key: 'paths', title: 'Directory Paths', icon: '&#x1F4C1;', description: 'File system paths for email storage and logs', fields: [
                     { key: 'QUARANTINE_DIR', label: 'Quarantine Directory', hint: 'Where quarantined emails are stored' },
@@ -177,6 +185,7 @@ block scripts
             const savedKeys = Object.keys(previousValues);
             if (savedKeys.length) {
                 savedKeys.forEach(key => {
+                    if (key === 'AUTH_PASSWORD_NEW') return;
                     const input = document.getElementById('cfg-' + key);
                     if (!input) return;
                     if (input.type === 'checkbox') {
@@ -228,7 +237,11 @@ block scripts
                     throw new Error(errData.message || 'Save failed');
                 }
                 document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
-                showToast('Configuration saved and reloaded!', 'success');
+                if (values.CERT_PATH && values.CERT_PATH.trim() !== '') {
+                    showToast('Certificate configured \u2014 restart the service to run in secure mode (HTTPS). Remote access will require login.', 'info', 5000);
+                } else {
+                    showToast('Configuration saved and reloaded!', 'success');
+                }
             } catch (err) {
                 console.error('Error saving config:', err);
                 showToast('Failed to save: ' + err.message, 'error');

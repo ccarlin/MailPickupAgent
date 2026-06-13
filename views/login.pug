@@ -1,0 +1,98 @@
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title Login - Mail Pickup Agent
+    link(rel='stylesheet', href='/css/style.css')
+    style.
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #1e293b;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      .login-card {
+        background: #f8fafc;
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        width: 100%;
+        max-width: 380px;
+      }
+      .login-card h1 {
+        margin: 0 0 1.5rem 0;
+        color: #1e293b;
+        font-size: 1.6rem;
+        text-align: center;
+      }
+      .login-card .form-group {
+        margin-bottom: 1.2rem;
+      }
+      .login-card label {
+        display: block;
+        margin-bottom: 0.4rem;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .login-card input {
+        width: 100%;
+        padding: 0.7rem 0.8rem;
+        border: 2px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 1rem;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+      }
+      .login-card input:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+      .login-card button {
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .login-card button:hover {
+        background-color: #2563eb;
+      }
+      .login-card .error {
+        background: #fee2e2;
+        color: #b91c1c;
+        padding: 0.6rem 0.8rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        text-align: center;
+      }
+      .login-card .env-badge {
+        text-align: center;
+        margin-top: 1rem;
+        font-size: 0.8rem;
+        color: #94a3b8;
+      }
+  body
+    .login-card
+      h1 Mail Pickup Agent
+      if error
+        .error= error
+      form(method='POST', action='/login')
+        .form-group
+          label(for='username') Username
+          input#username(type='text', name='username', placeholder='Enter username', required, autofocus)
+        .form-group
+          label(for='password') Password
+          input#password(type='password', name='password', placeholder='Enter password', required)
+        button(type='submit') Sign In
+      .env-badge= envLabel

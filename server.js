@@ -1,10 +1,13 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
+const session = require('express-session');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
 const tools = require('./tools');
 const appConfig = require('./config');
+const { verifyPassword } = require('./middleware/hash');
 
 const PORT = appConfig.PORT || 6245;
 
@@ -17,12 +20,30 @@ app.use(express.static(__dirname + '/public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Session middleware — auto-generate secret if left as default
+const sessionSecret = (appConfig.AUTH_SECRET && appConfig.AUTH_SECRET !== 'change-this-to-a-random-secret-in-production')
+  ? appConfig.AUTH_SECRET
+  : require('crypto').randomBytes(32).toString('hex');
+app.use(session({
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { httpOnly: true, sameSite: 'lax' }
+}));
+
 // Make env info available to all views
 app.use((req, res, next) => {
   res.locals.envLabel = appConfig.NODE_ENV || 'production';
   res.locals.envClass = appConfig.NODE_ENV || 'production';
   next();
 });
+
+// Auth routes (unprotected)
+app.use('/', require('./routes/auth'));
+
+// Auth middleware - protects all subsequent routes
+const authMiddleware = require('./middleware/auth');
+app.use(authMiddleware);
 
 // Default landing page
 app.get('/', (req, res) => {
@@ -227,14 +248,50 @@ app.post('/api/wipeall', (req, res) => {
 // Initialize configuration on startup
 initializeConfiguration();
 
+// Validate security: certificate requires non-default password
+if (appConfig.CERT_PATH) {
+  const pwHash = appConfig.AUTH_PASSWORD_HASH;
+  if (!pwHash || verifyPassword('admin', pwHash)) {
+    tools.logError('SECURITY ERROR: Certificate is configured but the admin password is still the default.');
+    tools.logError('Change it via the Configuration Editor (Security section > Admin Password field).');
+    process.exit(1);
+  }
+}
+
 // Start the server
-app.listen(PORT, () => {
-    tools.logData(`Server is running on http://localhost:${PORT}`);
-    tools.logData(`Configuration loaded at startup`);
-    tools.logData(`Open http://localhost:${PORT}/rulesEditor to configure your rules.`);
-    tools.logData(`API endpoints available:`);
-    tools.logData(`  GET  /api/help`);
-    tools.logData(`  GET  /api/config`);
-    tools.logData(`  GET  /api/test-emails`);
-    tools.logData(`  POST /api/process`);
-});
+function startServer(protocol) {
+  tools.logData(`Server is running on ${protocol}://localhost:${PORT}`);
+  tools.logData(`Configuration loaded at startup`);
+  tools.logData(`Open ${protocol}://localhost:${PORT}/ to access the admin interface.`);
+  if (appConfig.CERT_PATH) {
+    tools.logData(`Authentication is enabled. Log in with the configured credentials.`);
+  } else {
+    tools.logData(`Authentication is disabled for local connections.`);
+  }
+  tools.logData(`API endpoints available:`);
+  tools.logData(`  GET  /api/help`);
+  tools.logData(`  GET  /api/config`);
+  tools.logData(`  GET  /api/test-emails`);
+  tools.logData(`  POST /api/process`);
+}
+
+if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
+  try {
+    const privateKey = fs.readFileSync(appConfig.CERT_KEY_PATH, 'utf8');
+    const certificate = fs.readFileSync(appConfig.CERT_PATH, 'utf8');
+    const credentials = { key: privateKey, cert: certificate };
+    https.createServer(credentials, app).listen(PORT, () => {
+      startServer('https');
+    });
+  } catch (err) {
+    tools.logError(`Failed to load SSL certificates: ${err.message}`);
+    tools.logData('Falling back to HTTP.');
+    app.listen(PORT, () => {
+      startServer('http');
+    });
+  }
+} else {
+  app.listen(PORT, () => {
+    startServer('http');
+  });
+}
