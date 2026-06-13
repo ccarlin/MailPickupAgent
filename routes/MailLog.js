@@ -74,11 +74,12 @@ router.get('/', function(req, res) {
         //Tracking timing.. File Count per file timing 
         let endTime = performance.now()    
         let totalTime = endTime - startTime;
+        let now = new Date().toLocaleString();   
         let results = `SPAM Log Analyzer: Call to lookup ${logList.length.toLocaleString("en-US")} IP Addresses took ${totalTime} milliseconds `;
         tools.logData(results, "INFO");
         
         let title = "EMail Analyzer";
-        res.render('MailLog', { title, logData: logList});
+        res.render('MailLog', { title, logData: logList, currentTime: now});
     });  
 }); 
 
