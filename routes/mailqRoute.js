@@ -171,7 +171,32 @@ router.post('/action', async function(req, res) {
 /* Display Main page */
 router.get('/', function(req, res) {
 
-    let filterUser = req.query.user ? String(req.query.user).toLowerCase() : null;     
+    let filterUser = req.query.user ? String(req.query.user).toLowerCase() : null;
+
+    //If not logged in via session, handle key-based auth
+    if (!req.session?.authenticated)
+    {
+        //If the key is in the query string then set the cookie and redirect
+        if (req.query.key || req.query.Key)
+        {
+            const keyVal = req.query.key || req.query.Key;
+            res.cookie("MailKey", keyVal, {maxAge: 1000 * 60 * 1440 * 365});    
+            //If the user is passed with the key then set that cookie as well
+            if (filterUser)
+            {
+                //The all value clears the cookie
+                if (filterUser == "all")
+                    res.clearCookie("MailQUserFilter");
+                else
+                    res.cookie("MailQUserFilter", req.query.user, { maxAge: 1000 * 60 * 1440 * 365 });
+            }        
+            return res.redirect("/mailq");
+        }
+
+        //Check if this is a valid connection if not send home..
+        if (tools.isValid(req, "mailq") == false)
+            return res.redirect("/");
+    }
     
     // Optional filter parameter to only process/display emails for a specific user
     // Accepts ?user=<value> (matches against the recipients field)    
@@ -182,9 +207,9 @@ router.get('/', function(req, res) {
     }
     else if (filterUser) {
         res.cookie("MailQUserFilter", filterUser, { maxAge: 1000 * 60 * 1440 * 365 });
-        tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO");
+        tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO", req.socket.remoteAddress);
     }
-    else if (req.cookies?.MailQUserFilter) {
+    else if (req.cookies.MailQUserFilter) {
         // Use existing cookie value if no filter provided in query
         filterUser = String(req.cookies.MailQUserFilter).toLowerCase();        
     }

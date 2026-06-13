@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const session = require('express-session');
+const cookieParser = require('cookie-parser');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
 const tools = require('./tools');
@@ -19,6 +20,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(__dirname + '/public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Cookie parser — required for req.cookies support
+app.use(cookieParser());
 
 // Session middleware — auto-generate secret if left as default
 const sessionSecret = (appConfig.AUTH_SECRET && appConfig.AUTH_SECRET !== 'change-this-to-a-random-secret-in-production')
@@ -53,6 +57,7 @@ app.get('/', (req, res) => {
 app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/configEditor', require('./routes/configEditor'));
 app.use('/mailq', require('./routes/mailQRoute'));
+app.use('/generateLink', require('./routes/generateLink'));
 app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
 app.use('/QuarantineLog', require('./routes/QuarantineLog'));
