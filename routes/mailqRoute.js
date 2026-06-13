@@ -565,7 +565,7 @@ async function addSenderWhitelist(emails, listType) {
         emails.forEach(email => {
             const sender = parseEmailAddress((email.sender || '').trim());
             if (!sender) return;
-            const entry = listType === 'domain' ? '@' + sender.split('@')[1].toUpperCase() : sender.toUpperCase();
+            const entry = listType === 'domain' ? '@' + sender.split('@')[1].toLowerCase() : sender.toLowerCase();
             const duplicate = rules.whitelist.senders.some(s =>
                     typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
                 );
@@ -601,7 +601,7 @@ async function addSenderBlacklist(emails, listType) {
             emails.forEach(email => {
                 const sender = parseEmailAddress((email.sender || '').trim());
                 if (!sender) return;
-                const entry = '@' + sender.split('@')[1].toUpperCase();
+                const entry = '@' + sender.split('@')[1].toLowerCase();
                 const duplicate = rules.blacklist.senders.some(s =>
                     typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
                 );
@@ -624,7 +624,7 @@ async function addSenderBlacklist(emails, listType) {
             emails.forEach(email => {
                 const sender = parseEmailAddress((email.sender || '').trim());
                 if (!sender) return;
-                const entry = sender.toUpperCase();
+                const entry = sender.toLowerCase();
                 const duplicate = rules.blacklist.senders.some(s =>
                     typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
                 );
