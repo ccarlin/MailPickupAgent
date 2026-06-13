@@ -30,26 +30,26 @@
   },
   "blacklist": {
     "senders": [
-      "BROWNSTONERESEARCH.COM",
-      "MODERNINVESTINGNEWS.COM",
-      "CRYPTORETIREMENTNEWS.COM",
-      ".onmicrosoft.com"      
+      "brownstoneresearch.com",
+      "moderninvestingnews.com",
+      "cryptoretirementnews.com",
+      ".onmicrosoft.com"
     ],
     "ipRanges": [],
     "countries": [
-      "RU",
-      "CN",
-      "KP"
+      "ru",
+      "cn",
+      "kp"
     ],
     "combos": [
       {
-        "recipient": "ADMIN",
-        "sender": "BAD.ORG"
+        "recipient": "admin",
+        "sender": "bad.org"
       },
       {
-        "recipient": "POSTMASTER",
+        "recipient": "postmaster",
         "ipAddress": "13.110.0.0/16"
-      }      
+      }
     ],
     "keywordFilters": [
       {
@@ -492,7 +492,7 @@
         "FilterMatchType": "0",
         "FilterCaseSensitive": "0",
         "Score": "3"
-      },      
+      },
       {
         "FilterName": "Mailer-Daemon",
         "FilterType": "0",
@@ -572,7 +572,7 @@
         "FilterMatchType": "0",
         "FilterCaseSensitive": "0",
         "Score": "5"
-      },      
+      },
       {
         "FilterName": "Carepoint Junk",
         "FilterType": "0",
