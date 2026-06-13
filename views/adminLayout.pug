@@ -4,7 +4,8 @@ html(lang='en')
     meta(charset='UTF-8')
     meta(name='viewport', content='width=device-width, initial-scale=1.0')
     link(rel='stylesheet' href='/css/style.css')
-    link(rel='apple-touch-icon' href='/img/admin.png')
+    link(rel='icon' href='/img/MailPickupAgent.png' type='image/png')
+    link(rel='apple-touch-icon' href='/img/MailPickupAgent.png')
     meta(name='description', content='Admin Dashboard for CCarlin.com')
     meta(name='keywords', content='admin, dashboard, CCarlin.com, management, tools')
     title Admin Dashboard
@@ -145,8 +146,9 @@ html(lang='en')
         margin-bottom: 0.2rem; /* Reduce bottom margin for tighter icon spacing */
       }
 
-      .left-column.collapsed li.menu-item img {
-        margin-right: 0; /* Remove margin from image when text is hidden */
+      .left-column.collapsed li.menu-item img,
+      .left-column.collapsed li.menu-item i {
+        margin-right: 0; /* Remove margin from icon when text is hidden */
       }
 
       .left-column.collapsed li.menu-item a {
@@ -157,8 +159,8 @@ html(lang='en')
         height: 100%;
       }
 
-      .left-column.collapsed li.menu-item a > :not(img) {
-        display: none; /* Hide text inside menu items */
+      .left-column.collapsed li.menu-item a > :not(img):not(i):not(svg) {
+        display: none; /* Hide text inside menu items, keep icons visible */
       }
 
       /* Ensure the hamburger toggle container is visible */
@@ -389,7 +391,7 @@ html(lang='en')
               span Deleted
           li.menu-item
             a(href='/smtplog?today=true')
-              img.menu-icon(
+              img(
                 src="/img/smtplog.png"
                 alt="SMTP"
                 title="SMTP Log"
@@ -426,11 +428,11 @@ html(lang='en')
               span Rules Editor
           li.menu-item
             a(href='/configEditor')
-              i.fas.fa-cog(style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
+              i.fas.fa-cog(title="Configuration" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
               span Configuration
           li.menu-item
             a(href='/status')
-              i.fas.fa-chart-bar(style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
+              i.fas.fa-chart-bar(title="Status" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
               span Status
       .right-column
         block content

@@ -109,6 +109,7 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 - **Quarantine Log** (`/QuarantineLog`) — view quarantine action logs
 - **SMTP Log Analyzer** (`/SMTPLog`) — analyze MailEnable SMTP logs
 - **Rules Editor** (`/rulesEditor`) — manage whitelist, blacklist, and keyword filters
+- **Status Page** (`/status`) — uptime and metrics of messages processed
 
 It is recommended that you use PM2 or a similar tool to ensure that the server is always running.  
 Make sure to exlude logging directories and quarentine/deleted directories from any watch settings to avoid unnecessary restarts.
@@ -121,8 +122,7 @@ Make sure to exlude logging directories and quarentine/deleted directories from 
 | `npm run server` | Start the admin web server |
 | `npm test` | Send test emails to verify configuration |
 | `npm run purge` | Remove old deleted emails and log files |
-| `npm run wipeall` | Delete all quarantined and deleted emails |
-| `npm run lint` | Lint the codebase with ESLint |
+| `npm run wipeall` | Delete all quarantined and deleted emails and ALL log files |
 
 ### Test Emails
 

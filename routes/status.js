@@ -3,9 +3,10 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const net = require('net');
-const tools = require("../tools");
+const tools = require('../tools');
 const metrics = require('../metrics');
 const config = require('../config');
+const { purgeOldFiles } = require('../index');
 
 function checkTcpPort(host, port, timeout = 3000) {
   return new Promise((resolve) => {
@@ -28,8 +29,8 @@ router.get('/api', async function(req, res) {
   try {
     const files = fs.readdirSync(config.QUARANTINE_DIR);
     pendingCount = files.filter(f => path.extname(f).toLowerCase() === '.h00').length;
-  } catch {
-    tools.logError(`Error reading quarantine directory: ${config.QUARANTINE_DIR}`);
+  } catch (err) {
+    tools.logError(`Error reading quarantine directory: ${config.QUARANTINE_DIR} - ${err.message}`);
   }
 
   const aiEnabled = !!(config.AI_CHECK_ENABLED && config.AI_CHECK_ENABLED !== 'false');
@@ -55,6 +56,17 @@ router.get('/api', async function(req, res) {
     saEnabled,
     saRunning
   });
+});
+
+router.post('/api/purge', function(req, res) {
+  try {
+    purgeOldFiles();
+    tools.logData('Auto-purge triggered from status page');
+    res.json({ success: true, message: 'Purge completed' });
+  } catch (err) {
+    tools.logError(`Auto-purge failed: ${err.message}`);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 module.exports = router;

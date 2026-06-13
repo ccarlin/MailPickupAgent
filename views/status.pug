@@ -102,6 +102,16 @@ block css
       margin-top: 1rem;
     }
 
+    .status-card.purge-on .icon { color: #22c55e; }
+    .status-card.purge-off .icon { color: #94a3b8; }
+    .status-card.purge-on .count { color: #16a34a; font-size: 0.9rem; }
+    .status-card.purge-off .count { color: #94a3b8; font-size: 0.9rem; }
+    .status-card .sub-label {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      margin-top: 0.15rem;
+    }
+
 block content
   h2 Server Status
 
@@ -161,6 +171,14 @@ block content
           |  Offline
         .label SpamAssassin
 
+      .status-card.purge-off.clickable#card-purge
+        .icon
+          i.fas.fa-broom
+        .count#count-purge OFF
+        .label Auto Purge 
+        .sub-label#purge-on-message (runs while page is open)
+        .sub-label#purge-last-run
+
     .last-update
       | Last updated: <span id="last-update-time">--</span>
 
@@ -204,10 +222,67 @@ block scripts
         });
     }
 
+    let autoPurgeTimer = null;
+
+    function updatePurgeCard(enabled) {
+      if (enabled) {
+        $('#card-purge').removeClass('purge-off').addClass('purge-on');
+        $('#count-purge').html('<i class="fas fa-check-circle" style="color:#16a34a"></i> ON');
+        $('#purge-on-message').text('(runs while page is open)');
+      } else {
+        $('#card-purge').removeClass('purge-on').addClass('purge-off');
+        $('#count-purge').html('<i class="fas fa-times-circle" style="color:#94a3b8"></i> OFF');
+        $('#purge-on-message').text('(click to enable)');
+      }
+      const lastRun = localStorage.getItem('purgeLastRun');
+      $('#purge-last-run').text(lastRun ? 'Last: ' + lastRun : '');
+    }
+
+    function runPurge() {
+      $.post('/status/api/purge').done(function() {
+        const now = new Date().toLocaleString();
+        localStorage.setItem('purgeLastRun', now);
+        fetchStatus();
+      });
+    }
+
+    function startAutoPurge() {
+      stopAutoPurge();
+      autoPurgeTimer = setInterval(runPurge, 3600000);
+    }
+
+    function stopAutoPurge() {
+      if (autoPurgeTimer) {
+        clearInterval(autoPurgeTimer);
+        autoPurgeTimer = null;
+      }
+    }
+
+    function togglePurge() {
+      const wasOn = localStorage.getItem('autoPurge') === 'true';
+      if (wasOn) {
+        localStorage.setItem('autoPurge', 'false');
+        stopAutoPurge();
+        updatePurgeCard(false);
+      } else {
+        localStorage.setItem('autoPurge', 'true');
+        runPurge();
+        startAutoPurge();
+        updatePurgeCard(true);
+      }
+    }
+
     $(document).ready(function() {
       fetchStatus();
       setInterval(fetchStatus, 60000);
       $('#card-pending').on('click', function() {
         window.open('/mailq', '_blank');
       });
+      $('#card-purge').on('click', togglePurge);
+      if (localStorage.getItem('autoPurge') === 'true') {
+        updatePurgeCard(true);
+        startAutoPurge();
+      } else {
+        updatePurgeCard(false);
+      }
     });

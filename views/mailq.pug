@@ -30,7 +30,7 @@ block css
             flex: 1; border: 1px solid #ddd; border-radius: 4px;
         }
 
-    link(id="favicon" rel="icon" href="/img/email.png" type="image/png" sizes="16x16")
+    link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
     script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
     script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
@@ -98,7 +98,7 @@ block content
                 var oldLink = document.getElementById('favicon');
                 link.id = 'favicon';
                 link.rel = 'shortcut icon';
-                link.href = 'img/email.png';
+                link.href = 'img/MailPickupAgent.png';
                 if (oldLink)
                     document.head.removeChild(oldLink);            
                 document.head.appendChild(link);

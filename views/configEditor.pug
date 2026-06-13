@@ -226,6 +226,11 @@ block scripts
 
         async function saveConfig() {
             const values = collectValues();
+            if (values.PORT && configData.PORT && String(values.PORT) !== String(configData.PORT)) {
+                if (!confirm('WARNING: The port number has been changed from ' + configData.PORT + ' to ' + values.PORT + '.\n\nYou must manually update the port in mailServerPickup.bat to match.\nThe server must also be restarted for this change to take effect.\n\nAre you sure you want to save this change?')) {
+                    return;
+                }
+            }
             try {
                 const resp = await fetch('/configEditor/api/config/save', {
                     method: 'POST',
