@@ -121,27 +121,27 @@ block content
 
   #status-content
     .status-grid
-      .status-card.total
+      .status-card.total.clickable#card-total
         .icon
           i.fas.fa-envelope
         .count#count-total 0
         .label Total Processed
-      .status-card.whitelisted
+      .status-card.whitelisted.clickable#card-whitelisted
         .icon
           i.fas.fa-check-circle
         .count#count-whitelisted 0
         .label Whitelisted
-      .status-card.blacklisted
+      .status-card.blacklisted.clickable#card-blacklisted
         .icon
           i.fas.fa-ban
         .count#count-blacklisted 0
         .label Blacklisted
-      .status-card.quarantined
+      .status-card.quarantined.clickable#card-quarantined
         .icon
           i.fas.fa-shield-alt
         .count#count-quarantined 0
         .label Quarantined
-      .status-card.released
+      .status-card.released.clickable#card-released
         .icon
           i.fas.fa-paper-plane
         .count#count-released 0
@@ -275,6 +275,15 @@ block scripts
     $(document).ready(function() {
       fetchStatus();
       setInterval(fetchStatus, 60000);
+      $('#card-total, #card-whitelisted, #card-released').on('click', function() {
+        window.open('/MailLog?today=true', '_blank');
+      });
+      $('#card-blacklisted').on('click', function() {
+        window.open('/deleted', '_blank');
+      });
+      $('#card-quarantined').on('click', function() {
+        window.open('/QuarantineLog?today=true', '_blank');
+      });
       $('#card-pending').on('click', function() {
         window.open('/mailq', '_blank');
       });
