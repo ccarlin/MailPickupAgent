@@ -310,13 +310,12 @@ function checkSpamAssassin(rawEmail) {
     return Promise.resolve(null);
   }
 
-  return spamAssassinClient.report(rawEmail).then((result) => {
-    const thresholdMatch = (result.report || '').match(/threshold[:\s]+([\d.]+)/i);
+  return spamAssassinClient.symbols(rawEmail).then((result) => {
     return {
       isSpam: result.spam,
       score: result.score,
-      threshold: thresholdMatch ? parseFloat(thresholdMatch[1]) : 5.0,
-      fullReport: result.report || '',
+      threshold: 5.0,
+      fullReport: (result.symbols || []).join(', '),
     };
   }).catch((err) => {
     tools.logError(`SpamAssassin check failed: ${err.message}`);

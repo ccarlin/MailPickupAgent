@@ -21,6 +21,10 @@ function authMiddleware(req, res, next) {
       return next();
     }
   }
+  // AJAX/XHR requests should get a 401 JSON so client-side code can handle it
+  if (req.xhr) {
+    return res.status(401).json({ error: 'Authentication required. Please login again.' });
+  }
   res.redirect('/login');
 }
 

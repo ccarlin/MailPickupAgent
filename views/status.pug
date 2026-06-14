@@ -254,7 +254,11 @@ block scripts
           $('#status-content').show();
           changeIcon(data.pending);
         })
-        .fail(function() {
+        .fail(function(jqXHR) {
+          if (jqXHR.status === 401) {
+            window.location.href = '/login';
+            return;
+          }
           $('#server-offline').show();
           $('#status-content').hide();
         });
