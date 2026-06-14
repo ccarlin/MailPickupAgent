@@ -14,7 +14,8 @@
     "lint:fix": "eslint . --fix",
     "test": "node index.js --test",
     "wipeall": "node index.js --wipeall",
-    "purge": "node index.js --purge"
+    "purge": "node index.js --purge",
+    "spamTest": "node testSpamAssassin.js"
   },
   "keywords": [
     "mail",
@@ -38,6 +39,7 @@
     "moment": "^2.30.1",
     "nodemailer": "^8.0.10",
     "pug": "^3.0.4",
+    "spamassassin-client": "^1.3.0",
     "xss": "^1.0.15"
   },
   "devDependencies": {

@@ -335,11 +335,11 @@ block content
                             a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}
                         td #{email.dkim}
                         td(style="white-space: nowrap;")
-                            a.btn.btn-preview.preview-link(href="#" data-mailkey=email.filepath data-view="text" title="Plain Text Preview")
+                            button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="text" title="Plain Text Preview")
                                 i.material-icons article
                             if (email.safe)
                                 |&nbsp;
-                                a.btn.btn-preview.preview-link(href="#" data-mailkey=email.filepath data-view="html" title="HTML Preview")
+                                button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="html" title="HTML Preview")
                                     i.material-icons visibility
                             |&nbsp;
                             button.btn.btn-whitelist(type="button" title="Whitelist Sender" onclick="showSingleListingModal(this)" data-mailkey=encodeURIComponent(email.filepath))

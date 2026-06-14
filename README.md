@@ -123,6 +123,7 @@ Make sure to exlude logging directories and quarentine/deleted directories from 
 | `npm test` | Send test emails to verify configuration |
 | `npm run purge` | Remove old deleted emails and log files |
 | `npm run wipeall` | Delete all quarantined and deleted emails and ALL log files |
+| `npm run spamTest` | Test Spamassassin to see if it is running and working |
 
 ### Test Emails
 
@@ -136,6 +137,14 @@ Optional types: `good`, `quarantine`, `blacklist`:
 
 ```bash
 npm test -- quarantine
+```
+
+### Test Spamassassin
+
+Send test spam email to verify Spamassassin is installed and configured properly
+
+```bash
+npm run spamTest
 ```
 
 ### Purging Old Files
@@ -214,6 +223,7 @@ Replace the existing `GeoLite2-Country.mmdb` file in the project root with the d
 - **mailparser** — Email parsing
 - **mmdb-reader** — GeoIP country lookup
 - **moment** — Date/time formatting and manipulation
+- **spamassassin-client** — SpamAssassin SPAMC protocol client
 - **nodemailer** — SMTP email sending
 - **pug** — Template engine for admin UI
 - **xss** — Input sanitization to prevent XSS attacks
