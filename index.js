@@ -306,10 +306,15 @@ function checkSpamAssassin(rawEmail) {
 
   return new Promise((resolve) => {
     try {
+      const bodyBuffer = Buffer.from(rawEmail, 'utf8');
+      const request = `REPORT SPAMC/1.5\r\nContent-Length: ${bodyBuffer.length}\r\nUser: mailpickupagent\r\n\r\n`;
+      const requestBuffer = Buffer.concat([Buffer.from(request, 'utf8'), bodyBuffer]);
+
       const socket = net.createConnection(SPAMASSASSIN_PORT, SPAMASSASSIN_HOST, () => {
-        // Send SPAMC protocol request
-        const request = `REPORT SPAMC/1.5\r\nContent-Length: ${Buffer.byteLength(rawEmail)}\r\nUser: mailpickupagent\r\n\r\n${rawEmail}`;
-        socket.write(request);
+        socket.setNoDelay(true);
+        socket.write(requestBuffer, () => {
+          socket.end();
+        });
       });
 
       let responseData = '';
