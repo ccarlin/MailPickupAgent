@@ -11,7 +11,18 @@ block css
         }         
         .hideChat {
             display: none;
-        }   
+        }
+        #myTable {
+            table-layout: fixed;
+            width: 100%;
+        }
+        #myTable td {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .dataTables_wrapper {
+            overflow-x: hidden;
+        }
         
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
@@ -79,10 +90,7 @@ block content
                     td #{logEntry.msgSize}
                     td #{logEntry.spamScore} 
                     td #{logEntry.spamResult}   
-                    if (logEntry.spamInfo.includes("SalesForce Crap"))
-                        td(style="color: red; font-weight: bold;") #{logEntry.spamInfo}
-                    else 
-                        td #{logEntry.spamInfo}      
+                    td #{logEntry.spamInfo}      
             tfoot 
                 tr
                     th 
