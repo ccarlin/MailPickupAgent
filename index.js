@@ -71,10 +71,6 @@ function loadRules() {
   }
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 function matchSender(address, senders, recipients) {
   if (!senders || !senders.length) return false;
   const addrLower = address.toLowerCase();
@@ -312,7 +308,7 @@ function checkSpamAssassin(rawEmail) {
     try {
       const socket = net.createConnection(SPAMASSASSIN_PORT, SPAMASSASSIN_HOST, () => {
         // Send SPAMC protocol request
-        const request = `REPORT SPAMC/1.5\r\nContent-length: ${Buffer.byteLength(rawEmail)}\r\n\r\n${rawEmail}`;
+        const request = `REPORT SPAMC/1.5\r\nContent-Length: ${Buffer.byteLength(rawEmail)}\r\nUser: mailpickupagent\r\n\r\n${rawEmail}`;
         socket.write(request);
       });
 
@@ -808,7 +804,7 @@ if (require.main === module) {
         }
         if (index < tests.length - 1) {
           tools.logData(`Sleeping ${TEST_EMAIL_SLEEP_SECONDS} seconds before sending next test email...`);
-          await sleep(TEST_EMAIL_SLEEP_SECONDS * 1000);
+          await tools.sleep(TEST_EMAIL_SLEEP_SECONDS * 1000);
         }
       }
       process.exit(0);

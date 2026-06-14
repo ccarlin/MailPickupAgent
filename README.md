@@ -206,12 +206,17 @@ Replace the existing `GeoLite2-Country.mmdb` file in the project root with the d
 
 ## Dependencies
 
-- **express** — Web server framework
-- **pug** — Template engine for admin UI
-- **mailparser** — Email parsing
-- **nodemailer** — SMTP email sending
 - **axios** — HTTP client for Ollama API
+- **collections** — Data structure utilities (maps, sets, heaps)
+- **cookie-parser** — HTTP cookie parsing middleware
+- **express** — Web server framework
+- **express-session** — Session management middleware
+- **mailparser** — Email parsing
 - **mmdb-reader** — GeoIP country lookup
+- **moment** — Date/time formatting and manipulation
+- **nodemailer** — SMTP email sending
+- **pug** — Template engine for admin UI
+- **xss** — Input sanitization to prevent XSS attacks
 
 ## License
 
