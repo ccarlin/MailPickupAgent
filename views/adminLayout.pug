@@ -38,6 +38,16 @@ html(lang='en')
         flex-shrink: 0; /* Prevent the banner from shrinking */
       }
 
+      .footer {
+        position: fixed;
+        bottom: 1rem;
+        right: 1.5rem;
+        color: #94a3b8;
+        font-size: 0.8rem;
+        font-weight: 300;
+        z-index: 999;
+      }
+
       .top-banner h1 {
         margin: 0;
         font-size: 1.8rem;
@@ -370,12 +380,12 @@ html(lang='en')
 
         ul
           li.menu-item
-            a(href='/mailq')
+            a(href='/mailq?user=all')
               img(src="/img/mailqueue.gif" 
                 alt="Mail Queue" 
                 title="Mail Queue" 
                 style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                onclick="window.open('/mailq', '_blank'); return false;"
+                onclick="window.open('/mailq?user=all', '_blank'); return false;"
               )
               span Mail Queue
           li.menu-item
@@ -474,7 +484,7 @@ html(lang='en')
         leftColumnToggleContainer.addEventListener('click', function() {
           leftColumn.classList.toggle('collapsed');
           localStorage.setItem('leftColumnCollapsed', leftColumn.classList.contains('collapsed'));
-        });
-
-
       });
+
+    footer.footer
+      | Software designed by Chuck Carlin

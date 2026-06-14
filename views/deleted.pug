@@ -13,6 +13,7 @@ block css
 
         #GridView1 td, #GridView1 th { white-space: normal; word-break: break-word; }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
+    
 block scripts
     script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
     script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
@@ -26,7 +27,7 @@ block content
                 $('input:checkbox').not(this).prop('checked', this.checked);
             });
             var table = $('#GridView1').DataTable({
-                 order: [[ 0, "asc" ]],
+                 order: [[ 1, "desc" ]],
                  paging: false,
                  info: false,
                  responsive: true,
@@ -57,6 +58,7 @@ block content
                 thead
                     th(scope='col')
                         input#chkSelectAll(type='checkbox')
+                    th(scope='col') Time
                     th(scope='col') Sender
                     th(scope='col') Recipient
                     th(scope='col') Subject
@@ -67,6 +69,7 @@ block content
                         td
                             - var uniqueId = 'GridView1_chkItem_' + idx;
                             input(type='checkbox' id=uniqueId name=email.filepath)
+                        td #{formatTime(email.timeAcquired)}
                         td #{email.sender}
                         td #{email.recipients}
                         td #{email.subject}

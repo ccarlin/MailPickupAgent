@@ -165,9 +165,7 @@ block content
         .label Blacklisted
       .status-card.quarantined.clickable#card-quarantined
         .icon
-          .icon-wrap
-            i.fas.fa-shield-alt
-            span.icon-badge#badge-quarantined 0
+          i.fas.fa-shield-alt
         .count#count-quarantined 0
         .label Quarantined
       .status-card.released.clickable#card-released
@@ -182,7 +180,9 @@ block content
         .label Uptime
       .status-card.pending.clickable#card-pending
         .icon
-          i.fas.fa-inbox
+          .icon-wrap
+            i.fas.fa-inbox
+            span.icon-badge#badge-pending 0
         .count#count-pending 0
         .label Pending
       .status-card.service-down.hidden#card-ai
@@ -227,7 +227,7 @@ block scripts
           $('#count-whitelisted').text(data.whitelisted);
           $('#count-blacklisted').text(data.blacklisted);
           $('#count-quarantined').text(data.quarantined);
-          $('#badge-quarantined').text(data.quarantined).toggleClass('show', data.quarantined > 0);
+          $('#badge-pending').text(data.pending).toggleClass('show', data.pending > 0);
           $('#count-released').text(data.released);
           $('#count-uptime').text(data.uptimeFormatted);
           $('#count-users').text(data.loggedInUsers);
@@ -364,7 +364,7 @@ block scripts
         window.open('/QuarantineLog?today=true', '_blank');
       });
       $('#card-pending').on('click', function() {
-        window.open('/mailq', '_blank');
+        window.open('/mailq?user=all', '_blank');
       });
       $('#card-purge').on('click', togglePurge);
       if (localStorage.getItem('autoPurge') === 'true') {
