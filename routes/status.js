@@ -24,14 +24,54 @@ router.get('/', function(req, res) {
 });
 
 function countActiveUsers(sessionStore) {
-  try {
-    const sessions = sessionStore.sessions || {};
-    return Object.values(sessions).filter(s => {
-      try { return JSON.parse(s).authenticated === true; } catch { return false; }
-    }).length;
-  } catch {
-    return 0;
-  }
+  return new Promise((resolve) => {
+    try {
+      // For SQLiteStore and other session stores that support .all()
+      if (typeof sessionStore.all === 'function') {
+        sessionStore.all((err, sessions) => {
+          if (err) {
+            tools.logError(`Error fetching sessions: ${err.message}`);
+            return resolve(0);
+          }
+          if (!sessions) return resolve(0);
+
+          let count = 0;
+          if (Array.isArray(sessions)) {
+            count = sessions.filter(s => {
+              try {
+                // Handle both raw database rows and session objects
+                const sessionData = s.sess ? (typeof s.sess === 'string' ? JSON.parse(s.sess) : s.sess) : s;
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                return parsed && parsed.authenticated === true;
+              } catch { return false; }
+            }).length;
+          } else if (typeof sessions === 'object') {
+            count = Object.values(sessions).filter(s => {
+              try {
+                const sessionData = s.sess ? (typeof s.sess === 'string' ? JSON.parse(s.sess) : s.sess) : s;
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                return parsed && parsed.authenticated === true;
+              } catch { return false; }
+            }).length;
+          }
+          resolve(count);
+        });
+      } else {
+        // Fallback for MemoryStore
+        const sessions = sessionStore.sessions || {};
+        const count = Object.values(sessions).filter(s => {
+          try {
+            const parsed = typeof s === 'string' ? JSON.parse(s) : s;
+            return parsed && parsed.authenticated === true;
+          } catch { return false; }
+        }).length;
+        resolve(count);
+      }
+    } catch (err) {
+      tools.logError(`Error counting active users: ${err.message}`);
+      resolve(0);
+    }
+  });
 }
 
 router.get('/api', async function(req, res) {
@@ -66,7 +106,7 @@ router.get('/api', async function(req, res) {
     aiRunning,
     saEnabled,
     saRunning,
-    loggedInUsers: countActiveUsers(req.sessionStore)
+    loggedInUsers: await countActiveUsers(req.sessionStore)
   });
 });
 
