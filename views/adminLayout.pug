@@ -9,8 +9,8 @@ html(lang='en')
     title Admin Dashboard
     // Font Awesome for icons
     link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css')
-    block css
 
+    block css
     style.
       /* Basic styles for the body and overall layout */
       html, body {
@@ -362,8 +362,46 @@ html(lang='en')
           transform: none; /* Reset icon rotation */
         }
       }
+    
     block scripts
+    script.
+      document.addEventListener('DOMContentLoaded', function() {
+        const leftColumn = document.getElementById('main-left-column');
+        const leftColumnToggleContainer = document.getElementById('leftColumnToggleContainer');
 
+        // Function to set the initial state based on screen size
+        function setInitialColumnState() {
+          if (window.innerWidth <= 768) {
+            // On small screens, start collapsed (vertical collapse)
+            leftColumn.classList.add('collapsed');
+          } else {
+            // Restore state from localStorage
+            if (localStorage.getItem('leftColumnCollapsed') === 'true') {
+              leftColumn.classList.add('collapsed');
+            }
+            else 
+              leftColumn.classList.remove('collapsed');
+
+          }
+        }
+
+        // Set initial state on load
+        setInitialColumnState();
+
+        // Force reflow, then remove no-transition so future toggles animate
+        setTimeout(() => { leftColumn.classList.remove('no-transition'); }, 0);
+
+        // Listen for window resize to adjust column state
+        window.addEventListener('resize', setInitialColumnState);
+
+
+        // Handle the main left column collapse/expand via hamburger
+        leftColumnToggleContainer.addEventListener('click', function() {
+          leftColumn.classList.toggle('collapsed');
+          localStorage.setItem('leftColumnCollapsed', leftColumn.classList.contains('collapsed'));
+        });
+      });
+  
   body
     .top-banner
       block header
@@ -448,44 +486,6 @@ html(lang='en')
               span Status
       .right-column
         block content
-
-    script.
-      document.addEventListener('DOMContentLoaded', function() {
-        const leftColumn = document.getElementById('main-left-column');
-        const leftColumnToggleContainer = document.getElementById('leftColumnToggleContainer');
-
-        // Function to set the initial state based on screen size
-        function setInitialColumnState() {
-          if (window.innerWidth <= 768) {
-            // On small screens, start collapsed (vertical collapse)
-            leftColumn.classList.add('collapsed');
-          } else {
-            // Restore state from localStorage
-            if (localStorage.getItem('leftColumnCollapsed') === 'true') {
-              leftColumn.classList.add('collapsed');
-            }
-            else 
-              leftColumn.classList.remove('collapsed');
-
-          }
-        }
-
-        // Set initial state on load
-        setInitialColumnState();
-
-        // Force reflow, then remove no-transition so future toggles animate
-        setTimeout(() => { leftColumn.classList.remove('no-transition'); }, 0);
-
-        // Listen for window resize to adjust column state
-        window.addEventListener('resize', setInitialColumnState);
-
-
-        // Handle the main left column collapse/expand via hamburger
-        leftColumnToggleContainer.addEventListener('click', function() {
-          leftColumn.classList.toggle('collapsed');
-          localStorage.setItem('leftColumnCollapsed', leftColumn.classList.contains('collapsed'));
-      });
-
     footer.footer
       | Software designed by Chuck Carlin
       
