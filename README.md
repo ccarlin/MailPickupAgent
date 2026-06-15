@@ -109,7 +109,7 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 - **Quarantine Log** (`/QuarantineLog`) — view quarantine action logs
 - **SMTP Log Analyzer** (`/SMTPLog`) — analyze MailEnable SMTP logs
 - **Rules Editor** (`/rulesEditor`) — manage whitelist, blacklist, and keyword filters
-- **Status Page** (`/status`) — uptime and metrics of messages processed
+- **Status Page** (`/status` or `/`) — server dashboard showing total processed, pending counts, service status (SpamAssassin, AI), uptime, logged-in users, and auto-purge controls. This is the default landing page.
 
 It is recommended that you use PM2 or a similar tool to ensure that the server is always running.  
 Make sure to exlude logging directories and quarentine/deleted directories from any watch settings to avoid unnecessary restarts.

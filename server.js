@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const session = require('express-session');
+const SQLiteStoreFactory = require('better-sqlite3-session-store');
+const SQLiteStore = SQLiteStoreFactory(session);
 const cookieParser = require('cookie-parser');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
@@ -28,7 +30,13 @@ app.use(cookieParser());
 const sessionSecret = (appConfig.AUTH_SECRET && appConfig.AUTH_SECRET !== 'change-this-to-a-random-secret-in-production')
   ? appConfig.AUTH_SECRET
   : require('crypto').randomBytes(32).toString('hex');
+const sessionStore = new SQLiteStore({
+  db: path.join(__dirname, 'sessions.db'),
+  table: 'sessions'
+});
+
 app.use(session({
+  store: sessionStore,
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,

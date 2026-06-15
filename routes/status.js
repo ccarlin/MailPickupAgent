@@ -24,14 +24,12 @@ router.get('/', function(req, res) {
 });
 
 function countActiveUsers(sessionStore) {
-  try {
-    const sessions = sessionStore.sessions || {};
-    return Object.values(sessions).filter(s => {
-      try { return JSON.parse(s).authenticated === true; } catch { return false; }
-    }).length;
-  } catch {
-    return 0;
-  }
+  return new Promise((resolve) => {
+    sessionStore.all((err, sessions) => {
+      if (err) return resolve(0);
+      resolve(sessions.filter(s => s.authenticated === true).length);
+    });
+  });
 }
 
 router.get('/api', async function(req, res) {
@@ -66,7 +64,7 @@ router.get('/api', async function(req, res) {
     aiRunning,
     saEnabled,
     saRunning,
-    loggedInUsers: countActiveUsers(req.sessionStore)
+    loggedInUsers: await countActiveUsers(req.sessionStore)
   });
 });
 
