@@ -37,11 +37,19 @@ function countActiveUsers(sessionStore) {
 
           let count = 0;
           if (Array.isArray(sessions)) {
-            count = sessions.filter(s => s && s.authenticated === true).length;
+            count = sessions.filter(s => {
+              try {
+                // Handle both raw database rows and session objects
+                const sessionData = s.sess ? (typeof s.sess === 'string' ? JSON.parse(s.sess) : s.sess) : s;
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                return parsed && parsed.authenticated === true;
+              } catch { return false; }
+            }).length;
           } else if (typeof sessions === 'object') {
             count = Object.values(sessions).filter(s => {
               try {
-                const parsed = typeof s === 'string' ? JSON.parse(s) : s;
+                const sessionData = s.sess ? (typeof s.sess === 'string' ? JSON.parse(s.sess) : s.sess) : s;
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
                 return parsed && parsed.authenticated === true;
               } catch { return false; }
             }).length;

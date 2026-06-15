@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const session = require('express-session');
-const SQLiteStore = require('connect-sqlite3')(session);
+const SQLiteStore = require('better-sqlite3-session-store')(session);
+const Database = require('better-sqlite3');
 const cookieParser = require('cookie-parser');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
@@ -43,10 +44,11 @@ if (!sessionSecret || sessionSecret === 'change-this-to-a-random-secret-in-produ
 }
 
 const sessionStore = new SQLiteStore({
-  dir: './config',
-  db: 'sessions.sqlite',
-  table: 'sessions',
-  concurrentDB: true
+  client: new Database('./config/sessions.sqlite'),
+  expired: {
+    clear: true,
+    intervalMs: 900000 // 15 minutes
+  }
 });
 
 app.use(session({
@@ -290,25 +292,6 @@ if (appConfig.CERT_PATH) {
   }
 }
 
-// Inactive session cleanup - run once an hour
-setInterval(() => {
-  try {
-    // We access the underlying sqlite3 database object from connect-sqlite3
-    const db = sessionStore.db;
-    if (db && typeof db.run === 'function') {
-      const now = Date.now();
-      db.run(`DELETE FROM sessions WHERE expired < ?`, [now], function(err) {
-        if (err) {
-          tools.logError(`Error cleaning up expired sessions: ${err.message}`);
-        } else if (this.changes > 0) {
-          tools.logData(`Cleaned up ${this.changes} expired session(s).`);
-        }
-      });
-    }
-  } catch (err) {
-    tools.logError(`Session cleanup failed: ${err.message}`);
-  }
-}, 3600000);
 
 // Start the server
 function startServer(protocol) {
