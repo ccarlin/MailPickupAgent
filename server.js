@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 const cookieParser = require('cookie-parser');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
@@ -25,14 +26,39 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Session middleware — auto-generate secret if left as default
-const sessionSecret = (appConfig.AUTH_SECRET && appConfig.AUTH_SECRET !== 'change-this-to-a-random-secret-in-production')
-  ? appConfig.AUTH_SECRET
-  : require('crypto').randomBytes(32).toString('hex');
+let sessionSecret = appConfig.AUTH_SECRET;
+if (!sessionSecret || sessionSecret === 'change-this-to-a-random-secret-in-production') {
+  const secretFile = path.join(__dirname, 'config', '.session-secret');
+  try {
+    if (fs.existsSync(secretFile)) {
+      sessionSecret = fs.readFileSync(secretFile, 'utf8');
+    } else {
+      sessionSecret = require('crypto').randomBytes(32).toString('hex');
+      fs.writeFileSync(secretFile, sessionSecret, 'utf8');
+    }
+  } catch (err) {
+    tools.logError(`Error handling session secret: ${err.message}`);
+    sessionSecret = 'fallback-secret-for-session';
+  }
+}
+
+const sessionStore = new SQLiteStore({
+  dir: './config',
+  db: 'sessions.sqlite',
+  table: 'sessions',
+  concurrentDB: true
+});
+
 app.use(session({
+  store: sessionStore,
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax' }
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  }
 }));
 
 // Make env info available to all views
@@ -56,7 +82,7 @@ app.get('/', (req, res) => {
 
 app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/configEditor', require('./routes/configEditor'));
-app.use('/mailq', require('./routes/mailQRoute'));
+app.use('/mailq', require('./routes/mailqRoute'));
 app.use('/generateLink', require('./routes/generateLink'));
 app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
@@ -263,6 +289,26 @@ if (appConfig.CERT_PATH) {
     process.exit(1);
   }
 }
+
+// Inactive session cleanup - run once an hour
+setInterval(() => {
+  try {
+    // We access the underlying sqlite3 database object from connect-sqlite3
+    const db = sessionStore.db;
+    if (db && typeof db.run === 'function') {
+      const now = Date.now();
+      db.run(`DELETE FROM sessions WHERE expired < ?`, [now], function(err) {
+        if (err) {
+          tools.logError(`Error cleaning up expired sessions: ${err.message}`);
+        } else if (this.changes > 0) {
+          tools.logData(`Cleaned up ${this.changes} expired session(s).`);
+        }
+      });
+    }
+  } catch (err) {
+    tools.logError(`Session cleanup failed: ${err.message}`);
+  }
+}, 3600000);
 
 // Start the server
 function startServer(protocol) {
