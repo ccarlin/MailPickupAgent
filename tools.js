@@ -115,10 +115,7 @@ module.exports = {
         const queueDirKey = `${qt}_QUEUE_DIR`;
         const commandDirKey = `${qt}_COMMAND_DIR`;
         const messagePath = config[queueDirKey] ? path.join(config[queueDirKey], messageID) : messageID;
-        const controlFilePath = config[commandDirKey] ? path.join(config[commandDirKey], messageID) : messageID;
-        console.log(`Built file paths for messageID: ${messageID}, queueType: ${queueType}`);
-        console.log(`Resolved message path: ${messagePath}`);
-        console.log(`Resolved control file path: ${controlFilePath}`);
+        const controlFilePath = config[commandDirKey] ? path.join(config[commandDirKey], messageID) : messageID;       
         return { messagePath, controlFilePath };
     },
     isPrivateIp: function(ip) {
