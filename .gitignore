@@ -17,4 +17,3 @@ config/production.json*
 .eslintrc.json
 eslint.config.mjs
 ecosystem.config.js
-sessions.db

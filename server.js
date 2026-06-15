@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const session = require('express-session');
-const SqliteStore = require('./lib/session-store')(session);
 const cookieParser = require('cookie-parser');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
@@ -29,18 +28,11 @@ app.use(cookieParser());
 const sessionSecret = (appConfig.AUTH_SECRET && appConfig.AUTH_SECRET !== 'change-this-to-a-random-secret-in-production')
   ? appConfig.AUTH_SECRET
   : require('crypto').randomBytes(32).toString('hex');
-const sessionStore = new SqliteStore({
-  db: path.join(__dirname, 'sessions.db'),
-  clearExpired: true,
-  intervalMs: 900000
-});
-
 app.use(session({
-  store: sessionStore,
   secret: sessionSecret,
-  resave: true,
+  resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 86400000 }
+  cookie: { httpOnly: true, sameSite: 'lax' }
 }));
 
 // Make env info available to all views
