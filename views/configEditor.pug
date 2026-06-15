@@ -242,7 +242,7 @@ block scripts
                     throw new Error(errData.message || 'Save failed');
                 }
                 document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
-                if (values.CERT_PATH && values.CERT_PATH.trim() !== '') {
+                if (values.CERT_PATH && values.CERT_PATH.trim() !== '' && window.location.protocol !== 'https:') {
                     showToast('Certificate configured \u2014 restart the service to run in secure mode (HTTPS). Remote access will require login.', 'info', 5000);
                 } else {
                     showToast('Configuration saved and reloaded!', 'success');
