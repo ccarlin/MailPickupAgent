@@ -1,6 +1,7 @@
 extends adminLayout
 
 block css
+  link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png" sizes="16x16")
   style.
     .status-grid {
       display: grid;
@@ -42,6 +43,32 @@ block css
     .status-card.released .icon { color: #10b981; }
     .status-card.uptime .icon { color: #8b5cf6; }
     .status-card.pending .icon { color: #f97316; }
+    .status-card.users .icon { color: #06b6d4; }
+
+    .status-card .icon-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .status-card .icon-badge {
+      position: absolute;
+      top: -6px;
+      right: -12px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      line-height: 18px;
+      border-radius: 10px;
+      padding: 0 4px;
+      text-align: center;
+      box-shadow: 0 0 0 2px #fff;
+      display: none;
+    }
+    .status-card .icon-badge.show {
+      display: inline-block;
+    }
 
     .status-card.uptime .count {
       font-size: 1.4rem;
@@ -102,6 +129,16 @@ block css
       margin-top: 1rem;
     }
 
+    .status-card.purge-on .icon { color: #22c55e; }
+    .status-card.purge-off .icon { color: #94a3b8; }
+    .status-card.purge-on .count { color: #16a34a; font-size: 0.9rem; }
+    .status-card.purge-off .count { color: #94a3b8; font-size: 0.9rem; }
+    .status-card .sub-label {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      margin-top: 0.15rem;
+    }    
+
 block content
   h2 Server Status
 
@@ -111,27 +148,27 @@ block content
 
   #status-content
     .status-grid
-      .status-card.total
+      .status-card.total.clickable#card-total
         .icon
           i.fas.fa-envelope
         .count#count-total 0
         .label Total Processed
-      .status-card.whitelisted
+      .status-card.whitelisted.clickable#card-whitelisted
         .icon
           i.fas.fa-check-circle
         .count#count-whitelisted 0
         .label Whitelisted
-      .status-card.blacklisted
+      .status-card.blacklisted.clickable#card-blacklisted
         .icon
           i.fas.fa-ban
         .count#count-blacklisted 0
         .label Blacklisted
-      .status-card.quarantined
+      .status-card.quarantined.clickable#card-quarantined
         .icon
           i.fas.fa-shield-alt
         .count#count-quarantined 0
         .label Quarantined
-      .status-card.released
+      .status-card.released.clickable#card-released
         .icon
           i.fas.fa-paper-plane
         .count#count-released 0
@@ -143,7 +180,9 @@ block content
         .label Uptime
       .status-card.pending.clickable#card-pending
         .icon
-          i.fas.fa-inbox
+          .icon-wrap
+            i.fas.fa-inbox
+            span.icon-badge#badge-pending 0
         .count#count-pending 0
         .label Pending
       .status-card.service-down.hidden#card-ai
@@ -161,6 +200,20 @@ block content
           |  Offline
         .label SpamAssassin
 
+      .status-card.users#card-users
+        .icon
+          i.fas.fa-users
+        .count#count-users 0
+        .label Logged In Users
+
+      .status-card.purge-off.clickable#card-purge
+        .icon
+          i.fas.fa-broom
+        .count#count-purge OFF
+        .label Auto Purge 
+        .sub-label#purge-on-message (runs while page is open)
+        .sub-label#purge-last-run
+
     .last-update
       | Last updated: <span id="last-update-time">--</span>
 
@@ -174,8 +227,10 @@ block scripts
           $('#count-whitelisted').text(data.whitelisted);
           $('#count-blacklisted').text(data.blacklisted);
           $('#count-quarantined').text(data.quarantined);
+          $('#badge-pending').text(data.pending).toggleClass('show', data.pending > 0);
           $('#count-released').text(data.released);
           $('#count-uptime').text(data.uptimeFormatted);
+          $('#count-users').text(data.loggedInUsers);
           $('#count-pending').text(data.pending);
           $('#card-pending').toggleClass('alert', data.pending > 0);
           if (data.aiEnabled) {
@@ -197,17 +252,131 @@ block scripts
           $('#last-update-time').text(new Date().toLocaleTimeString());
           $('#server-offline').hide();
           $('#status-content').show();
+          changeIcon(data.pending);
         })
-        .fail(function() {
+        .fail(function(jqXHR) {
+          if (jqXHR.status === 401) {
+            window.location.href = '/login';
+            return;
+          }
           $('#server-offline').show();
           $('#status-content').hide();
         });
     }
 
+    let autoPurgeTimer = null;
+
+    function updatePurgeCard(enabled) {
+      if (enabled) {
+        $('#card-purge').removeClass('purge-off').addClass('purge-on');
+        $('#count-purge').html('<i class="fas fa-check-circle" style="color:#16a34a"></i> ON');
+        $('#purge-on-message').text('(runs while page is open)');
+      } else {
+        $('#card-purge').removeClass('purge-on').addClass('purge-off');
+        $('#count-purge').html('<i class="fas fa-times-circle" style="color:#94a3b8"></i> OFF');
+        $('#purge-on-message').text('(click to enable)');
+      }
+      const lastRun = localStorage.getItem('purgeLastRun');
+      $('#purge-last-run').text(lastRun ? 'Last: ' + lastRun : '');
+    }
+
+    function runPurge() {
+      $.post('/status/api/purge').done(function() {
+        const now = new Date().toLocaleString();
+        localStorage.setItem('purgeLastRun', now);
+        updatePurgeCard(true);
+        fetchStatus();
+      });
+    }
+
+    function startAutoPurge() {
+      stopAutoPurge();
+      autoPurgeTimer = setInterval(runPurge, 3600000);
+    }
+
+    function stopAutoPurge() {
+      if (autoPurgeTimer) {
+        clearInterval(autoPurgeTimer);
+        autoPurgeTimer = null;
+      }
+    }
+
+    function togglePurge() {
+      const wasOn = localStorage.getItem('autoPurge') === 'true';
+      if (wasOn) {
+        localStorage.setItem('autoPurge', 'false');
+        stopAutoPurge();
+        updatePurgeCard(false);
+      } else {
+        localStorage.setItem('autoPurge', 'true');
+        runPurge();
+        startAutoPurge();
+        updatePurgeCard(true);
+      }
+    }
+
+    function changeIcon(emailCount) {
+      if (emailCount < 1) {
+        var oldLink = document.getElementById('favicon');
+        if (oldLink) document.head.removeChild(oldLink);
+        var link = document.createElement('link');
+        link.id = 'favicon';
+        link.rel = 'shortcut icon';
+        link.href = '/img/MailPickupAgent.png';
+        document.head.appendChild(link);
+        return;
+      }
+
+      var canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      var context = canvas.getContext('2d');
+
+      var img = new Image();
+      img.onload = function() {
+        context.drawImage(img, 0, 0, 16, 16);
+        context.beginPath();
+        context.arc(16 - 16 / 3, 16 / 3, 16 / 3, 0, 2 * Math.PI);
+        context.fillStyle = '#FF0000';
+        context.fill();
+        context.font = '10px "helvetica", sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillStyle = '#FFFFFF';
+        context.fillText(emailCount, 16 - 16 / 3, 16 / 3);
+
+        var oldLink = document.getElementById('favicon');
+        if (oldLink) document.head.removeChild(oldLink);
+        var link = document.createElement('link');
+        link.id = 'favicon';
+        link.rel = 'shortcut icon';
+        link.href = canvas.toDataURL('image/png');
+        document.head.appendChild(link);
+      };
+      img.src = '/img/MailPickupAgent.png';
+    }
+
     $(document).ready(function() {
       fetchStatus();
       setInterval(fetchStatus, 60000);
-      $('#card-pending').on('click', function() {
-        window.open('/mailq', '_blank');
+      $('#card-total, #card-whitelisted, #card-released').on('click', function() {
+        window.open('/MailLog?today=true', '_blank');
       });
+      $('#card-blacklisted').on('click', function() {
+        window.open('/deleted', '_blank');
+      });
+      $('#card-quarantined').on('click', function() {
+        window.open('/QuarantineLog?today=true', '_blank');
+      });
+      $('#card-pending').on('click', function() {
+        window.open('/mailq?user=all', '_blank');
+      });
+      $('#card-purge').on('click', togglePurge);
+      if (localStorage.getItem('autoPurge') === 'true') {
+        updatePurgeCard(true);
+        runPurge();
+        startAutoPurge();
+      } else {
+        updatePurgeCard(false);
+      }
     });

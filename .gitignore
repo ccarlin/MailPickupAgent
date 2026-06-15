@@ -11,8 +11,11 @@ deleted/
 quarantine/
 release/
 config/rules.json
+config/sessions.sqlite*
+config/.session-secret
 .env.deleteme
 config/development.json*
 config/production.json*
 .eslintrc.json
 eslint.config.mjs
+ecosystem.config.js

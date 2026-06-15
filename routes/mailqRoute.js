@@ -77,11 +77,11 @@ router.post('/', async function(req, res) {
             res.redirect('/mailq');
             return;
         case "whitelist":
-            if (await addGoodEntries(emails))
+            if (await addSenderWhitelist(emails, bodyPostBack.listType))
                 ReleaseMessages(emails);
             break;
         case "blacklist":
-            if (await addBadComboEntries(emails))
+            if (await addSenderBlacklist(emails, bodyPostBack.listType))
                 DeleteMessages(emails, path);
             break;
         default:
@@ -153,11 +153,11 @@ router.post('/action', async function(req, res) {
             res.redirect('/mailq');
             return;
         case "whitelist":
-            if (await addGoodEntries(emails))
+            if (await addSenderWhitelist(emails, bodyPostBack.listType))
                 ReleaseMessages(emails);
             break;
         case "blacklist":
-            if (await addBadComboEntries(emails))
+            if (await addSenderBlacklist(emails, bodyPostBack.listType))
                 DeleteMessages(emails, path);
             break;
         default:
@@ -171,7 +171,32 @@ router.post('/action', async function(req, res) {
 /* Display Main page */
 router.get('/', function(req, res) {
 
-    let filterUser = req.query.user ? String(req.query.user).toLowerCase() : null;     
+    let filterUser = req.query.user ? String(req.query.user).toLowerCase() : null;
+
+    //If not logged in via session, handle key-based auth
+    if (!req.session?.authenticated)
+    {
+        //If the key is in the query string then set the cookie and redirect
+        if (req.query.key || req.query.Key)
+        {
+            const keyVal = req.query.key || req.query.Key;
+            res.cookie("MailKey", keyVal, {maxAge: 1000 * 60 * 1440 * 365});    
+            //If the user is passed with the key then set that cookie as well
+            if (filterUser)
+            {
+                //The all value clears the cookie
+                if (filterUser == "all")
+                    res.clearCookie("MailQUserFilter");
+                else
+                    res.cookie("MailQUserFilter", req.query.user, { maxAge: 1000 * 60 * 1440 * 365 });
+            }        
+            return res.redirect("/mailq");
+        }
+
+        //Check if this is a valid connection if not send home..
+        if (tools.isValid(req, "mailq") == false)
+            return res.redirect("/");
+    }
     
     // Optional filter parameter to only process/display emails for a specific user
     // Accepts ?user=<value> (matches against the recipients field)    
@@ -182,9 +207,9 @@ router.get('/', function(req, res) {
     }
     else if (filterUser) {
         res.cookie("MailQUserFilter", filterUser, { maxAge: 1000 * 60 * 1440 * 365 });
-        tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO");
+        tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO", req.socket.remoteAddress);
     }
-    else if (req.cookies?.MailQUserFilter) {
+    else if (req.cookies.MailQUserFilter) {
         // Use existing cookie value if no filter provided in query
         filterUser = String(req.cookies.MailQUserFilter).toLowerCase();        
     }
@@ -554,7 +579,7 @@ function parseEmailAddress(email) {
     return match ? match[0] : null;
 }
 
-async function addGoodEntries(emails) {
+async function addSenderWhitelist(emails, listType) {
     try {
         const raw = fs.readFileSync(rulesConfigPath, 'utf8');
         const rules = JSON.parse(raw);
@@ -565,12 +590,13 @@ async function addGoodEntries(emails) {
         emails.forEach(email => {
             const sender = parseEmailAddress((email.sender || '').trim());
             if (!sender) return;
+            const entry = listType === 'domain' ? '@' + sender.split('@')[1].toLowerCase() : sender.toLowerCase();
             const duplicate = rules.whitelist.senders.some(s =>
-                    typeof s === 'string' && s.toLowerCase() === sender.toUpperCase().toLowerCase()
+                    typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
                 );
             if (!duplicate) {
-                rules.whitelist.senders.push(sender.toUpperCase());
-                added.push(sender.toUpperCase());
+                rules.whitelist.senders.push(entry);
+                added.push(entry);
             }
         });
         
@@ -588,39 +614,58 @@ async function addGoodEntries(emails) {
     }
 }
 
-async function addBadComboEntries(emails) {
+async function addSenderBlacklist(emails, listType) {
     try {
         const raw = fs.readFileSync(rulesConfigPath, 'utf8');
         const rules = JSON.parse(raw);
         rules.blacklist = rules.blacklist || {};
-        rules.blacklist.combos = rules.blacklist.combos || [];
 
-        const added = [];
-        emails.forEach(email => {
-            const sender = parseEmailAddress((email.sender || '').trim());            
-            if (!sender) return;
-            const recipients = String(email.recipients || '').split(',').map(r => r.trim()).filter(Boolean);
-            recipients.forEach(recipient => {
-                if (!recipient) return;
-                const duplicate = rules.blacklist.combos.some(c =>
-                    String(c.recipient || '').toLowerCase() === recipient.toLowerCase()
-                    && String(c.sender || '').toLowerCase() === sender.toLowerCase()
+        if (listType === 'domain') {
+            rules.blacklist.senders = rules.blacklist.senders || [];
+            const added = [];
+            emails.forEach(email => {
+                const sender = parseEmailAddress((email.sender || '').trim());
+                if (!sender) return;
+                const entry = '@' + sender.split('@')[1].toLowerCase();
+                const duplicate = rules.blacklist.senders.some(s =>
+                    typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
                 );
                 if (!duplicate) {
-                    const newEntry = { recipient: recipient.toUpperCase(), sender: sender.toUpperCase() };
-                    rules.blacklist.combos.push(newEntry);
-                    added.push(newEntry);
+                    rules.blacklist.senders.push(entry);
+                    added.push(entry);
                 }
             });
-        });
-
-        if (added.length > 0) {
-            fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
-            tools.logData(`Added ${added.length} bad combos`, "INFO");
-            return true;
+            if (added.length > 0) {
+                fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
+                tools.logData(`Added ${added.length} blacklist domain senders`, "INFO");
+                return true;
+            } else {
+                tools.logData(`No new blacklist domain senders to add`, "INFO");
+                return false;
+            }
         } else {
-            tools.logData(`No new bad combos to add`, "INFO");
-            return false;
+            rules.blacklist.senders = rules.blacklist.senders || [];
+            const added = [];
+            emails.forEach(email => {
+                const sender = parseEmailAddress((email.sender || '').trim());
+                if (!sender) return;
+                const entry = sender.toLowerCase();
+                const duplicate = rules.blacklist.senders.some(s =>
+                    typeof s === 'string' && s.toLowerCase() === entry.toLowerCase()
+                );
+                if (!duplicate) {
+                    rules.blacklist.senders.push(entry);
+                    added.push(entry);
+                }
+            });
+            if (added.length > 0) {
+                fs.writeFileSync(rulesConfigPath, JSON.stringify(rules, null, 2), 'utf8');
+                tools.logData(`Added ${added.length} blacklist senders`, "INFO");
+                return true;
+            } else {
+                tools.logData(`No new blacklist senders to add`, "INFO");
+                return false;
+            }
         }
     } catch (err) {
         tools.logError(`Error adding bad combos: ${err}`);

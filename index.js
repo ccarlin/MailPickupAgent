@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const net = require('net');
 const axios = require('axios');
+const { SpamAssassinClient } = require('spamassassin-client');
 const { simpleParser } = require('mailparser');
 const nodemailer = require('nodemailer');
 const { buildAllTestEmails } = require('./testEmails');
@@ -22,7 +22,7 @@ const OLLAMA_PORT = config.OLLAMA_PORT;
 const OLLAMA_MODEL = config.OLLAMA_MODEL;
 const SPAMASSASSIN_ENABLED = config.SPAMASSASSIN_ENABLED;
 const SPAMASSASSIN_HOST = config.SPAMASSASSIN_HOST;
-const SPAMASSASSIN_PORT = config.SPAMASSASSIN_PORT;
+const SPAMASSASSIN_PORT = Number(config.SPAMASSASSIN_PORT);
 const TEST_EMAIL_SLEEP_SECONDS = Number(config.TEST_EMAIL_SLEEP_SECONDS || 10) || 10;
 const THRESHOLD_QUARANTINE = Number(config.THRESHOLD_QUARANTINE || 5);
 const THRESHOLD_DELETE = Number(config.THRESHOLD_DELETE || 15);
@@ -69,10 +69,6 @@ function loadRules() {
   } catch {
     return { whitelist: {}, blacklist: {} };
   }
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function matchSender(address, senders, recipients) {
@@ -303,76 +299,27 @@ async function queryOllama(prompt) {
   return '';
 }
 
+const spamAssassinClient = SPAMASSASSIN_ENABLED ? new SpamAssassinClient({
+  host: SPAMASSASSIN_HOST,
+  port: SPAMASSASSIN_PORT,
+  timeout: 5,
+}) : null;
+
 function checkSpamAssassin(rawEmail) {
-  if (!SPAMASSASSIN_ENABLED) {
+  if (!spamAssassinClient) {
     return Promise.resolve(null);
   }
 
-  return new Promise((resolve) => {
-    try {
-      const socket = net.createConnection(SPAMASSASSIN_PORT, SPAMASSASSIN_HOST, () => {
-        // Send SPAMC protocol request
-        const request = `REPORT SPAMC/1.5\r\nContent-length: ${Buffer.byteLength(rawEmail)}\r\n\r\n${rawEmail}`;
-        socket.write(request);
-      });
-
-      let responseData = '';
-      let headerComplete = false;
-      let isSpam = null;
-      let score = 0;
-      let threshold = 5.0;
-
-      socket.on('data', (data) => {
-        responseData += data.toString();
-
-        if (!headerComplete) {
-          const headerEnd = responseData.indexOf('\r\n\r\n');
-          if (headerEnd !== -1) {
-            headerComplete = true;
-            const headerText = responseData.substring(0, headerEnd);
-
-            // Parse response headers
-            const lines = headerText.split('\r\n');
-            for (const line of lines) {
-              if (line.startsWith('Spam:')) {
-                isSpam = line.toLowerCase().includes('true');
-              } else if (line.startsWith('Score:')) {
-                const scoreMatch = line.match(/[\d.]+/);
-                score = scoreMatch ? parseFloat(scoreMatch[0]) : 0;
-              } else if (line.startsWith('Threshold:')) {
-                const thresholdMatch = line.match(/[\d.]+/);
-                threshold = thresholdMatch ? parseFloat(thresholdMatch[0]) : 5.0;
-              }
-            }
-          }
-        }
-      });
-
-      socket.on('end', () => {
-        const separatorIndex = responseData.indexOf('\r\n\r\n');
-        const fullReport = separatorIndex !== -1 ? responseData.substring(separatorIndex + 4).trim() : '';
-        resolve({
-          isSpam: isSpam,
-          score: score,
-          threshold: threshold,
-          fullReport: fullReport,
-        });
-      });
-
-      socket.on('error', (err) => {
-        tools.logError(`SpamAssassin connection error: ${err.message}`);
-        resolve(null); // Return null on error so email is still processed
-      });
-
-      socket.setTimeout(5000, () => {
-        socket.destroy();
-        tools.logError('SpamAssassin connection timeout');
-        resolve(null); // Return null on timeout
-      });
-    } catch (err) {
-      tools.logError(`SpamAssassin check failed: ${err.message}`);
-      resolve(null); // Return null on error so email is still processed
-    }
+  return spamAssassinClient.symbols(rawEmail).then((result) => {
+    return {
+      isSpam: result.spam,
+      score: result.score,
+      threshold: 5.0,
+      fullReport: (result.symbols || []).join(', '),
+    };
+  }).catch((err) => {
+    tools.logError(`SpamAssassin check failed: ${err.message}`);
+    return null;
   });
 }
 
@@ -808,7 +755,7 @@ if (require.main === module) {
         }
         if (index < tests.length - 1) {
           tools.logData(`Sleeping ${TEST_EMAIL_SLEEP_SECONDS} seconds before sending next test email...`);
-          await sleep(TEST_EMAIL_SLEEP_SECONDS * 1000);
+          await tools.sleep(TEST_EMAIL_SLEEP_SECONDS * 1000);
         }
       }
       process.exit(0);

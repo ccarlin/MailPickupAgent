@@ -4,14 +4,13 @@ html(lang='en')
     meta(charset='UTF-8')
     meta(name='viewport', content='width=device-width, initial-scale=1.0')
     link(rel='stylesheet' href='/css/style.css')
-    link(rel='apple-touch-icon' href='/img/admin.png')
     meta(name='description', content='Admin Dashboard for CCarlin.com')
     meta(name='keywords', content='admin, dashboard, CCarlin.com, management, tools')
     title Admin Dashboard
     // Font Awesome for icons
     link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css')
-    block css
 
+    block css
     style.
       /* Basic styles for the body and overall layout */
       html, body {
@@ -37,6 +36,16 @@ html(lang='en')
         border-bottom-left-radius: 12px; /* Rounded corners for the bottom */
         border-bottom-right-radius: 12px;
         flex-shrink: 0; /* Prevent the banner from shrinking */
+      }
+
+      .footer {
+        position: fixed;
+        bottom: 0rem;
+        right: 1.5rem;
+        color: #94a3b8;
+        font-size: 0.8rem;
+        font-weight: 300;
+        z-index: 999;
       }
 
       .top-banner h1 {
@@ -145,8 +154,9 @@ html(lang='en')
         margin-bottom: 0.2rem; /* Reduce bottom margin for tighter icon spacing */
       }
 
-      .left-column.collapsed li.menu-item img {
-        margin-right: 0; /* Remove margin from image when text is hidden */
+      .left-column.collapsed li.menu-item img,
+      .left-column.collapsed li.menu-item i {
+        margin-right: 0; /* Remove margin from icon when text is hidden */
       }
 
       .left-column.collapsed li.menu-item a {
@@ -157,8 +167,8 @@ html(lang='en')
         height: 100%;
       }
 
-      .left-column.collapsed li.menu-item a > :not(img) {
-        display: none; /* Hide text inside menu items */
+      .left-column.collapsed li.menu-item a > :not(img):not(i):not(svg) {
+        display: none; /* Hide text inside menu items, keep icons visible */
       }
 
       /* Ensure the hamburger toggle container is visible */
@@ -352,89 +362,8 @@ html(lang='en')
           transform: none; /* Reset icon rotation */
         }
       }
+    
     block scripts
-
-  body
-    .top-banner
-      block header
-      h1 #{title}
-    .main-content
-      .left-column.no-transition#main-left-column
-        // Container for the hamburger toggle button
-        .left-column-toggle-container#leftColumnToggleContainer
-          i.fas.fa-bars.left-column-toggle
-
-        h2
-          img(src="/img/admin.png" alt="Admin" title="Admin Menu" style="width:28px; height:28px; vertical-align:middle; margin-right:8px;")
-          | Admin Menu
-
-        ul
-          li.menu-item
-            a(href='/mailq')
-              img(src="/img/mailqueue.gif" 
-                alt="Mail Queue" 
-                title="Mail Queue" 
-                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                onclick="window.open('/mailq', '_blank'); return false;"
-              )
-              span Mail Queue
-          li.menu-item
-            a(href='/deleted')
-              img(src="/img/email.png" 
-                alt="Deleted" 
-                title="Deleted Messages" 
-                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                onclick="window.open('/deleted', '_blank'); return false;"
-              )
-              span Deleted
-          li.menu-item
-            a(href='/smtplog?today=true')
-              img.menu-icon(
-                src="/img/smtplog.png"
-                alt="SMTP"
-                title="SMTP Log"
-                style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
-                onclick="window.open('/smtplog?today=true', '_blank'); return false;"
-              )
-              span SMTP Log       
-          li.menu-item
-            a(href='/MailLog?today=true')
-              img(src="/img/email.png" 
-                alt="Queue Log" 
-                title="Queue Log" 
-                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                onclick="window.open('/MailLog?today=true', '_blank'); return false;"
-              )
-              span Mail Log
-          li.menu-item
-            a(href='/QuarantineLog?today=true')
-              img(src="/img/spamLog.png" 
-                alt="Quarantine Log" 
-                title="Quarantine Log" 
-                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                onclick="window.open('/QuarantineLog?today=true', '_blank'); return false;"
-              )
-              span Quarantine Log
-          li.menu-item
-            a(href='/rulesEditor')
-              img(src="/img/rules.png" 
-                alt="Rules Editor" 
-                title="Rules Editor" 
-                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
-                onclick="window.open('/rulesEditor', '_blank'); return false;"
-              )
-              span Rules Editor
-          li.menu-item
-            a(href='/configEditor')
-              i.fas.fa-cog(style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
-              span Configuration
-          li.menu-item
-            a(href='/status')
-              i.fas.fa-chart-bar(style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
-              span Status
-      .right-column
-        block content
-
     script.
       document.addEventListener('DOMContentLoaded', function() {
         const leftColumn = document.getElementById('main-left-column');
@@ -471,6 +400,92 @@ html(lang='en')
           leftColumn.classList.toggle('collapsed');
           localStorage.setItem('leftColumnCollapsed', leftColumn.classList.contains('collapsed'));
         });
-
-
       });
+  
+  body
+    .top-banner
+      block header
+      h1 #{title}
+    .main-content
+      .left-column.no-transition#main-left-column
+        // Container for the hamburger toggle button
+        .left-column-toggle-container#leftColumnToggleContainer
+          i.fas.fa-bars.left-column-toggle
+
+        h2
+          img(src="/img/admin.png" alt="Admin" title="Admin Menu" style="width:28px; height:28px; vertical-align:middle; margin-right:8px;")
+          | Admin Menu
+
+        ul
+          li.menu-item
+            a(href='/mailq?user=all')
+              img(src="/img/mailqueue.gif" 
+                alt="Mail Queue" 
+                title="Mail Queue" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/mailq?user=all', '_blank'); return false;"
+              )
+              span Mail Queue
+          li.menu-item
+            a(href='/generateLink')
+              i.fas.fa-link(title="Generate Access Link" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
+              span Generate Link
+          li.menu-item
+            a(href='/deleted')
+              img(src="/img/email.png" 
+                alt="Deleted" 
+                title="Deleted Messages" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/deleted', '_blank'); return false;"
+              )
+              span Deleted
+          li.menu-item
+            a(href='/smtplog?today=true')
+              img(
+                src="/img/smtplog.png"
+                alt="SMTP"
+                title="SMTP Log"
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
+                onclick="window.open('/smtplog?today=true', '_blank'); return false;"
+              )
+              span SMTP Log       
+          li.menu-item
+            a(href='/MailLog?today=true')
+              img(src="/img/email.png" 
+                alt="Queue Log" 
+                title="Queue Log" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/MailLog?today=true', '_blank'); return false;"
+              )
+              span Mail Log
+          li.menu-item
+            a(href='/QuarantineLog?today=true')
+              img(src="/img/spamLog.png" 
+                alt="Quarantine Log" 
+                title="Quarantine Log" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/QuarantineLog?today=true', '_blank'); return false;"
+              )
+              span Quarantine Log
+          li.menu-item
+            a(href='/rulesEditor')
+              img(src="/img/rules.png" 
+                alt="Rules Editor" 
+                title="Rules Editor" 
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px;"
+                onclick="window.open('/rulesEditor', '_blank'); return false;"
+              )
+              span Rules Editor
+          li.menu-item
+            a(href='/configEditor')
+              i.fas.fa-cog(title="Configuration" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
+              span Configuration
+          li.menu-item
+            a(href='/status')
+              i.fas.fa-chart-bar(title="Status" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px;")
+              span Status
+      .right-column
+        block content
+    footer.footer
+      | Software designed by Chuck Carlin
+      

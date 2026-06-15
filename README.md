@@ -109,6 +109,7 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 - **Quarantine Log** (`/QuarantineLog`) — view quarantine action logs
 - **SMTP Log Analyzer** (`/SMTPLog`) — analyze MailEnable SMTP logs
 - **Rules Editor** (`/rulesEditor`) — manage whitelist, blacklist, and keyword filters
+- **Status Page** (`/status` or `/`) — server dashboard showing total processed, pending counts, service status (SpamAssassin, AI), uptime, logged-in users, and auto-purge controls. This is the default landing page.
 
 It is recommended that you use PM2 or a similar tool to ensure that the server is always running.  
 Make sure to exlude logging directories and quarentine/deleted directories from any watch settings to avoid unnecessary restarts.
@@ -121,8 +122,8 @@ Make sure to exlude logging directories and quarentine/deleted directories from 
 | `npm run server` | Start the admin web server |
 | `npm test` | Send test emails to verify configuration |
 | `npm run purge` | Remove old deleted emails and log files |
-| `npm run wipeall` | Delete all quarantined and deleted emails |
-| `npm run lint` | Lint the codebase with ESLint |
+| `npm run wipeall` | Delete all quarantined and deleted emails and ALL log files |
+| `npm run spamTest` | Test Spamassassin to see if it is running and working |
 
 ### Test Emails
 
@@ -136,6 +137,14 @@ Optional types: `good`, `quarantine`, `blacklist`:
 
 ```bash
 npm test -- quarantine
+```
+
+### Test Spamassassin
+
+Send test spam email to verify Spamassassin is installed and configured properly
+
+```bash
+npm run spamTest
 ```
 
 ### Purging Old Files
@@ -206,12 +215,18 @@ Replace the existing `GeoLite2-Country.mmdb` file in the project root with the d
 
 ## Dependencies
 
-- **express** — Web server framework
-- **pug** — Template engine for admin UI
-- **mailparser** — Email parsing
-- **nodemailer** — SMTP email sending
 - **axios** — HTTP client for Ollama API
+- **collections** — Data structure utilities (maps, sets, heaps)
+- **cookie-parser** — HTTP cookie parsing middleware
+- **express** — Web server framework
+- **express-session** — Session management middleware
+- **mailparser** — Email parsing
 - **mmdb-reader** — GeoIP country lookup
+- **moment** — Date/time formatting and manipulation
+- **spamassassin-client** — SpamAssassin SPAMC protocol client
+- **nodemailer** — SMTP email sending
+- **pug** — Template engine for admin UI
+- **xss** — Input sanitization to prevent XSS attacks
 
 ## License
 

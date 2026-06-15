@@ -3,6 +3,7 @@ extends adminLayout
 block css
     link(href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css" rel="stylesheet" integrity="sha384-lidBvvi7oLJ2j9e3nFlBSXfo+giBJ9L7QnUdgjc3AvLiynS0HdKEEEZtvZ4izE46" crossorigin="anonymous")
     link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
+    link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
     style.
        body {
             background-color: white;
@@ -10,6 +11,12 @@ block css
         .myMiniButton {
             margin-left: 5px;
         }
+        .btn-blacklist { background-color: black; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
+        .btn-whitelist { background-color: #17a2b8; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
+        .btn-preview { background-color: #6c757d; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
+        .btn-preview .material-icons, .btn-whitelist .material-icons, .btn-blacklist .material-icons { font-size: 14px; vertical-align: middle; }
+        .myMiniButton.btn-blacklist { background-color: black !important; color: white !important; }
+        .myMiniButton.btn-whitelist { background-color: #17a2b8 !important; color: white !important; }
         #GridView1 td { white-space: normal; word-break: break-word; }
         .preview-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -29,8 +36,15 @@ block css
         .preview-modal-content iframe {
             flex: 1; border: 1px solid #ddd; border-radius: 4px;
         }
+        .listing-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: white; padding: 24px; border-radius: 10px;
+            min-width: 420px; max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
 
-    link(id="favicon" rel="icon" href="/img/email.png" type="image/png" sizes="16x16")
+    link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
     script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
     script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
@@ -89,6 +103,141 @@ block content
             $('#emailPreviewModal').show();
         });
 
+        var pendingAction = null;
+        var pendingItems = [];
+
+        function showBatchListingModal(action) {
+            $('#mainForm').find('input.dynamic-action').remove();
+
+            var selectCount = $("table[id*=GridView1] input[type=checkbox][id*=chkItem]:checked").length;
+            if (selectCount === 0) {
+                alert("Please select one or more messages.");
+                return;
+            }
+
+            pendingAction = action;
+            pendingItems = [];
+
+            $("table[id*=GridView1] input[type=checkbox][id*=chkItem]:checked").each(function() {
+                var $row = $(this).closest('tr');
+                var sender = $row.find('td:nth-child(3)').text().trim();
+                pendingItems.push({ sender: sender });
+            });
+
+            $('#listingModalTitle').text((action === 'whitelist' ? 'Whitelist' : 'Blacklist') + ' Senders');
+            renderListingPreview();
+            $('#listingModal').show();
+        }
+
+        function showSingleListingModal(btn) {
+            var $btn = $(btn);
+            var action = $btn.hasClass('btn-blacklist') ? 'blacklist' : 'whitelist';
+            var rawKey = $btn.attr('data-mailkey') || '';
+            var filepath = rawKey ? decodeURIComponent(rawKey) : '';
+            if (!filepath) return;
+
+            pendingAction = action;
+            pendingItems = [];
+
+            var $row = $btn.closest('tr');
+            var sender = $row.find('td:nth-child(3)').text().trim();
+            pendingItems.push({
+                filepath: filepath,
+                sender: sender,
+                _btn: $btn,
+                subject: $row.find('td:nth-child(4)').text().trim(),
+                recipients: $row.find('td:nth-child(2)').text().trim(),
+                spamScore: $row.find('td:nth-child(5)').text().trim(),
+                antiSpam: $row.find('td:nth-child(6)').text().trim(),
+                datetime: $row.find('td:nth-child(7)').text().trim(),
+                dkim: $row.find('td:nth-child(9)').text().trim()
+            });
+
+            $('#listingModalTitle').text((action === 'whitelist' ? 'Whitelist' : 'Blacklist') + ' Sender');
+            renderListingPreview();
+            $('#listingModal').show();
+        }
+
+        function renderListingPreview() {
+            var isDomain = $('input[name="listTypeChoice"]:checked').val() === 'domain';
+            var seen = {};
+            var $list = $('#listingAddressList').empty();
+            pendingItems.forEach(function(item) {
+                var display = isDomain ? extractDomain(item.sender) : item.sender;
+                if (!seen[display]) {
+                    seen[display] = true;
+                    $('<div>').text(display).appendTo($list);
+                }
+            });
+        }
+
+        function extractDomain(email) {
+            var atIndex = email.lastIndexOf('@');
+            if (atIndex !== -1) return '@' + email.slice(atIndex + 1);
+            return email;
+        }
+
+        function confirmListing() {
+            var isDomain = $('input[name="listTypeChoice"]:checked').val() === 'domain';
+            $('#listingModal').hide();
+
+            document.getElementById('listType').value = isDomain ? 'domain' : 'email';
+
+            if (pendingItems.length === 1 && pendingItems[0]._btn) {
+                performSingleAction(pendingAction, pendingItems[0], isDomain ? 'domain' : 'email');
+            } else {
+                var mainForm = document.getElementById('mainForm');
+                var old = mainForm.querySelector('input.dynamic-action');
+                if (old) old.remove();
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'action';
+                input.value = pendingAction;
+                input.className = 'dynamic-action';
+                mainForm.appendChild(input);
+                mainForm.submit();
+            }
+
+            pendingAction = null;
+            pendingItems = [];
+        }
+
+        function closeListingModal() {
+            $('#listingModal').hide();
+            pendingAction = null;
+            pendingItems = [];
+        }
+
+        function performSingleAction(action, item, listType) {
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/mailq/action';
+            form.style.display = 'none';
+
+            function addField(name, value) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            addField('action', action);
+            addField('filePath', item.filepath);
+            addField('subject', item.subject);
+            addField('sender', item.sender);
+            addField('recipients', item.recipients);
+            addField('spamScore', item.spamScore);
+            addField('antiSpam', item.antiSpam);
+            addField('clientip', '');
+            addField('datetime', item.datetime);
+            addField('dkim', item.dkim);
+            addField('listType', listType);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
         function changeIcon() { 
             var emailCount = $("table[id*=GridView1] input[type=checkbox]").length - 1;        
             //Reset to normal if no emails..
@@ -98,7 +247,7 @@ block content
                 var oldLink = document.getElementById('favicon');
                 link.id = 'favicon';
                 link.rel = 'shortcut icon';
-                link.href = 'img/email.png';
+                link.href = 'img/MailPickupAgent.png';
                 if (oldLink)
                     document.head.removeChild(oldLink);            
                 document.head.appendChild(link);
@@ -139,13 +288,16 @@ block content
             };
         }
         
-    form(action='/mailq', method="POST")        
+    form#mainForm(action='/mailq', method="POST")        
         table(style='width: 100%')
             tr
                 td(align="left")
                     input#butDeleteAll(type='submit' name='action' value='Delete All' onclick="return ConfirmFunction('clear');" class="myMiniButton")
                     input#butDelete(type='submit' name='action' value='Delete' onclick="return ConfirmFunction('remove');" class="myMiniButton")
-                    input#butRelease(type='submit' name='action' value='Release' onclick="return ConfirmFunction('release');" class="myMiniButton")  
+                    input#butRelease(type='submit' name='action' value='Release' onclick="return ConfirmFunction('release');" class="myMiniButton")
+                    input#butWhitelist(type='button' value='Whitelist' onclick="showBatchListingModal('whitelist');" class="myMiniButton")
+                    input#butBlacklist(type='button' value='Blacklist' onclick="showBatchListingModal('blacklist');" class="myMiniButton")
+                    input(type='hidden' name='listType' id='listType')
                     // Clear filter button: shown when server indicates a filter is active
                     if filterUser
                         input(type='submit' name='action' value='Filter Clear' class='myMiniButton' onclick="return confirm('Clear MailQ user filter?');")
@@ -164,7 +316,7 @@ block content
                     th(scope='col') Date/Time
                     th(scope='col') ClientIP
                     th(scope='col') DKIM
-                    th(scope='col') Preview
+                    th(scope='col') Actions
                 each email, idx in emails
                     tr(title=email.clientipinfo)
                         td
@@ -182,11 +334,19 @@ block content
                         td
                             a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}
                         td #{email.dkim}
-                        td
-                            a(href="#" data-mailkey=email.filepath data-view="text").preview-link safe
+                        td(style="white-space: nowrap;")
+                            button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="text" title="Plain Text Preview")
+                                i.material-icons article
                             if (email.safe)
-                                |
-                                a(href="#" data-mailkey=email.filepath data-view="html").preview-link html
+                                |&nbsp;
+                                button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="html" title="HTML Preview")
+                                    i.material-icons visibility
+                            |&nbsp;
+                            button.btn.btn-whitelist(type="button" title="Whitelist Sender" onclick="showSingleListingModal(this)" data-mailkey=encodeURIComponent(email.filepath))
+                                i.material-icons check_circle
+                            |&nbsp;
+                            button.btn.btn-blacklist(type="button" title="Blacklist Sender" onclick="showSingleListingModal(this)" data-mailkey=encodeURIComponent(email.filepath))
+                                i.material-icons block
                             input(type='hidden' name='data[' + email.filepath + '][subject]' value=email.subject)
                             input(type='hidden' name='data[' + email.filepath + '][sender]' value=email.sender)
                             input(type='hidden' name='data[' + email.filepath + '][recipients]' value=email.recipients)
@@ -196,9 +356,28 @@ block content
                             input(type='hidden' name='data[' + email.filepath + '][datetime]' value=email.date)
                             input(type='hidden' name='data[' + email.filepath + '][dkim]' value=email.dkim)
         
+    #listingModal.preview-modal
+        .listing-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2#listingModalTitle
+                button(type="button" onclick="closeListingModal()" style="background:transparent;border:none;font-size:1.5rem;cursor:pointer;") &times;
+            div(style="margin:14px 0;")
+                label(style="margin-right:20px;cursor:pointer;")
+                    input(type="radio" name="listTypeChoice" value="email" checked onchange="renderListingPreview()")
+                    | &nbsp;Full Email Address
+                label(style="cursor:pointer;")
+                    input(type="radio" name="listTypeChoice" value="domain" onchange="renderListingPreview()")
+                    | &nbsp;Domain Only
+            div(style="margin:12px 0;font-weight:bold;") The following will be added:
+            div#listingAddressList(style="max-height:260px;overflow-y:auto;border:1px solid #ccc;padding:10px;border-radius:4px;font-family:monospace;font-size:0.9rem;background:#fafafa;")
+            div(style="margin-top:18px;text-align:right;")
+                button.myButton(type="button" onclick="confirmListing()" style="margin-right:8px;") Confirm
+                button.myButton(type="button" onclick="closeListingModal()") Cancel
+
     #emailPreviewModal.preview-modal
         .preview-modal-content
             div(style="display:flex; justify-content:space-between; align-items:center;")
                 h2 Email Preview
                 button.myButton(onclick="closePreviewModal()") Close
             iframe#emailPreviewFrame
+            

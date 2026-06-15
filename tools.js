@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const simpleParser = require('mailparser').simpleParser;
 const config = require('./config');
 
@@ -114,10 +115,7 @@ module.exports = {
         const queueDirKey = `${qt}_QUEUE_DIR`;
         const commandDirKey = `${qt}_COMMAND_DIR`;
         const messagePath = config[queueDirKey] ? path.join(config[queueDirKey], messageID) : messageID;
-        const controlFilePath = config[commandDirKey] ? path.join(config[commandDirKey], messageID) : messageID;
-        console.log(`Built file paths for messageID: ${messageID}, queueType: ${queueType}`);
-        console.log(`Resolved message path: ${messagePath}`);
-        console.log(`Resolved control file path: ${controlFilePath}`);
+        const controlFilePath = config[commandDirKey] ? path.join(config[commandDirKey], messageID) : messageID;       
         return { messagePath, controlFilePath };
     },
     isPrivateIp: function(ip) {
@@ -125,8 +123,67 @@ module.exports = {
       const privateRanges = [
         /^10\./, //
         /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // 172.16.0.0 - 172.31.255.255
-        /^192\.168\./ // 192.168.0.0 - 192.168.255.255
+        /^192\.168\./, // 192.168.0.0 - 192.168.255.255
+        // IPv6 private / unique-local ranges
+        /^fc[0-9a-f]{2}:|^fd[0-9a-f]{2}:/i, // fc00::/7 unique-local
+        /^fe80:/i, // fe80::/10 link-local
+        /^::1$/, // loopback
+        // IPv4-mapped IPv6 private ranges
+        /^::ffff:10\./,
+        /^::ffff:172\.(1[6-9]|2[0-9]|3[0-1])\./,
+        /^::ffff:192\.168\./
       ];
       return privateRanges.some(range => range.test(ip));
-    }
+    },
+     //Validate the connection
+    isValid: function(req, pagePath) {           
+      try {
+        //Create list of valid keys
+        if (this.isPrivateIp(req.socket.remoteAddress)) 
+          return true;     
+        if (req.session?.authenticated)
+          return true;
+        else {
+            const key = req.cookies.MailKey;
+            let validPageKey = this.generateKey(req.socket.localAddress, null, pagePath);
+            let validKey = this.generateKey(req.socket.localAddress);
+            const validKeys = [validPageKey, validKey];
+            // Also accept a user-tied key based on the MailQUserFilter cookie
+            const userFilter = req.cookies.MailQUserFilter;
+            if (userFilter) {
+              validKeys.push(this.generateKey(req.socket.localAddress, null, `${pagePath}:${userFilter}`));
+            }
+            if (validKeys.includes(key))
+              return true;
+            else 
+              this.logError(`Invalid or expired security key: ${req.cookies.MailKey}, for IP: ${req.socket.localAddress}, Accessing Page: ${req.originalUrl} PageKey: ${pagePath}`, req.socket.remoteAddress);            
+        }
+      }
+      catch (exp) {
+        this.logError(`Unable to validate security key, exception: ${exp}`, req.socket.remoteAddress);            
+      }
+
+      return false;
+    },
+    /**
+     * Generate an access key.
+     * @param {string} localAddress
+     * @param {string} remoteAddress
+     * @param {string} [pagePath] Optional - if provided the key will be tied to a single page (include full path or identifier)
+     * @returns {string} md5 hash key
+     */
+    generateKey: function(localAddress, remoteAddress, pagePath) {
+      localAddress = localAddress || '';
+      remoteAddress = remoteAddress || '';
+
+      // base key includes local and optionally remote
+      let base = remoteAddress ? `${localAddress}:${remoteAddress}` : `${localAddress}`;
+
+      // if a pagePath is provided include it in the hash so the key is page-specific
+      if (pagePath && pagePath !== '') {
+        base += `:${pagePath}`;
+      }
+
+      return crypto.createHash('md5').update(base).digest("hex");
+    }    
   }; 

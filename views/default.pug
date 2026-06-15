@@ -1,5 +1,8 @@
 extends adminLayout
-  
+
+block css 
+    link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
+    
 block content
               
     form(action='/SMTPLog', method="POST")

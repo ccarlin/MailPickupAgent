@@ -34,7 +34,7 @@ block css
         .toast.success { background: #0d9e4e; }
         .toast.error { background: #d93025; }
         .toast.info { background: #1a73e8; }
-
+    link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
     script.
         let configData = null;
@@ -226,6 +226,11 @@ block scripts
 
         async function saveConfig() {
             const values = collectValues();
+            if (values.PORT && configData.PORT && String(values.PORT) !== String(configData.PORT)) {
+                if (!confirm('WARNING: The port number has been changed from ' + configData.PORT + ' to ' + values.PORT + '.\n\nYou must manually update the port in mailServerPickup.bat to match.\nThe server must also be restarted for this change to take effect.\n\nAre you sure you want to save this change?')) {
+                    return;
+                }
+            }
             try {
                 const resp = await fetch('/configEditor/api/config/save', {
                     method: 'POST',
@@ -237,7 +242,7 @@ block scripts
                     throw new Error(errData.message || 'Save failed');
                 }
                 document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
-                if (values.CERT_PATH && values.CERT_PATH.trim() !== '') {
+                if (values.CERT_PATH && values.CERT_PATH.trim() !== '' && window.location.protocol !== 'https:') {
                     showToast('Certificate configured \u2014 restart the service to run in secure mode (HTTPS). Remote access will require login.', 'info', 5000);
                 } else {
                     showToast('Configuration saved and reloaded!', 'success');

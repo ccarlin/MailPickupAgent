@@ -3,9 +3,10 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const net = require('net');
-const tools = require("../tools");
+const tools = require('../tools');
 const metrics = require('../metrics');
 const config = require('../config');
+const { purgeOldFiles } = require('../index');
 
 function checkTcpPort(host, port, timeout = 3000) {
   return new Promise((resolve) => {
@@ -22,14 +23,65 @@ router.get('/', function(req, res) {
   res.render('status', { title: 'Server Status' });
 });
 
+function countActiveUsers(sessionStore) {
+  return new Promise((resolve) => {
+    try {
+      // For SQLiteStore and other session stores that support .all()
+      if (typeof sessionStore.all === 'function') {
+        sessionStore.all((err, sessions) => {
+          if (err) {
+            tools.logError(`Error fetching sessions: ${err.message}`);
+            return resolve(0);
+          }
+          if (!sessions) return resolve(0);
+
+          let count = 0;
+          if (Array.isArray(sessions)) {
+            count = sessions.filter(s => {
+              try {
+                // Handle both raw database rows and session objects
+                const sessionData = s.sess ? (typeof s.sess === 'string' ? JSON.parse(s.sess) : s.sess) : s;
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                return parsed && parsed.authenticated === true;
+              } catch { return false; }
+            }).length;
+          } else if (typeof sessions === 'object') {
+            count = Object.values(sessions).filter(s => {
+              try {
+                const sessionData = s.sess ? (typeof s.sess === 'string' ? JSON.parse(s.sess) : s.sess) : s;
+                const parsed = typeof sessionData === 'string' ? JSON.parse(sessionData) : sessionData;
+                return parsed && parsed.authenticated === true;
+              } catch { return false; }
+            }).length;
+          }
+          resolve(count);
+        });
+      } else {
+        // Fallback for MemoryStore
+        const sessions = sessionStore.sessions || {};
+        const count = Object.values(sessions).filter(s => {
+          try {
+            const parsed = typeof s === 'string' ? JSON.parse(s) : s;
+            return parsed && parsed.authenticated === true;
+          } catch { return false; }
+        }).length;
+        resolve(count);
+      }
+    } catch (err) {
+      tools.logError(`Error counting active users: ${err.message}`);
+      resolve(0);
+    }
+  });
+}
+
 router.get('/api', async function(req, res) {
   const data = metrics.getMetrics();
   let pendingCount = 0;
   try {
     const files = fs.readdirSync(config.QUARANTINE_DIR);
     pendingCount = files.filter(f => path.extname(f).toLowerCase() === '.h00').length;
-  } catch {
-    tools.logError(`Error reading quarantine directory: ${config.QUARANTINE_DIR}`);
+  } catch (err) {
+    tools.logError(`Error reading quarantine directory: ${config.QUARANTINE_DIR} - ${err.message}`);
   }
 
   const aiEnabled = !!(config.AI_CHECK_ENABLED && config.AI_CHECK_ENABLED !== 'false');
@@ -53,8 +105,20 @@ router.get('/api', async function(req, res) {
     aiEnabled,
     aiRunning,
     saEnabled,
-    saRunning
+    saRunning,
+    loggedInUsers: await countActiveUsers(req.sessionStore)
   });
+});
+
+router.post('/api/purge', function(req, res) {
+  try {
+    purgeOldFiles();
+    tools.logData('Auto-purge triggered from status page');
+    res.json({ success: true, message: 'Purge completed' });
+  } catch (err) {
+    tools.logError(`Auto-purge failed: ${err.message}`);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 module.exports = router;

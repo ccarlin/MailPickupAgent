@@ -9,7 +9,7 @@ const { recentlyReleased } = require('../index.js');
 router.get('/', function(req, res) {
     getDeletedEmails(function(err, emails) {
         let title = "Deleted Messages";
-        res.render('deleted', { title, emails, currentTime: new Date().toLocaleString() });
+        res.render('deleted', { title, emails, currentTime: new Date().toLocaleString(), formatTime });
     });
 });
 
@@ -73,6 +73,9 @@ function getDeletedEmails(callback) {
                                 case "Sender":
                                     emailInfo.sender = value;
                                     break;
+                                case "TimeAcquired":
+                                    emailInfo.timeAcquired = value;
+                                    break;
                             }
                         }
 
@@ -102,9 +105,16 @@ function getDeletedEmails(callback) {
                     }
                 }
             }
+            emailList.sort((a, b) => (a.timeAcquired || 0) - (b.timeAcquired || 0));
         }
         callback(err, emailList);
     });
+}
+
+function formatTime(epoch) {
+    if (!epoch) return '';
+    let date = new Date(parseInt(epoch) * 1000);
+    return date.toLocaleString();
 }
 
 function RecoverMessages(emails) {

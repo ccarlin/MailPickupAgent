@@ -3,6 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const session = require('express-session');
+const SQLiteStore = require('better-sqlite3-session-store')(session);
+const Database = require('better-sqlite3');
+const cookieParser = require('cookie-parser');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
 const tools = require('./tools');
@@ -20,15 +23,44 @@ app.use(express.static(__dirname + '/public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Cookie parser — required for req.cookies support
+app.use(cookieParser());
+
 // Session middleware — auto-generate secret if left as default
-const sessionSecret = (appConfig.AUTH_SECRET && appConfig.AUTH_SECRET !== 'change-this-to-a-random-secret-in-production')
-  ? appConfig.AUTH_SECRET
-  : require('crypto').randomBytes(32).toString('hex');
+let sessionSecret = appConfig.AUTH_SECRET;
+if (!sessionSecret || sessionSecret === 'change-this-to-a-random-secret-in-production') {
+  const secretFile = path.join(__dirname, 'config', '.session-secret');
+  try {
+    if (fs.existsSync(secretFile)) {
+      sessionSecret = fs.readFileSync(secretFile, 'utf8');
+    } else {
+      sessionSecret = require('crypto').randomBytes(32).toString('hex');
+      fs.writeFileSync(secretFile, sessionSecret, 'utf8');
+    }
+  } catch (err) {
+    tools.logError(`Error handling session secret: ${err.message}`);
+    sessionSecret = 'fallback-secret-for-session';
+  }
+}
+
+const sessionStore = new SQLiteStore({
+  client: new Database('./config/sessions.sqlite'),
+  expired: {
+    clear: true,
+    intervalMs: 900000 // 15 minutes
+  }
+});
+
 app.use(session({
+  store: sessionStore,
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax' }
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  }
 }));
 
 // Make env info available to all views
@@ -47,12 +79,13 @@ app.use(authMiddleware);
 
 // Default landing page
 app.get('/', (req, res) => {
-  res.render('default');
+  res.redirect('/status');
 });
 
 app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/configEditor', require('./routes/configEditor'));
-app.use('/mailq', require('./routes/mailQRoute'));
+app.use('/mailq', require('./routes/mailqRoute'));
+app.use('/generateLink', require('./routes/generateLink'));
 app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
 app.use('/QuarantineLog', require('./routes/QuarantineLog'));
@@ -258,6 +291,7 @@ if (appConfig.CERT_PATH) {
     process.exit(1);
   }
 }
+
 
 // Start the server
 function startServer(protocol) {
