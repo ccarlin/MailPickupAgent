@@ -27,7 +27,9 @@ function countActiveUsers(sessionStore) {
   return new Promise((resolve) => {
     sessionStore.all((err, sessions) => {
       if (err) return resolve(0);
-      resolve(sessions.filter(s => s.authenticated === true).length);
+      resolve(sessions.filter(s => {
+        try { return JSON.parse(s.sess).authenticated === true; } catch { return false; }
+      }).length);
     });
   });
 }
