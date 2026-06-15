@@ -38,9 +38,9 @@ const sessionStore = new SqliteStore({
 app.use(session({
   store: sessionStore,
   secret: sessionSecret,
-  resave: false,
+  resave: true,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax' }
+  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 86400000 }
 }));
 
 // Make env info available to all views
