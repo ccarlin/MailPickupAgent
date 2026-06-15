@@ -284,6 +284,7 @@ block scripts
       $.post('/status/api/purge').done(function() {
         const now = new Date().toLocaleString();
         localStorage.setItem('purgeLastRun', now);
+        updatePurgeCard(true);
         fetchStatus();
       });
     }
@@ -373,6 +374,7 @@ block scripts
       $('#card-purge').on('click', togglePurge);
       if (localStorage.getItem('autoPurge') === 'true') {
         updatePurgeCard(true);
+        runPurge();
         startAutoPurge();
       } else {
         updatePurgeCard(false);
