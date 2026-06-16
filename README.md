@@ -159,7 +159,7 @@ Schedule this command to run daily via Windows Task Scheduler or cron.
 
 ### Wipe All Data
 
-Delete all emails in the quarantine and deleted directories:
+Delete all emails in the quarantine and deleted directories as well as all log files:
 
 ```bash
 npm run wipeall
