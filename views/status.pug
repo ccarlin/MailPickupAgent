@@ -8,6 +8,8 @@ block css
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 1rem;
       margin-bottom: 1.5rem;
+      max-width: calc(180px * 6 + 1rem * 5);
+      margin: 0 auto;
     }
     .status-card {
       background: #fff;
@@ -159,38 +161,44 @@ block content
           i.fas.fa-envelope
         .count#count-total 0
         .label Total Processed
+        .sub-label (since last restart)
       .status-card.whitelisted.clickable#card-whitelisted
         .icon
           i.fas.fa-check-circle
         .count#count-whitelisted 0
         .label Whitelisted
+        .sub-label (since last restart)
       .status-card.blacklisted.clickable#card-blacklisted
         .icon
           i.fas.fa-ban
         .count#count-blacklisted 0
         .label Blacklisted
+        .sub-label (since last restart)
       .status-card.quarantined.clickable#card-quarantined
         .icon
           i.fas.fa-shield-alt
         .count#count-quarantined 0
         .label Quarantined
+        .sub-label (since last restart)
       .status-card.released.clickable#card-released
         .icon
           i.fas.fa-paper-plane
         .count#count-released 0
         .label Released
+        .sub-label (since last restart)
       .status-card.uptime
         .icon
           i.fas.fa-clock
         .count#count-uptime 0
         .label Uptime
+        .sub-label (since last restart)
       .status-card.pending.clickable#card-pending
         .icon
           .icon-wrap
             i.fas.fa-inbox
             span.icon-badge#badge-pending 0
         .count#count-pending 0
-        .label Pending
+        .label Mail Queue
       .status-card.service-down.hidden#card-ai
         .icon
           i.fas.fa-brain
