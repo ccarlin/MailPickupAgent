@@ -122,11 +122,16 @@ block css
       display: block;
     }
 
+    #status-header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 1rem;
+      min-height: 2rem;
+    }
     .last-update {
-      text-align: right;
       font-size: 0.8rem;
       color: #94a3b8;
-      margin-top: 1rem;
     }
 
     .status-card.purge-on .icon { color: #22c55e; }
@@ -140,13 +145,14 @@ block css
     }    
 
 block content
-  h2 Server Status
-
   #server-offline
     h1 &#9888; Server Offline
     p The server is no longer responding. Check the service status.
 
   #status-content
+    #status-header
+      .last-update
+        | Last updated: <span id="last-update-time">--</span>
     .status-grid
       .status-card.total.clickable#card-total
         .icon
@@ -212,9 +218,6 @@ block content
         .label Auto Purge 
         .sub-label#purge-on-message (runs while page is open)
         .sub-label#purge-last-run
-
-    .last-update
-      | Last updated: <span id="last-update-time">--</span>
 
 block scripts
   script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
