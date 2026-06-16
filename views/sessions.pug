@@ -1,6 +1,7 @@
 extends adminLayout
 
 block css
+  link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png" sizes="16x16")
   style.
     .sessions-table {
       width: 100%;
@@ -94,6 +95,7 @@ block content
               td
                 if s.currentUser
                   span.badge-current You
+                  a(href="/logout" style="margin-left:8px;font-size:13px;color:#ef4444;text-decoration:none;font-weight:600;" title="Logout") Logout
                 else
                   form(method="POST" action=`/sessions/${s.sid}/destroy` onsubmit="return confirm('Force logout this user? Their session will be destroyed immediately.')")
                     button.btn-destroy(type="submit") Force Logout

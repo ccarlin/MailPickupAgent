@@ -368,6 +368,9 @@ block scripts
       $('#card-quarantined').on('click', function() {
         window.open('/QuarantineLog?today=true', '_blank');
       });
+      $('#card-users').on('click', function() {
+        window.open('/sessions', '_blank');
+      });
       $('#card-pending').on('click', function() {
         window.open('/mailq?user=all', '_blank');
       });
