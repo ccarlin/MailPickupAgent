@@ -19,7 +19,8 @@ router.post('/', function(req, res) {
     const localAddress = req.socket.localAddress || '127.0.0.1';
     const userPart = email.split('@')[0];
     const key = tools.generateKey(localAddress, null, 'mailq:' + userPart);
-    link = `/mailq?Key=${key}&user=${encodeURIComponent(userPart)}`;
+    const host = req.get('host');
+    link = `${req.protocol}://${host}/mailq?Key=${key}&user=${encodeURIComponent(userPart)}`;
   }
 
   res.render('generateLink', { title: 'Generate Access Link', link, email, error });
