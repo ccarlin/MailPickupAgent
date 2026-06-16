@@ -111,6 +111,21 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 - **Rules Editor** (`/rulesEditor`) — manage whitelist, blacklist, and keyword filters
 - **Status Page** (`/status` or `/`) — server dashboard showing total processed, pending counts, service status (SpamAssassin, AI), uptime, logged-in users, and auto-purge controls. This is the default landing page.
 
+### Screenshots
+
+| | |
+|---|---|
+| ![Default Status Page](public/img/Screenshots/Default%20Status%20Page.png) | ![Configuration Editor](public/img/Screenshots/Configuration%20Editor.png) |
+| Default landing page with server dashboard | View and edit all settings |
+| ![Rules Editor](public/img/Screenshots/Rules%20Editor.png) | ![Quarantine Manager](public/img/Screenshots/Mailq%20Link%20Generator.png) |
+| Manage whitelist, blacklist, and keyword filters | Review, release, or delete quarantined emails |
+| ![Deleted Emails Recovery](public/img/Screenshots/Deleted%20Emails%20Recovery.png) | ![Processing Log](public/img/Screenshots/Mail%20Log%20-%20Email%20Analyzer.png) |
+| Browse and recover deleted emails | View daily processing logs |
+| ![Quarantine Log](public/img/Screenshots/Quarantine%20Log.png) | ![SMTP Log Analyzer](public/img/Screenshots/MailEnable%20SMTP%20Log%20viewer.png) |
+| View quarantine action logs | Analyze MailEnable SMTP logs |
+| ![Session Manager](public/img/Screenshots/Session%20Manager.png) | |
+| Manage active sessions | |
+
 It is recommended that you use PM2 or a similar tool to ensure that the server is always running.  
 Make sure to exlude logging directories and quarentine/deleted directories from any watch settings to avoid unnecessary restarts.
 
