@@ -38,6 +38,7 @@ block scripts
     script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
     script(src="/scripts/jquery.sumoselect.min.js")
     script(src="/scripts/filtercontrol.js")
+    script(src="/scripts/dynamicPageLength.js")
 
 block content
     script.            
@@ -59,7 +60,8 @@ block content
                     btns.addClass('myMiniButton');
                     btns.removeClass('dt-button');   
                     [2].forEach(idx => standardFilterSetup(this.api().column(idx)));
-                    [4,8].forEach(idx => multiFilterSetup(this.api().column(idx), 140));                                   
+                    [4,8].forEach(idx => multiFilterSetup(this.api().column(idx), 140));
+                    dynamicPageLength('#myTable');                                   
                  }
             });
         });  

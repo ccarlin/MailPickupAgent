@@ -19,6 +19,7 @@ block scripts
     script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
     script(src="scripts/jquery.sumoselect.min.js")
     script(src="scripts/filtercontrol.js")
+    script(src="scripts/dynamicPageLength.js")
 
 block content
     script.           
@@ -26,7 +27,7 @@ block content
         {              
             var table = $('#myTable').DataTable({ 
                 order: [[ 6, "desc" ]], 
-                pageLength: 22,  
+                pageLength: 22,
                 layout: {
                     topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'pdf', 'print']},
                     topEnd: 'search',
@@ -38,16 +39,14 @@ block content
                     var btns = $('.dt-button');
                     btns.addClass('myMiniButton');
                     btns.removeClass('dt-button');  
-                    [1].forEach(idx => multiFilterSetup(this.api().column(idx)));                     
+                    [1].forEach(idx => multiFilterSetup(this.api().column(idx)));
+                    dynamicPageLength('#myTable');
                  },
                 footerCallback: function (row, data, start, end, display) {
                     var api = this.api();
-                    // Remove the formatting to get integer data for summation
                     var intVal = function (i) {
                         return typeof i === 'string' ? i.replace(/[\$,]/g, '') * 1 : typeof i === 'number' ? i : 0;
                     };
-    
-                    // Total over all pages
                     totalAttempts = api.column(5, {search:'applied'}).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
@@ -60,8 +59,6 @@ block content
                     totalSuccess = api.column(8, {search:'applied'}).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    
-                    // Update footer
                     $(api.column(5).footer()).html(totalAttempts.toLocaleString("en-US"));
                     $(api.column(6).footer()).html(totalFailures.toLocaleString("en-US"));
                     $(api.column(7).footer()).html(totalFailedRelays.toLocaleString("en-US"));
