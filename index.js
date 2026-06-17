@@ -501,32 +501,40 @@ async function processEmail(controlFilePath, messagePath, rules) {
     // 4. Ollama AI spam check
     let aiSpamResult = false;
     let aiLabel = '';
+    let aiResponse = 'No Response';
     if (AI_CHECK_ENABLED) {
       try {
+        const aiSpamPoints = config.AI_SPAM_POINTS || 5;
+        const aiHamPoints = (config.AI_HAM_POINTS || 2.5) * -1;
         const promptPath = path.join(__dirname, 'config', 'aiSpamCheckPrompt.md');
         let promptTemplate = fs.readFileSync(promptPath, 'utf8');
         const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
         const aiPrompt = promptTemplate + emailContent;
-        const aiResponse = await queryOllama(aiPrompt);
+        aiResponse = await queryOllama(aiPrompt);
         const parsedJson = JSON.parse(aiResponse);
         const classification = (parsedJson.classification || '').toUpperCase();
         const confidence = parseFloat(parsedJson.confidence_score) || 0;
         const reasons = parsedJson.reasons || [];
         if (classification === 'SPAM') {
-          const score = Math.round(5 * confidence * 100) / 100;
+          const score = Math.round(aiSpamPoints * confidence * 10) / 10;
           spamScore += score;
           aiLabel = `SPAM(${score})`;
           quarantineReasons.push(`AI classified as spam - ${reasons.join('; ')}`);
           aiSpamResult = true;
         } else if (classification === 'HAM') {
-          const score = Math.round(-5 * confidence * 100) / 100;
+          const score = Math.round(aiHamPoints * confidence * 10) / 10;
           spamScore += score;
           aiLabel = `HAM(${score})`;
         }
-      } catch (err) {
-        tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
+      } catch (err) {             
+        if (aiResponse)
+          tools.logError(`Ollama query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
+        else 
+          tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
       }
     }
+
+    spamScore = Math.round(spamScore * 10) / 10;
 
     const processElapsed = (Date.now() - processStartTime) / 1000;
     const spamInfoParts = [];

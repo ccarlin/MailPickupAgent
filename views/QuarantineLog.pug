@@ -72,7 +72,7 @@ block content
                     td #{logEntry.sender}
                     td #{logEntry.recipient}
                     td #{logEntry.subject}                    
-                    td #{logEntry.spamScore} 
+                    td #{isNaN(Number(logEntry.spamScore)) ? logEntry.spamScore : Number(logEntry.spamScore).toFixed(1)} 
                     td #{logEntry.spamResults}
                     td #{logEntry.ipAddress}
             tfoot 

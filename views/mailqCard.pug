@@ -352,7 +352,7 @@ block content
                                 p Date: 
                                     span #{email.date}   
                                 p Score: 
-                                    span #{email.spamScore} 
+                                    span #{isNaN(Number(email.spamScore)) ? email.spamScore : Number(email.spamScore).toFixed(1)} 
                                 p DKIM: 
                                     span #{email.dkim}                                                             
                             .email-footer                            

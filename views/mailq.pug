@@ -328,7 +328,7 @@ block content
                         else
                             td(style='color: red;font-weight:bold;') #{email.sender}
                         td #{email.subject}
-                        td #{email.spamScore}
+                        td #{isNaN(Number(email.spamScore)) ? email.spamScore : Number(email.spamScore).toFixed(1)}
                         td #{email.antiSpam}
                         td #{email.date}
                         td
