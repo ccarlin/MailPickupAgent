@@ -110,7 +110,7 @@ block content
                         td #{email.sender}
                         td #{email.recipients}
                         td #{email.subject}
-                        td #{isNaN(Number(email.spamScore)) ? email.spamScore : Number(email.spamScore).toFixed(1)}
+                        td #{isNaN(Number(email.spamScore)) ? email.spamScore : +Number(email.spamScore).toFixed(1)}
                         td #{email.antiSpam}
                         td(style="white-space: nowrap;")
                             button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="text" title="Plain Text Preview")

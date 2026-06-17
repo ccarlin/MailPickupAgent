@@ -88,7 +88,7 @@ block content
                     td #{logEntry.recipient}
                     td #{logEntry.subject}
                     td #{logEntry.msgSize}
-                    td #{isNaN(Number(logEntry.spamScore)) ? logEntry.spamScore : Number(logEntry.spamScore).toFixed(1)} 
+                    td #{isNaN(Number(logEntry.spamScore)) ? logEntry.spamScore : +Number(logEntry.spamScore).toFixed(1)} 
                     td #{logEntry.spamResult}   
                     td #{logEntry.spamInfo}      
             tfoot 
