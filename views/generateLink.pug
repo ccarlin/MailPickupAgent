@@ -43,15 +43,41 @@ block css
       background: #e8f5e9;
       border: 1px solid #a5d6a7;
       border-radius: 4px;
-      word-break: break-all;
     }
-    .generated-link a {
+    .generated-link .link-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+      margin-top: 8px;
+    }
+    .generated-link .link-row input {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: monospace;
+      border: 1px solid #a5d6a7;
+      border-radius: 4px;
+      background: #fff;
       color: #2e7d32;
-      font-weight: 600;
-      text-decoration: none;
+      outline: none;
+      cursor: text;
     }
-    .generated-link a:hover {
-      text-decoration: underline;
+    .generated-link .link-row button {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #2e7d32;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .generated-link .link-row button:hover {
+      background: #1b5e20;
+    }
+    .generated-link .link-row button.copied {
+      background: #558b2f;
     }
     .error-msg {
       margin-top: 12px;
@@ -79,8 +105,33 @@ block content
 
       if link
         .generated-link
-          p
-            strong Access Link:
-          a(href=link target="_blank") #{link}
-          p(style="margin-top:8px;font-size:13px;color:#555;")
+          p(style="margin:0;")
+            strong Access Link
+            span(style="font-weight:400;font-size:13px;color:#555;margin-left:8px;")
+              | (share this with the user)
+          .link-row
+            input(type="text" readonly value=link onclick="this.select()" id="shareLink")
+            button(onclick="copyLink()" id="copyBtn") Copy
+          p(style="margin:8px 0 0;font-size:13px;color:#555;")
             | This link will grant access to the Mail Queue filtered for this email address.
+
+        script.
+          function copyLink() {
+            const input = document.getElementById('shareLink');
+            const btn = document.getElementById('copyBtn');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            try {
+              navigator.clipboard.writeText(input.value);
+              btn.textContent = 'Copied!';
+              btn.classList.add('copied');
+              setTimeout(() => {
+                btn.textContent = 'Copy';
+                btn.classList.remove('copied');
+              }, 2500);
+            } catch {
+              document.execCommand('copy');
+              btn.textContent = 'Copied!';
+              setTimeout(() => btn.textContent = 'Copy', 2500);
+            }
+          }

@@ -3,6 +3,7 @@ extends adminLayout
 block css
     link(href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css" rel="stylesheet" integrity="sha384-lidBvvi7oLJ2j9e3nFlBSXfo+giBJ9L7QnUdgjc3AvLiynS0HdKEEEZtvZ4izE46" crossorigin="anonymous")
     link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
+    link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
     style.
        body {
             background-color: white;
@@ -12,6 +13,26 @@ block css
         }
 
         #GridView1 td, #GridView1 th { white-space: normal; word-break: break-word; }
+        .btn-preview { background-color: #6c757d; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
+        .btn-preview .material-icons { font-size: 14px; vertical-align: middle; }
+        .preview-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7); z-index: 100;
+            display: none;
+        }
+        .preview-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: white; padding: 20px; border-radius: 10px;
+            width: 85vw; height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        .preview-modal-content h2 {
+            margin: 0 0 10px 0;
+        }
+        .preview-modal-content iframe {
+            flex: 1; border: 1px solid #ddd; border-radius: 4px;
+        }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
     
 block scripts
@@ -46,6 +67,21 @@ block content
             }
         };
 
+        function closePreviewModal() {
+            $('#emailPreviewModal').hide();
+            $('#emailPreviewFrame').attr('src', '');
+        }
+
+        $(document).on('click', '.preview-link', function (e) {
+            e.preventDefault();
+            var key = $(this).data('mailkey');
+            var view = $(this).data('view');
+            if (!key) return;
+            var url = view === 'html' ? 'emailPreview?isDeleted=true&view=HTML&mailKey=' + encodeURIComponent(key) : 'emailPreview?isDeleted=true&mailKey=' + encodeURIComponent(key);
+            $('#emailPreviewFrame').attr('src', url);
+            $('#emailPreviewModal').show();
+        });
+
     form(action='/deleted', method="POST")
         table(style='width: 100%')
             tr
@@ -64,6 +100,7 @@ block content
                     th(scope='col') Subject
                     th(scope='col') SpamScore
                     th(scope='col') Reason
+                    th(scope='col') Actions
                 each email, idx in emails
                     tr
                         td
@@ -74,4 +111,18 @@ block content
                         td #{email.recipients}
                         td #{email.subject}
                         td #{email.spamScore}
-                        td #{email.antiSpam}                       
+                        td #{email.antiSpam}
+                        td(style="white-space: nowrap;")
+                            button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="text" title="Plain Text Preview")
+                                i.material-icons article
+                            if (email.safe)
+                                |&nbsp;
+                                button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="html" title="HTML Preview")
+                                    i.material-icons visibility
+
+    #emailPreviewModal.preview-modal
+        .preview-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2 Email Preview
+                button.myButton(onclick="closePreviewModal()") Close
+            iframe#emailPreviewFrame                       

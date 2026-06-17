@@ -58,6 +58,7 @@ function getDeletedEmails(callback) {
                         emailInfo.subject = "";
                         emailInfo.spamScore = "N/A";
                         emailInfo.antiSpam = "N/A";
+                        emailInfo.safe = true;
 
                         for(var j=0;j<lines.length;j++) {
                             let data = lines[j].split(/=(.+)/);

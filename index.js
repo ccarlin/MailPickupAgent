@@ -500,15 +500,28 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 4. Ollama AI spam check
     let aiSpamResult = false;
+    let aiLabel = '';
     if (AI_CHECK_ENABLED) {
       try {
-        const aiPrompt = `You are a spam classifier. Reply with only the word "spam" or "ham". Is the following email spam?\n\nFrom: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
+        const promptPath = path.join(__dirname, 'config', 'aiSpamCheckPrompt.md');
+        let promptTemplate = fs.readFileSync(promptPath, 'utf8');
+        const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
+        const aiPrompt = promptTemplate + emailContent;
         const aiResponse = await queryOllama(aiPrompt);
-        const isSpam = aiResponse.toLowerCase().includes('spam') && !aiResponse.toLowerCase().includes('ham');
-        if (isSpam) {
-          spamScore += 5; // Assign a score for AI-detected spam - this can be adjusted based on testing and needs;
-          quarantineReasons.push('AI classified as spam');
+        const parsedJson = JSON.parse(aiResponse);
+        const classification = (parsedJson.classification || '').toUpperCase();
+        const confidence = parseFloat(parsedJson.confidence_score) || 0;
+        const reasons = parsedJson.reasons || [];
+        if (classification === 'SPAM') {
+          const score = Math.round(5 * confidence * 100) / 100;
+          spamScore += score;
+          aiLabel = `SPAM(${score})`;
+          quarantineReasons.push(`AI classified as spam - ${reasons.join('; ')}`);
           aiSpamResult = true;
+        } else if (classification === 'HAM') {
+          const score = Math.round(-5 * confidence * 100) / 100;
+          spamScore += score;
+          aiLabel = `HAM(${score})`;
         }
       } catch (err) {
         tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
@@ -520,8 +533,8 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (keywordResult.matches.length > 0) {
       spamInfoParts.push(`Keyword - [${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}]`);
     }
-    if (aiSpamResult) {
-      spamInfoParts.push(`AI Check - AI classified as spam(5)`);
+    if (aiSpamResult || aiLabel) {
+      spamInfoParts.push(`AI Check - ${aiLabel}`);
     }
     if (SPAMASSASSIN_ENABLED && saResult) {
       let saInfo = `SpamAssassin(${saResult.score})`;

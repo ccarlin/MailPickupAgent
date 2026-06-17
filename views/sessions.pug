@@ -1,0 +1,101 @@
+extends adminLayout
+
+block css
+  link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png" sizes="16x16")
+  style.
+    .sessions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .sessions-table th,
+    .sessions-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+    .sessions-table th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #475569;
+      white-space: nowrap;
+    }
+    .sessions-table tr:hover {
+      background: #f1f5f9;
+    }
+    .sessions-table td {
+      color: #334155;
+    }
+    .sessions-table .user-agent {
+      font-size: 12px;
+      color: #64748b;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .badge-current {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #dbeafe;
+      color: #1d4ed8;
+      border-radius: 10px;
+    }
+    .btn-destroy {
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-destroy:hover {
+      background: #dc2626;
+    }
+    .btn-destroy:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 16px;
+    }
+
+block content
+  .container
+    .header-bar
+      h1 Active Sessions
+
+    if sessions.length === 0
+      .empty-state No authenticated sessions found.
+    else
+      p(style="color:#64748b;font-size:14px;")
+        | #{sessions.length} active session#{sessions.length !== 1 ? 's' : ''}
+      table.sessions-table
+        thead
+          tr
+            th IP Address
+            th Browser / User-Agent
+            th Logged In
+            th
+        tbody
+          each s in sessions
+            tr
+              td #{s.ip}
+              td
+                .user-agent(title=s.userAgent) #{s.userAgent}
+              td #{s.loginTime ? new Date(s.loginTime).toLocaleString() : 'unknown'}
+              td
+                if s.currentUser
+                  span.badge-current You
+                  a(href="/logout" style="margin-left:8px;font-size:13px;color:#ef4444;text-decoration:none;font-weight:600;" title="Logout") Logout
+                else
+                  form(method="POST" action=`/sessions/${s.sid}/destroy` onsubmit="return confirm('Force logout this user? Their session will be destroyed immediately.')")
+                    button.btn-destroy(type="submit") Force Logout
