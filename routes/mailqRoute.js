@@ -437,7 +437,7 @@ function GetEmailRecipient(emailList, bFirstOnly)
                 if (retValue.Length > 0)
                     retValue += ", ";
                 if (bFirstOnly)
-                    retValue += piece.split('@')[0];
+                    retValue += piece.split('@')[0].toLowerCase();
                 else
                     retValue += piece;
             }

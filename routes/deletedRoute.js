@@ -75,7 +75,7 @@ function getDeletedEmails(callback) {
                             let mailMessage = fs.readFileSync(emailFilePath);
                             let parsed = await simpleParser(mailMessage);
                             emailInfo.sender = parsed.from?.value?.[0]?.address || 'unknown';
-                            let toAddresses = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0]).filter(Boolean);
+                            let toAddresses = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0].toLowerCase()).filter(Boolean);
                             emailInfo.recipients = toAddresses.join(', ');
                             emailInfo.subject = parsed.subject || '';
 

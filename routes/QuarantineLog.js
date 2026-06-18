@@ -32,7 +32,7 @@ router.get('/', function(req, res) {
                     obj.action = lineParts[1]; 
                     obj.subject = lineParts[2];
                     obj.sender = lineParts[3];
-                    obj.recipient = lineParts[4];
+                    obj.recipient = lineParts[4].toLowerCase();
                     obj.spamScore = lineParts[5];
                     obj.spamResults = lineParts[6];
                     obj.dkim = lineParts[7];
