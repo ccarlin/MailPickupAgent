@@ -53,7 +53,7 @@ block content
             });
             var table = $('#GridView1').DataTable({
                 order: [[ 1, "desc" ]],
-                pageLength: 22, 
+                pageLength: 10, 
                 layout: {
                     topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'pdf', 'print',
                         {
@@ -76,7 +76,7 @@ block content
                     var btns = $('.dt-button');
                     btns.addClass('myMiniButton');
                     btns.removeClass('dt-button');               
-                    [3].forEach(idx => multiFilterSetup(this.api().column(idx), 140));                                
+                    [3].forEach(idx => multiFilterSetup(this.api().column(idx), 140));                             
                 }
             });
         });
