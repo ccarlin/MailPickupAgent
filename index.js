@@ -416,10 +416,11 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     tools.logData(`Processing email: ${subjectText} from ${fromAddr}`);
 
-    // const rules = loadRules();
     const destMessageName = path.basename(messagePath);
     const processStartTime = Date.now();
     const messageId = path.parse(messagePath).name;
+
+    //Skip messages that have already been processed
     purgeExpiredCacheEntries();
     if (recentlyReleased.has(messageId)) {
       recentlyReleased.delete(messageId);
@@ -433,11 +434,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const recipientStr = recipientAddresses.join(', ');
     const recipients = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
     const originatingIp = extractOriginatingIp(commandData);
-    tools.logData(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`);
-
-    // Country lookup — used for blacklist matching and MPA-Country header on quarantined emails
-    const bl = rules.blacklist || {};
-    const countryResult = matchCountry(originatingIp, bl.countries || []);
+    tools.logData(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`, "DEBUG");
 
     // 1.0 Whitelist check — Check if sender email is whiltelisted
     const wl = rules.whitelist || {};
@@ -458,6 +455,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       return;
     }
 
+    const bl = rules.blacklist || {};
     // 2.0 Blacklist check -  Allowed TLDs enforcement - if an allowedTLDs list exists, delete emails where sender domain is not in list    
     const allowed = (rules.allowedTLDs || []).map(s => String(s).toLowerCase().replace(/^\./, '')).filter(Boolean);
     if (allowed.length > 0) {
@@ -496,6 +494,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     // 2.3 Blacklist check - Check if sender IP maps to blacklisted country code
+    const countryResult = matchCountry(originatingIp, bl.countries || []);
     if (countryResult.matched) {
       metrics.increment('blacklisted');
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
