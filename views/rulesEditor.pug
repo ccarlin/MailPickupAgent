@@ -18,6 +18,8 @@ block css
         .btn-sm { padding: 4px 10px; font-size: 12px; }
         .btn-outline { background: transparent; border: 1px solid #ccc; color: #333; }
         .btn-outline:hover { background: #eee; }
+        .btn-info { background: #7c3aed; color: #fff; }
+        .btn-info:hover { background: #6d28d9; }
         .section { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
         .section-header { background: #f0f4f8; padding: 12px 16px 0px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; cursor: pointer; }
         .section-header h2 { font-size: 16px; margin: 0; }
@@ -95,7 +97,7 @@ block scripts
         }
 
         // --- Modal helpers ---
-        function showModal(title, fields, onSave, twoColumn) {
+        function showModal(title, fields, onSave, twoColumn, extraButtons) {
             const overlay = document.createElement('div');
             overlay.className = 'modal-overlay';
             overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -119,7 +121,11 @@ block scripts
                 }
                 html += '</div>';
             });
-            html += '</div><div class="modal-actions"><button class="btn btn-outline" id="modalCancelBtn">Cancel</button><button class="btn btn-primary" id="modalSaveBtn">Save</button></div>';
+            html += '</div><div class="modal-actions">';
+            (extraButtons || []).forEach(b => {
+                html += '<button class="btn ' + b.className + '" id="' + b.id + '">' + b.text + '</button>';
+            });
+            html += '<button class="btn btn-outline" id="modalCancelBtn">Cancel</button><button class="btn btn-primary" id="modalSaveBtn">Save</button></div>';
             modal.innerHTML = html;
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
@@ -134,7 +140,68 @@ block scripts
                 onSave(values);
                 overlay.remove();
             });
+            (extraButtons || []).forEach(b => {
+                const btn = modal.querySelector('#' + b.id);
+                if (btn) btn.addEventListener('click', (e) => b.onClick(e, modal, fields, overlay));
+            });
             modal.querySelector('input, textarea, select')?.focus();
+        }
+
+        async function aiGenerateFilter(description) {
+            if (!description.trim()) { showToast('Please enter a description', 'error'); return null; }
+            try {
+                const resp = await fetch('/rulesEditor/api/rules/generate-keyword-filter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: description.trim() })
+                });
+                if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.message || 'Generation failed');
+                }
+                return await resp.json();
+            } catch (error) {
+                showToast('AI generation failed: ' + error.message, 'error');
+                return null;
+            }
+        }
+
+        function fillModalFields(modal, values) {
+            Object.keys(values).forEach(key => {
+                const el = modal.querySelector('[name="' + key + '"]');
+                if (el) {
+                if (el.tagName === 'SELECT') {
+                    el.value = values[key];
+                } else {
+                    el.value = values[key];
+                }
+                }
+            });
+        }
+
+        function showAiPromptModal(onResult) {
+            const promptOverlay = document.createElement('div');
+            promptOverlay.className = 'modal-overlay';
+            promptOverlay.addEventListener('click', (e) => { if (e.target === promptOverlay) promptOverlay.remove(); });
+            promptOverlay.innerHTML = '<div class="modal" style="min-width:500px;"><h3>Generate Keyword Filter with AI</h3><div class="modal-fields single-column"><div class="field full-width"><label>Describe the rule you want to create</label><textarea id="aiPromptText" rows="4" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:Consolas,Courier New,monospace;" placeholder="e.g. Block emails mentioning free crypto giveaways in the subject with score 8"></textarea></div></div><div class="modal-actions"><button class="btn btn-outline" id="aiPromptCancelBtn">Cancel</button><button class="btn btn-primary" id="aiPromptGenerateBtn">Generate</button></div></div>';
+            document.body.appendChild(promptOverlay);
+
+            promptOverlay.querySelector('#aiPromptCancelBtn').addEventListener('click', () => promptOverlay.remove());
+            promptOverlay.querySelector('#aiPromptGenerateBtn').addEventListener('click', async () => {
+                const desc = promptOverlay.querySelector('#aiPromptText').value;
+                if (!desc.trim()) { showToast('Please describe the rule', 'error'); return; }
+                const genBtn = promptOverlay.querySelector('#aiPromptGenerateBtn');
+                genBtn.disabled = true;
+                genBtn.textContent = 'Generating...';
+                const result = await aiGenerateFilter(desc);
+                genBtn.disabled = false;
+                genBtn.textContent = 'Generate';
+                if (result) {
+                promptOverlay.remove();
+                onResult(result);
+                }
+            });
+            promptOverlay.querySelector('#aiPromptText').focus();
         }
 
         // --- Render sections ---
@@ -420,7 +487,7 @@ block scripts
                 { name: 'SearchScope', label: 'Search Scope', type: 'select', value: '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }] },
                 { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: '0', options: [{ value: '0', label: 'Any match' }, { value: '1', label: 'Starts with' }, { value: '2', label: 'Ends with' }, { value: '3', label: 'Whole word' }] },
                 { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
-                { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: '0', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
+                { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: '1', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
                 { name: 'Comment', label: 'Comment', type: 'text', value: '', placeholder: 'Optional comment', fullWidth: true }
             ], (values) => {
                 if (!values.FilterName.trim()) { showToast('Filter name is required', 'error'); return; }
@@ -441,7 +508,13 @@ block scripts
                 renderAllSections();
                 markUnsaved();
                 showToast('Filter added', 'success');
-            }, true);
+            }, true, [
+                { text: 'AI Generate', className: 'btn-info btn-sm', id: 'modalAiBtn', onClick: (e, modal, fields, overlay) => {
+                showAiPromptModal((result) => {
+                    fillModalFields(modal, result);
+                });
+                } }
+            ]);
         }
 
         function editKeywordFilter(parent, key, index, item) {
@@ -454,7 +527,7 @@ block scripts
                 { name: 'SearchScope', label: 'Search Scope', type: 'select', value: item.SearchScope || '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }] },
                 { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: item.FilterMatchType || '0', options: [{ value: '0', label: 'Any match' }, { value: '1', label: 'Starts with' }, { value: '2', label: 'Ends with' }, { value: '3', label: 'Whole word' }] },
                 { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: item.FilterCaseSensitive || '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
-                { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: item.FilterExpressionType || '0', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
+                { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: item.FilterExpressionType || '1', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
                 { name: 'Comment', label: 'Comment', type: 'text', value: item.Comment || '', placeholder: 'Optional comment', fullWidth: true }
             ], (values) => {
                 if (!values.FilterName.trim()) { showToast('Filter name is required', 'error'); return; }
@@ -475,7 +548,18 @@ block scripts
                 renderAllSections();
                 markUnsaved();
                 showToast('Filter updated', 'success');
-            }, true);
+            }, true, [
+                { text: 'AI Generate', className: 'btn-info btn-sm', id: 'modalAiBtn', onClick: (e, modal, fields, overlay) => {
+                showAiPromptModal((result) => {
+                    const updatedFields = fields.map(f => {
+                    const val = result[f.name] !== undefined ? result[f.name] : item[f.name] || '';
+                    return { ...f, value: val };
+                    });
+                    overlay.remove();
+                    editKeywordFilter(parent, key, index, result);
+                });
+                } }
+            ]);
         }
 
         // --- Save / Load ---
