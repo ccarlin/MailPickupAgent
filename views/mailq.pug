@@ -2,21 +2,14 @@ extends adminLayout
 
 block css
     link(href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css" rel="stylesheet" integrity="sha384-lidBvvi7oLJ2j9e3nFlBSXfo+giBJ9L7QnUdgjc3AvLiynS0HdKEEEZtvZ4izE46" crossorigin="anonymous")
+    link(href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.min.css" rel="stylesheet" integrity="sha384-gZdV4/a6Gt/Qu0qCP3bchrOj0WlpkAfszB1m4/eFzOSnvvHUFMv9+C/KcgMO8CeR" crossorigin="anonymous")
     link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
     link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
-    style.
-       body {
-            background-color: white;
-        }    
-        .myMiniButton {
-            margin-left: 5px;
-        }
+    style.      
         .btn-blacklist { background-color: black; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
         .btn-whitelist { background-color: #17a2b8; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
         .btn-preview { background-color: #6c757d; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
         .btn-preview .material-icons, .btn-whitelist .material-icons, .btn-blacklist .material-icons { font-size: 14px; vertical-align: middle; }
-        .myMiniButton.btn-blacklist { background-color: black !important; color: white !important; }
-        .myMiniButton.btn-whitelist { background-color: #17a2b8 !important; color: white !important; }
         #GridView1 td { white-space: normal; word-break: break-word; }
         .preview-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -46,13 +39,16 @@ block css
 
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
-    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
+    script(src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha384-NXgwF8Kv9SSAr+jemKKcbvQsz+teULH/a5UNJvZc6kP47hZgl62M1vGnw6gHQhb1" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
+    script(src="https://cdn.datatables.net/buttons/3.2.2/js/dataTables.buttons.min.js" integrity="sha384-DmaAfo+/+UjRKHPidNNswlNqd9ybuE6yx9zKHyMY+vYy9SZhQEu4nauMVgwSx4Z/" crossorigin="anonymous")
     script(src='scripts/ellipsis.min.js')
     script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
     
 block content
     script.    
+        var hsFilterUser = !{JSON.stringify(filterUser || null)};
+
         $(document).ready(function () {     
             var timeout = setTimeout("location.reload(true);", 600000);
             $('#chkSelectAll').click(function ()
@@ -60,11 +56,84 @@ block content
                 $('input:checkbox').not(this).prop('checked', this.checked);
             });
             changeIcon();
+
+            var buttons = [
+                {
+                    text: 'Delete All',
+                    className: 'myMiniButton',
+                    action: function(e, dt, node, config) {
+                        $('#chkSelectAll').click();
+                        if (ConfirmFunction('remove')) {
+                            $('<input>').attr({ type: 'hidden', name: 'action', value: 'Delete All' }).appendTo('#mainForm');
+                            $('#mainForm').submit();
+                        }
+                    }
+                },
+                {
+                    text: 'Delete',
+                    className: 'myMiniButton',
+                    action: function(e, dt, node, config) {
+                        if (ConfirmFunction('remove')) {
+                            $('<input>').attr({ type: 'hidden', name: 'action', value: 'Delete' }).appendTo('#mainForm');
+                            $('#mainForm').submit();
+                        }
+                    }
+                },
+                {
+                    text: 'Release',
+                    className: 'myMiniButton',
+                    action: function(e, dt, node, config) {
+                        if (ConfirmFunction('release')) {
+                            $('<input>').attr({ type: 'hidden', name: 'action', value: 'Release' }).appendTo('#mainForm');
+                            $('#mainForm').submit();
+                        }
+                    }
+                },
+                {
+                    text: 'Whitelist',
+                    className: 'myMiniButton',
+                    action: function(e, dt, node, config) {
+                        showBatchListingModal('whitelist');
+                    }
+                },
+                {
+                    text: 'Blacklist',
+                    className: 'myMiniButton',
+                    action: function(e, dt, node, config) {
+                        showBatchListingModal('blacklist');
+                    }
+                }
+            ];
+
+            if (hsFilterUser) {
+                buttons.push({
+                    text: 'Filter Clear',
+                    className: 'myMiniButton',
+                    action: function(e, dt, node, config) {
+                        if (confirm('Clear MailQ user filter?')) {
+                            $('<input>').attr({ type: 'hidden', name: 'action', value: 'Filter Clear' }).appendTo('#mainForm');
+                            $('#mainForm').submit();
+                        }
+                    }
+                });
+            }
+
             var table = $('#GridView1').DataTable({
                  order: [[ 6, "asc" ]],  
                  paging: false,
                  info: false,
-                 language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."}                 
+                 language: {"emptyTable": "Nothing to see here move along.",  "zeroRecords": "No matches found."},
+                 layout: {
+                    topStart: { buttons: buttons },
+                    topEnd: 'search',
+                    bottomStart: 'info',
+                    bottomEnd: 'paging'                
+                },
+                 initComplete: function () {    
+                    var btns = $('.dt-button');
+                    btns.addClass('myMiniButton');
+                    btns.removeClass('dt-button');
+                 }
             });             
         });      
 
@@ -288,21 +357,9 @@ block content
             };
         }
         
-    form#mainForm(action='/mailq', method="POST")        
-        table(style='width: 100%')
-            tr
-                td(align="left")
-                    input#butDeleteAll(type='submit' name='action' value='Delete All' onclick="return ConfirmFunction('clear');" class="myMiniButton")
-                    input#butDelete(type='submit' name='action' value='Delete' onclick="return ConfirmFunction('remove');" class="myMiniButton")
-                    input#butRelease(type='submit' name='action' value='Release' onclick="return ConfirmFunction('release');" class="myMiniButton")
-                    input#butWhitelist(type='button' value='Whitelist' onclick="showBatchListingModal('whitelist');" class="myMiniButton")
-                    input#butBlacklist(type='button' value='Blacklist' onclick="showBatchListingModal('blacklist');" class="myMiniButton")
-                    input(type='hidden' name='listType' id='listType')
-                    // Clear filter button: shown when server indicates a filter is active
-                    if filterUser
-                        input(type='submit' name='action' value='Filter Clear' class='myMiniButton' onclick="return confirm('Clear MailQ user filter?');")
-                td(align="right")                
-                    | #{currentTime}        
+    div(align="right" style="margin-bottom:4px;") #{currentTime}
+    form#mainForm(action='/mailq', method="POST")
+        input(type='hidden' name='listType' id='listType')
         div
             table#GridView1(class="row-border compact order-column hover stripe" style='width: 100%; font-size: small')
                 thead
