@@ -5,7 +5,7 @@ block css
     link(href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.min.css" rel="stylesheet" integrity="sha384-gZdV4/a6Gt/Qu0qCP3bchrOj0WlpkAfszB1m4/eFzOSnvvHUFMv9+C/KcgMO8CeR" crossorigin="anonymous")
     link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
     link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
-    link(href="/css/sumoselect.min.css" rel="stylesheet"  type="text/css")    
+    link(href="css/sumoselect.min.css" rel="stylesheet"  type="text/css")    
     style.       
         #GridView1 td, #GridView1 th { white-space: normal; word-break: break-word; }
         .btn-preview { background-color: #6c757d; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
@@ -31,7 +31,7 @@ block css
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
     
 block scripts
-    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
+    script(src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha384-NXgwF8Kv9SSAr+jemKKcbvQsz+teULH/a5UNJvZc6kP47hZgl62M1vGnw6gHQhb1" crossorigin="anonymous")
     script(src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous")
     script(src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous")
     script(src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous")
@@ -40,8 +40,9 @@ block scripts
     script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.html5.min.js" integrity="sha384-+E6fb8f66UPOVDHKlEc1cfguF7DOTQQ70LNUnlbtywZiyoyQWqtrMjfTnWyBlN/Y" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.print.min.js" integrity="sha384-FvTRywo5HrkPlBKFrm2tT8aKxIcI/VU819roC/K/8UrVwrl4XsF3RKRKiCAKWNly" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
-    script(src="/scripts/jquery.sumoselect.min.js")
-    script(src="/scripts/filtercontrol.js")
+    script(src="scripts/jquery.sumoselect.min.js")
+    script(src="scripts/filtercontrol.js")
+    script(src="scripts/dynamicPageLength.js")
 
 block content
     script.
@@ -50,13 +51,10 @@ block content
             $('#chkSelectAll').click(function () {
                 $('input:checkbox').not(this).prop('checked', this.checked);
             });
-             var table = $('#GridView1').DataTable({
-                  order: [[ 1, "desc" ]],
-                  pageLength: 22, 
-                  info: false,
-                  responsive: true,
-                  language: {"emptyTable": "No deleted messages found.", "zeroRecords": "No matches found."},
-                  layout: {
+            var table = $('#GridView1').DataTable({
+                order: [[ 1, "desc" ]],
+                pageLength: 22, 
+                layout: {
                     topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'pdf', 'print',
                         {
                             text: 'Recover',
@@ -68,11 +66,12 @@ block content
                                 }
                             }
                         }
-                    ] },
+                    ]},
                     topEnd: 'search',
                     bottomStart: 'info',
                     bottomEnd: 'paging'                
-                },                
+                },
+                language: {"emptyTable": "No deleted messages found.", "zeroRecords": "No matches found."},         
                 initComplete: function () {    
                     var btns = $('.dt-button');
                     btns.addClass('myMiniButton');
