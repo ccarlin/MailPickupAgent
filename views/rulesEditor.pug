@@ -337,7 +337,7 @@ block scripts
 
         function addComboItem(parent, key) {
             showModal('Add Combo', [
-                { name: 'recipient', label: 'Recipient', type: 'text', value: '', placeholder: 'e.g. CHUCK, AMY, or empty for all' },
+                { name: 'recipient', label: 'Recipient', type: 'text', value: '', placeholder: 'e.g. admin, postmaster, or empty for all' },
                 { name: 'sender', label: 'Sender', type: 'text', value: '', placeholder: 'e.g. example.com (leave empty if using IP)' },
                 { name: 'ipAddress', label: 'IP Address', type: 'text', value: '', placeholder: 'e.g. 10.0.0.0/8 (leave empty if using Sender)' }
             ], (values) => {
@@ -355,7 +355,7 @@ block scripts
 
         function editComboItem(parent, key, index, item) {
             showModal('Edit Combo', [
-                { name: 'recipient', label: 'Recipient', type: 'text', value: item.recipient || '', placeholder: 'e.g. CHUCK' },
+                { name: 'recipient', label: 'Recipient', type: 'text', value: item.recipient || '', placeholder: 'e.g. admin' },
                 { name: 'sender', label: 'Sender', type: 'text', value: item.sender || '', placeholder: 'e.g. example.com' },
                 { name: 'ipAddress', label: 'IP Address', type: 'text', value: item.ipAddress || '', placeholder: 'e.g. 10.0.0.0/8' }
             ], (values) => {
@@ -376,12 +376,12 @@ block scripts
             const table = document.createElement('table');
             table.className = 'combo-grid';
             const thead = document.createElement('thead');
-            thead.innerHTML = '<tr><th>Name</th><th>Expression</th><th>Score</th><th>Scope</th><th>Comment</th><th></th></tr>';
+            thead.innerHTML = '<tr><th>Name</th><th>Recipient</th><th>Expression</th><th>Score</th><th>Scope</th><th>Comment</th><th></th></tr>';
             table.appendChild(thead);
             const tbody = document.createElement('tbody');
             arr.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + (item.Comment || '') + '</td>';
+                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td>' + (item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + (item.Comment || '') + '</td>';
                 const tdActions = document.createElement('td');
                 tdActions.className = 'cell-actions';
                 const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editKeywordFilter(parent, key, index, item));
@@ -414,6 +414,7 @@ block scripts
             showModal('Add Keyword Filter', [
                 { name: 'FilterName', label: 'Filter Name', type: 'text', value: '', placeholder: 'e.g. MY_FILTER', fullWidth: true },
                 { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: '', placeholder: 'Regex or plain text', fullWidth: true },
+                { name: 'Recipient', label: 'Recipient', type: 'text', value: '', placeholder: 'admin (empty for all)' },
                 { name: 'Score', label: 'Score', type: 'number', value: '1', placeholder: 'Numeric score' },
                 { name: 'FilterType', label: 'Filter Type', type: 'select', value: '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
                 { name: 'SearchScope', label: 'Search Scope', type: 'select', value: '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }] },
@@ -434,6 +435,7 @@ block scripts
                 FilterCaseSensitive: values.FilterCaseSensitive,
                 Score: values.Score
                 };
+                if (values.Recipient.trim()) filter.Recipient = values.Recipient.trim().toLowerCase();
                 if (values.Comment.trim()) filter.Comment = values.Comment.trim();
                 rulesData[parent][key].push(filter);
                 renderAllSections();
@@ -446,6 +448,7 @@ block scripts
             showModal('Edit Keyword Filter', [
                 { name: 'FilterName', label: 'Filter Name', type: 'text', value: item.FilterName || '', placeholder: 'e.g. MY_FILTER', fullWidth: true },
                 { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: item.FilterExpression || '', placeholder: 'Regex or plain text', fullWidth: true },
+                { name: 'Recipient', label: 'Recipient', type: 'text', value: item.Recipient || '', placeholder: 'admin (empty for all)' },
                 { name: 'Score', label: 'Score', type: 'number', value: item.Score || '1', placeholder: 'Numeric score' },
                 { name: 'FilterType', label: 'Filter Type', type: 'select', value: item.FilterType || '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
                 { name: 'SearchScope', label: 'Search Scope', type: 'select', value: item.SearchScope || '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }] },
@@ -467,6 +470,7 @@ block scripts
                 FilterCaseSensitive: values.FilterCaseSensitive,
                 Score: values.Score
                 };
+                if (values.Recipient.trim()) arr[index].Recipient = values.Recipient.trim().toLowerCase();
                 if (values.Comment.trim()) arr[index].Comment = values.Comment.trim();
                 renderAllSections();
                 markUnsaved();

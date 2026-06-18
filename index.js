@@ -205,12 +205,18 @@ function getKeywordText(parsed, filter) {
   }
 }
 
-function matchKeywordFilter(parsed, filter) {
+function matchKeywordFilter(parsed, filter, recipients) {
   if (!filter) return false;
   // If Enabled is explicitly present and falsy, skip the filter
   if (typeof filter.Enabled !== 'undefined') {
     const en = String(filter.Enabled).trim();
     if (en === '0' || en.toLowerCase() === 'false') return false;
+  }
+
+  // If the filter has a specific Recipient, only apply if one matches
+  if (filter.Recipient && recipients) {
+    const filterRecipient = String(filter.Recipient).trim().toLowerCase();
+    if (!recipients.some(r => r.toLowerCase() === filterRecipient)) return false;
   }
 
   const text = getKeywordText(parsed, filter);
@@ -267,10 +273,10 @@ function matchKeywordFilter(parsed, filter) {
   return expressions.some(e => testExpression(e));
 }
 
-function scoreKeywordFilters(parsed, filters) {
+function scoreKeywordFilters(parsed, filters, recipients) {
   if (!filters || !filters.length) return { score: 0, matches: [] };
   return filters.reduce((acc, filter) => {
-    if (matchKeywordFilter(parsed, filter)) {
+    if (matchKeywordFilter(parsed, filter, recipients)) {
       const score = Number(filter.Score) || 0;
       const filterName = filter.FilterName || 'Keyword';
       tools.logData(`Keyword filter matched: "${filterName}", score: ${score}`);
@@ -519,7 +525,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     let quarantineReasons = [];
     let spamInfoParts = [];
     let spamScore = 0;
-    const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters);
+    const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters, recipients);
     if (keywordResult.score > 0) {
       spamInfoParts.push(`Keywords(${keywordResult.score})`);
       spamScore += keywordResult.score;

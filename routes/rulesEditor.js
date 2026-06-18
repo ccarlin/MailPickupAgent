@@ -43,6 +43,13 @@ function normalizeRules(rulesObj) {
     if (rulesObj.blacklist.countries) lowerStrings(rulesObj.blacklist.countries);
     if (rulesObj.blacklist.ipRanges && Array.isArray(rulesObj.blacklist.ipRanges))
       rulesObj.blacklist.ipRanges = rulesObj.blacklist.ipRanges.map(s => s.toLowerCase());
+    if (rulesObj.blacklist.keywordFilters) {
+      rulesObj.blacklist.keywordFilters.forEach(item => {
+        if (item.Recipient && typeof item.Recipient === 'string') {
+          item.Recipient = item.Recipient.trim().toLowerCase();
+        }
+      });
+    }
   }
   if (rulesObj.allowedTLDs) lowerStrings(rulesObj.allowedTLDs);
   return rulesObj;
