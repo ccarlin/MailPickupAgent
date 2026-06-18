@@ -72,6 +72,9 @@ function getDeletedEmails(callback) {
                                     emailInfo.subject = value;
                                     break;
                                 case "Sender":
+                                    if (!emailInfo.sender) emailInfo.sender = value;
+                                    break;
+                                case "FromAddr":
                                     emailInfo.sender = value;
                                     break;
                                 case "TimeAcquired":

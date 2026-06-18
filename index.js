@@ -466,7 +466,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
         const elapsed = (Date.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
         await updateEmailHeaders(messagePath, destMessageName, ['TLD not allowed'], 99, countryResult.country, 'Blacklisted Sender TLD: ' + fromTld);
-        await deleteEmail(controlFilePath, messagePath, destMessageName);
+        await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
         return;
       }
     }
@@ -478,7 +478,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
       await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted sender'], 99, countryResult.country, 'Blacklisted Sender: ' + fromAddr);
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
       return;
     }
 
@@ -489,7 +489,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
       await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted IP'], 99, countryResult.country, 'Blacklisted Originating IP: ' + originatingIp);
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
       return;
     }
 
@@ -501,7 +501,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
       await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted country'], 99, countryResult.country, 'Originating country: ' + countryResult.country);
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
       return;
     }
 
@@ -512,7 +512,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
       await updateEmailHeaders(messagePath, destMessageName, ['Combo rule matched'], 99, countryResult.country, 'Combo rule matched');
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
       return;
     }
 
@@ -569,7 +569,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Blacklisted', spamDetailInfo, spamScore);
       tools.logData(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
     } 
     // Check if we are above the quarantine threshold
     else if (spamScore >= THRESHOLD_QUARANTINE) {
@@ -577,7 +577,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo, spamScore);
       tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
-      await quarantineEmail(controlFilePath, messagePath, destMessageName);
+      await quarantineEmail(controlFilePath, messagePath, destMessageName, fromAddr);
     } 
     // No threshold reached release email
     else {
@@ -592,9 +592,12 @@ async function processEmail(controlFilePath, messagePath, rules) {
 }
 
 // Moves email to quarantine directory for further analysis and potential release by administrators
-async function quarantineEmail(controlFilePath, messagePath, destMessageName) {
+async function quarantineEmail(controlFilePath, messagePath, destMessageName, fromAddr) {
   const destHeader = path.join(QUARANTINE_DIR, destMessageName.replace(".MAI", ".H00"));
   const destMessage = path.join(QUARANTINE_DIR, destMessageName);
+  if (fromAddr) {
+    fs.appendFileSync(controlFilePath, `\r\nFromAddr=${fromAddr}\r\n`, 'utf8');
+  }
   fs.renameSync(controlFilePath, destHeader);
   fs.renameSync(messagePath, destMessage);
   tools.logData(`Email quarantined: ${destHeader}, ${destMessage}`);
@@ -602,9 +605,12 @@ async function quarantineEmail(controlFilePath, messagePath, destMessageName) {
 
 // Moves email to deleted directory, effectively deleting it from the pickup queue
 // These will be purged after several days by a separate cleanup process, allowing for recovery if needed
-async function deleteEmail(controlFilePath, messagePath, destMessageName) {
+async function deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr) {
   const destHeader = path.join(DELETED_DIR, destMessageName.replace(".MAI", ".H00"));
   const destMessage = path.join(DELETED_DIR, destMessageName);
+  if (fromAddr) {
+    fs.appendFileSync(controlFilePath, `\r\nFromAddr=${fromAddr}\r\n`, 'utf8');
+  }
   fs.renameSync(controlFilePath, destHeader);
   fs.renameSync(messagePath, destMessage);
   tools.logData(`Email deleted: ${destHeader}, ${destMessage}`);

@@ -281,7 +281,12 @@ function getEmails(emailPath, callback)
                                 emailInfo.subject = GetSubject(value);
                                 break;
                             case "Sender":
-                                value = GetEmailRecipient(value, false);
+                                if (!emailInfo.sender) {
+                                    value = GetEmailRecipient(value, false);
+                                    emailInfo.sender = value;
+                                }
+                                break;
+                            case "FromAddr":
                                 emailInfo.sender = value;
                                 break;                            
                         }
