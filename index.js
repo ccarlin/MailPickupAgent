@@ -548,9 +548,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     // 3.2 Quaranetine check - Ollama AI spam check
-    const { aiSpamResult, aiLabel, aiScore, extraReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
+    const { aiSpamResult, aiLabel, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
     spamScore += aiScore;
-    quarantineReasons.push(...extraReasons);
+    quarantineReasons.push(...aiReasons);
     spamScore = Math.round(spamScore * 10) / 10;
 
     const processElapsed = (Date.now() - processStartTime) / 1000;
@@ -590,7 +590,6 @@ async function processEmail(controlFilePath, messagePath, rules) {
   } catch (error) {
     tools.logError(`Error processing ${controlFilePath} and ${messagePath}: ${error}`);
   }
-
 }
 
 // Moves email to quarantine directory for further analysis and potential release by administrators
