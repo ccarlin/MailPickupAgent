@@ -66,13 +66,13 @@ function getDeletedEmails(callback) {
                             let value = data[1];
                             switch(key) {
                                 case "Recipients":
-                                    emailInfo.recipients = tools.simplifyRecipient(value);
+                                    emailInfo.recipients = value;
                                     break;
                                 case "Subject":
                                     emailInfo.subject = value;
                                     break;
                                 case "Sender":
-                                    emailInfo.sender = tools.extractCleanEmail(value);
+                                    emailInfo.sender = value;
                                     break;
                                 case "TimeAcquired":
                                     emailInfo.timeAcquired = value;

@@ -31,8 +31,8 @@ router.get('/', function(req, res) {
                     obj.dateTime = lineParts[0];   
                     obj.action = lineParts[1]; 
                     obj.subject = lineParts[2];
-                    obj.sender = tools.extractCleanEmail(lineParts[3]);
-                    obj.recipient = tools.simplifyRecipient(lineParts[4]);
+                    obj.sender = lineParts[3];
+                    obj.recipient = lineParts[4];
                     obj.spamScore = lineParts[5];
                     obj.spamResults = lineParts[6];
                     obj.dkim = lineParts[7];
