@@ -76,7 +76,7 @@ block content
                     var btns = $('.dt-button');
                     btns.addClass('myMiniButton');
                     btns.removeClass('dt-button');               
-                    [3].forEach(idx => multiFilterSetup(this.api().column(idx), 140));                             
+                    [3].forEach(idx => multiFilterSetup(this.api().column(idx)));                             
                 }
             });
         });
@@ -114,13 +114,13 @@ block content
                 thead
                     th(scope='col')
                         input#chkSelectAll(type='checkbox')
-                    th(scope='col') Time
+                    th(align='left' scope='col' style='white-space: nowrap;') Time
                     th(scope='col') Sender
                     th(scope='col') Recipient
                     th(scope='col') Subject
-                    th(scope='col') SpamScore
+                    th(align='left' scope='col' style='white-space: nowrap;') Score
                     th(scope='col') Reason
-                    th(scope='col') Actions
+                    th(align='left' scope='col' style='white-space: nowrap;') Actions
                 each email, idx in emails
                     tr
                         td
