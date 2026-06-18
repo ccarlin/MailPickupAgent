@@ -540,7 +540,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
         const saInfo = `SpamAssassin(${saResult.score})`;
         spamInfoParts.push(saInfo);
         if (saResult.fullReport && saResult.score > 0) 
-          quarantineEmail.push(`${saInfo} - ${saResult.fullReport}`);        
+          quarantineReasons.push(`${saInfo} - ${saResult.fullReport}`);        
       } else {
         tools.logError('SpamAssassin check unavailable, continuing with other checks');
       }
