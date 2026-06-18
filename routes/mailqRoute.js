@@ -421,20 +421,21 @@ function GetSubject(value)
 function GetEmailRecipient(emailList, bFirstOnly)
 {
     let retValue = "";
-    let pieces = emailList.split(/[:;\]]/);
+    let pieces = emailList.split(/[:;,\]]/);
     for(let i=0;i<pieces.length;i++)
     {
-        let piece = pieces[i];
+        let piece = pieces[i].trim();
         if (piece.length > 0)
         {
-            if (piece.includes("@"))
+            let cleanEmail = parseEmailAddress(piece);
+            if (cleanEmail)
             {
-                if (retValue.Length > 0)
+                if (retValue.length > 0)
                     retValue += ", ";
                 if (bFirstOnly)
-                    retValue += piece.split('@')[0];
+                    retValue += cleanEmail.split('@')[0];
                 else
-                    retValue += piece;
+                    retValue += cleanEmail;
             }
         }
     }

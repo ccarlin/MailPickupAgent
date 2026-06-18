@@ -172,6 +172,31 @@ module.exports = {
      * @param {string} [pagePath] Optional - if provided the key will be tied to a single page (include full path or identifier)
      * @returns {string} md5 hash key
      */
+    // Extract a clean email address from text that may contain display name + angle brackets
+    // e.g. "John Doe <john@example.com>" -> "john@example.com"
+    extractCleanEmail: function(text) {
+        if (!text) return '';
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+        const match = text.match(emailRegex);
+        return match ? match[0] : text;
+    },
+    // Simplify recipient(s) to just the local-part (before @) of each clean email
+    // e.g. "John Doe <john@example.com>" -> "john"
+    // e.g. "user1@domain.com; User2 <user2@domain.com>" -> "user1, user2"
+    simplifyRecipient: function(recipientsText) {
+        if (!recipientsText) return '';
+        let parts = recipientsText.split(/[:;,|\]]/);
+        let names = [];
+        for (let p of parts) {
+            p = p.trim();
+            if (!p) continue;
+            let email = this.extractCleanEmail(p);
+            if (email && email.includes('@')) {
+                names.push(email.split('@')[0]);
+            }
+        }
+        return names.join(', ');
+    },
     generateKey: function(localAddress, remoteAddress, pagePath) {
       localAddress = localAddress || '';
       remoteAddress = remoteAddress || '';
