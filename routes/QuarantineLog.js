@@ -47,7 +47,7 @@ router.get('/', function(req, res) {
         }
                     
         let title = "Quarantine Log";
-        res.render('QuarantineLog', { title, logData: logList}); 
+        res.render('QuarantineLogGrid', { title, logData: logList}); 
     });
 }); 
 

@@ -28,6 +28,10 @@ block css
         .preview-modal-content iframe {
             flex: 1; border: 1px solid #ddd; border-radius: 4px;
         }
+        .last-update {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
     
 block scripts
@@ -104,7 +108,7 @@ block content
             $('#emailPreviewModal').show();
         });
 
-    div(align="right" style="margin-bottom:4px;") #{currentTime}
+    div.last-update(align="right") Last updated: #{currentTime}
     form(action='/deleted', method="POST")
         div
             table#GridView1(class="row-border compact order-column hover stripe" style='width: 100%; font-size: small')

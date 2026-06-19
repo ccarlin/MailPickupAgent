@@ -5,13 +5,7 @@ block css
     link(href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.min.css" rel="stylesheet" integrity="sha384-gZdV4/a6Gt/Qu0qCP3bchrOj0WlpkAfszB1m4/eFzOSnvvHUFMv9+C/KcgMO8CeR" crossorigin="anonymous")
     link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
     link(href="/css/sumoselect.min.css" rel="stylesheet"  type="text/css")
-    style.
-        body {
-            background-color: white;
-        }         
-        .hideChat {
-            display: none;
-        }
+    style.       
         #myTable {
             table-layout: fixed;
             width: 100%;
@@ -22,6 +16,12 @@ block css
         }
         .dataTables_wrapper {
             overflow-x: hidden;
+        }
+        .last-update {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: right;
+            margin-bottom: 4px;
         }
         
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
@@ -65,7 +65,7 @@ block content
         });  
                
     form
-        div #{currentTime} 
+        .last-update Last updated: #{currentTime} 
         table#myTable(class="row-border compact order-column hover stripe" style="font-size: small;")
             thead    
                 th(align='left' scope='col' style='white-space: nowrap;') Time Stamp

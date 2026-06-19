@@ -36,6 +36,10 @@ block css
             min-width: 420px; max-width: 600px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
+        .last-update {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
 
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
@@ -357,7 +361,7 @@ block content
             };
         }
         
-    div(align="right" style="margin-bottom:4px;") #{currentTime}
+    div.last-update(align="right") Last updated: #{currentTime}
     form#mainForm(action='/mailq', method="POST")
         input(type='hidden' name='listType' id='listType')
         div
