@@ -450,16 +450,6 @@ html(lang='en')
               )
               span Deleted Messages
           li.menu-item
-            a(href='/smtplog?today=true')
-              img(
-                src="/img/smtplog.png"
-                alt="SMTP"
-                title="SMTP Log"
-                style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
-                onclick="window.open('/smtplog?today=true', '_blank'); return false;"
-              )
-              span SMTP Log       
-          li.menu-item
             a(href='/MailLog?today=true')
               img(src="/img/email.png" 
                 alt="Mail Log" 
@@ -477,6 +467,16 @@ html(lang='en')
                 onclick="window.open('/QuarantineLog?today=true', '_blank'); return false;"
               )
               span Quarantine Log
+          li.menu-item
+            a(href='/smtplog?today=true')
+              img(
+                src="/img/smtplog.png"
+                alt="SMTP"
+                title="SMTP Log"
+                style="width:22px; height:22px; vertical-align:middle; margin-right:8px; cursor:pointer;"
+                onclick="window.open('/smtplog?today=true', '_blank'); return false;"
+              )
+              span SMTP Log       
           li.menu-separator
             hr
           li.menu-item

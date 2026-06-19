@@ -231,7 +231,7 @@ router.get('/', function(req, res) {
         if (filterUser && filterUser != "all")
             res.render('mailqCard', { title, emails, currentTime: now, filterUser });    
         else
-            res.render('mailq', { title, emails, currentTime: now, filterUser});
+            res.render('MailqGrid', { title, emails, currentTime: now, filterUser});
     });    
 }); 
 

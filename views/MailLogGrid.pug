@@ -4,27 +4,27 @@ block css
     link(href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet")
     link(href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet")
     style.
-        .quarantine-grid-wrapper {
+        .mail-grid-wrapper {
             font-family: 'Roboto', sans-serif;
             margin: 0.5rem 0;
         }
-        .quarantine-grid-wrapper .gridjs-container {
+        .mail-grid-wrapper .gridjs-container {
             font-family: 'Roboto', sans-serif;
             color: #1e293b;
         }
-        .quarantine-grid-wrapper .gridjs-head {
+        .mail-grid-wrapper .gridjs-head {
             display: none;
         }
-        .quarantine-grid-wrapper table {
+        .mail-grid-wrapper table {
             border-collapse: collapse;
             width: 100%;
             font-size: 0.8125rem;
         }
-        .quarantine-grid-wrapper td {
+        .mail-grid-wrapper td {
             overflow: visible !important;
             text-overflow: clip !important;
         }
-        .quarantine-grid-wrapper th {
+        .mail-grid-wrapper th {
             background: #1976d2;
             color: #fff;
             font-weight: 500;
@@ -39,42 +39,42 @@ block css
             vertical-align: middle;
             line-height: 1.6;
         }
-        .quarantine-grid-wrapper th:hover {
+        .mail-grid-wrapper th:hover {
             background: #1565c0;
         }
-        .quarantine-grid-wrapper th .gridjs-th-content {
+        .mail-grid-wrapper th .gridjs-th-content {
             float: left;
             white-space: nowrap;
             overflow: visible !important;
             text-overflow: clip !important;
             width: calc(100% - 16px);
         }
-        .quarantine-grid-wrapper th .gridjs-sort {
+        .mail-grid-wrapper th .gridjs-sort {
             filter: brightness(0) invert(1);
             opacity: 0.7;
         }
-        .quarantine-grid-wrapper th .gridjs-sort:hover {
+        .mail-grid-wrapper th .gridjs-sort:hover {
             opacity: 1;
         }
-        .quarantine-grid-wrapper td {
+        .mail-grid-wrapper td {
             padding: 10px 16px;
             border-bottom: 1px solid #e2e8f0;
             color: #334155;
             word-break: break-word;
         }
-        .quarantine-grid-wrapper tbody tr {
+        .mail-grid-wrapper tbody tr {
             transition: background-color 0.15s ease;
         }
-        .quarantine-grid-wrapper tbody tr:hover {
+        .mail-grid-wrapper tbody tr:hover {
             background-color: #e3f2fd;
         }
-        .quarantine-grid-wrapper tbody tr:nth-child(even) {
+        .mail-grid-wrapper tbody tr:nth-child(even) {
             background-color: #fafafa;
         }
-        .quarantine-grid-wrapper tbody tr:nth-child(even):hover {
+        .mail-grid-wrapper tbody tr:nth-child(even):hover {
             background-color: #e3f2fd;
         }
-        .quarantine-grid-wrapper .gridjs-footer {
+        .mail-grid-wrapper .gridjs-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -84,12 +84,12 @@ block css
             font-size: 0.8125rem;
             color: #64748b;
         }
-        .quarantine-grid-wrapper .gridjs-pagination {
+        .mail-grid-wrapper .gridjs-pagination {
             display: flex;
             align-items: center;
             gap: 4px;
         }
-        .quarantine-grid-wrapper .gridjs-pagination button {
+        .mail-grid-wrapper .gridjs-pagination button {
             min-width: 32px;
             height: 32px;
             padding: 0 8px;
@@ -102,26 +102,26 @@ block css
             cursor: pointer;
             transition: all 0.15s ease;
         }
-        .quarantine-grid-wrapper .gridjs-pagination button:hover:not(:disabled) {
+        .mail-grid-wrapper .gridjs-pagination button:hover:not(:disabled) {
             background: #e3f2fd;
             border-color: #1976d2;
             color: #1976d2;
         }
-        .quarantine-grid-wrapper .gridjs-pagination button:disabled {
+        .mail-grid-wrapper .gridjs-pagination button:disabled {
             opacity: 0.4;
             cursor: default;
         }
-        .quarantine-grid-wrapper .gridjs-pagination button.gridjs-currentPage {
+        .mail-grid-wrapper .gridjs-pagination button.gridjs-currentPage {
             background: #1976d2;
             color: #fff;
             border-color: #1976d2;
             font-weight: 500;
         }
-        .quarantine-grid-wrapper .gridjs-summary {
+        .mail-grid-wrapper .gridjs-summary {
             color: #64748b;
             font-size: 0.8125rem;
         }
-        .quarantine-grid-wrapper .gridjs-table-wrap {
+        .mail-grid-wrapper .gridjs-table-wrap {
             overflow-x: auto;
         }
         .mui-card {
@@ -134,29 +134,15 @@ block css
         .mui-card:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
         }
-        .mui-card-header {
-            padding: 16px 20px 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .mui-card-header h3 {
-            margin: 0;
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #1e293b;
-        }
-        .mui-card-header .mui-badge {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
         .mui-divider {
             height: 1px;
             background: #e2e8f0;
+        }
+        .mui-last-update {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            padding: 6px 20px 0;
+            text-align: right;
         }
         .mui-empty {
             text-align: center;
@@ -324,6 +310,14 @@ block css
         .mui-filter-clear:hover {
             background: #e3f2fd;
         }
+        .mail-grid-wrapper td a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .mail-grid-wrapper td a:hover {
+            text-decoration: underline;
+        }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
 block scripts
@@ -335,18 +329,22 @@ block content
             var logData = !{JSON.stringify(logData)};
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
-                return [e.dateTime, e.action, e.sender, e.recipient, e.subject, String(score), e.spamResults, e.ipAddress];
+                return [e.dateTime, e.ipAddress, e.Country, e.sender, e.recipient, e.subject, e.msgSize, String(score), e.spamResult, e.spamInfo, e.ipLookup];
             });
 
             var grid = null;
             var filteredData = allData.slice();
 
             var filterConfig = [
-                { idx: 1, label: 'Action', key: 'action' },
-                { idx: 3, label: 'Recipient', key: 'recipient' }
+                { idx: 2, label: 'Country', key: 'country' },
+                { idx: 4, label: 'Recipient', key: 'recipient' },
+                { idx: 9, label: 'Details', key: 'details' }
             ];
 
             var customSearchInput = document.getElementById('custom-search');
+            document.getElementById('last-update').textContent = '#{currentTime}';
+
+            setTimeout(function() { location.reload(true); }, 600000);
 
             function getDistinct(colIdx) {
                 var set = {};
@@ -452,29 +450,39 @@ block content
             }
 
             function renderGrid() {
-                var container = document.getElementById('quarantine-grid');
+                var container = document.getElementById('mail-grid');
                 if (grid) {
                     grid.updateConfig({ data: filteredData }).forceRender();
                 } else {
                     grid = new gridjs.Grid({
                         columns: [
                             { name: 'Time Stamp', width: '150px', sort: true },
-                            { name: 'Action', width: '90px', sort: true },
+                            {
+                                name: 'IP Address',
+                                width: '140px',
+                                sort: true,
+                                formatter: function(cell, row) {
+                                    var ip = cell;
+                                    var lookup = row.cells[row.cells.length - 1].data;
+                                    return gridjs.html('<a href="' + lookup + '" target="_blank">' + ip + '</a>');
+                                }
+                            },
+                            { name: 'Country', width: '100px', sort: true },
                             { name: 'Sender', width: '200px', sort: true },
-                            { name: 'Recipient', width: '80px', sort: true },
-                            { name: 'Subject', width: '280px', sort: true },
-                            { name: 'Score', width: '65px', sort: true },
-                            { name: 'SPAM Results', width: '240px', sort: true },
-                            { name: 'IP Address', width: '100px', sort: true }
+                            { name: 'Recipient', width: '120px', sort: true },
+                            { name: 'Subject', width: '220px', sort: true },
+                            { name: 'Size(Kb)', width: '80px', sort: true },
+                            { name: 'Score', width: '80px', sort: true },
+                            { name: 'Result', width: '120px', sort: true },
+                            { name: 'Details', width: '180px', sort: true },
+                            { name: 'ipLookup', hidden: true }
                         ],
                         data: filteredData,
-                        pagination: { limit: 8, summary: true },
-                        search: {
-                            enabled: false
-                        },
+                        pagination: { limit: 10, summary: true },
+                        search: { enabled: false },
                         sort: true,
                         language: {
-                            'nothing found': '<div class="mui-empty"><i class="fas fa-shield-alt"></i>Nothing to see here move along.</div>'
+                            'nothing found': '<div class="mui-empty"><i class="fas fa-envelope"></i>Nothing to see here move along.</div>'
                         },
                         className: {
                             table: 'gridjs-table',
@@ -499,7 +507,7 @@ block content
                     });
                 } else {
                     filteredData = allData.filter(function(row) {
-                        for (var ci = 0; ci < row.length; ci++) {
+                        for (var ci = 0; ci < row.length - 1; ci++) {
                             if (String(row[ci]).toLowerCase().indexOf(q) !== -1) return true;
                         }
                         return false;
@@ -518,26 +526,26 @@ block content
 
             document.getElementById('btn-csv').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Time Stamp','Action','Sender','Recipient','Subject','Score','SPAM Results','IP Address'];
+                var header = ['Time Stamp','IP Address','Country','Sender','Recipient','Subject','Size(Kb)','Score','Result','Details'];
                 var csv = header.join(',') + '\\n';
                 rows.forEach(function(r) {
-                    var esc = r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
+                    var esc = r.slice(0, 10).map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
                     csv += esc.join(',') + '\\n';
                 });
                 var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 var link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = 'QuarantineLog.csv';
+                link.download = 'MailLog.csv';
                 link.click();
                 URL.revokeObjectURL(link.href);
             });
 
             document.getElementById('btn-copy').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Time Stamp','Action','Sender','Recipient','Subject','Score','SPAM Results','IP Address'];
-                var pad = [20, 12, 30, 30, 40, 8, 30, 16];
+                var header = ['Time Stamp','IP Address','Country','Sender','Recipient','Subject','Size(Kb)','Score','Result','Details'];
+                var pad = [20, 16, 10, 30, 30, 40, 10, 8, 14, 20];
                 function fmtRow(arr) {
-                    return arr.map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
+                    return arr.slice(0, 10).map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
                 }
                 var text = fmtRow(header) + '\\n' + '-'.repeat(fmtRow(header).length) + '\\n';
                 text += rows.map(fmtRow).join('\\n');
@@ -552,16 +560,16 @@ block content
             document.getElementById('btn-print').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
                 var win = window.open('', '_blank');
-                var html = '<!DOCTYPE html><html><head><title>Quarantine Log</title>';
+                var html = '<!DOCTYPE html><html><head><title>Mail Log</title>';
                 html += '<style>body{font-family:Roboto,sans-serif;margin:20px;}';
                 html += 'h2{color:#1e293b;}table{border-collapse:collapse;width:100%;font-size:12px;}';
                 html += 'th{background:#1976d2;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}';
                 html += 'td{padding:6px 10px;border-bottom:1px solid #e2e8f0;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
-                html += '<h2>Quarantine Log</h2><table><thead><tr>';
-                html += '<th>Time Stamp</th><th>Action</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Score</th><th>SPAM Results</th><th>IP Address</th>';
+                html += '<h2>Mail Log</h2><table><thead><tr>';
+                html += '<th>Time Stamp</th><th>IP Address</th><th>Country</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Size(Kb)</th><th>Score</th><th>Result</th><th>Details</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
-                    html += '<tr>' + r.map(function(c) { return '<td>' + String(c) + '</td>'; }).join('') + '</tr>';
+                    html += '<tr>' + r.slice(0, 10).map(function(c) { return '<td>' + String(c) + '</td>'; }).join('') + '</tr>';
                 });
                 html += '</tbody></table></body></html>';
                 win.document.write(html);
@@ -579,8 +587,9 @@ block content
             renderGrid();
         });
 
-    .quarantine-grid-wrapper
+    .mail-grid-wrapper
         .mui-card
+            .mui-last-update Last updated: <span id="last-update"></span>
             .mui-filters-row
                 .mui-filters-left
                     .mui-btn#btn-csv
@@ -594,13 +603,16 @@ block content
                         | Print
                     .mui-btn-separator(style="width:1px;height:24px;background:#e2e8f0;margin:0 4px;")
                     .mui-filter-group
-                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-right:4px;") Action
-                        #ms-action
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-right:4px;") Country
+                        #ms-country
                     .mui-filter-group
                         label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-right:4px;") Recipient
                         #ms-recipient
+                    .mui-filter-group
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-right:4px;") Details
+                        #ms-details
                     button.mui-filter-clear#btn-clear-filters Clear
                 .mui-filters-right
                     input#custom-search(type="search" placeholder="Search...")
             .mui-divider
-            #quarantine-grid
+            #mail-grid

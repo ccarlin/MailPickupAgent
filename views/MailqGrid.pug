@@ -1,0 +1,822 @@
+extends adminLayout
+
+block css
+    link(href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet")
+    link(href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet")
+    link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
+    style.
+        .mailq-grid-wrapper {
+            font-family: 'Roboto', sans-serif;
+            margin: 0.5rem 0;
+        }
+        .mailq-grid-wrapper .gridjs-container {
+            font-family: 'Roboto', sans-serif;
+            color: #1e293b;
+        }
+        .mailq-grid-wrapper .gridjs-head {
+            display: none;
+        }
+        .mailq-grid-wrapper table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.8125rem;
+        }
+        .mailq-grid-wrapper td {
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+        .mailq-grid-wrapper th {
+            background: #1976d2;
+            color: #fff;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 6px 8px;
+            text-align: left;
+            white-space: nowrap;
+            border: none;
+            user-select: none;
+            vertical-align: middle;
+            line-height: 1.6;
+        }
+        .mailq-grid-wrapper th:hover {
+            background: #1565c0;
+        }
+        .mailq-grid-wrapper th .gridjs-th-content {
+            float: left;
+            white-space: nowrap;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            width: calc(100% - 16px);
+        }
+        .mailq-grid-wrapper th .gridjs-sort {
+            filter: brightness(0) invert(1);
+            opacity: 0.7;
+        }
+        .mailq-grid-wrapper th .gridjs-sort:hover {
+            opacity: 1;
+        }
+        .mailq-grid-wrapper td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            word-break: break-word;
+        }
+        .mailq-grid-wrapper tbody tr {
+            transition: background-color 0.15s ease;
+        }
+        .mailq-grid-wrapper tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+        .mailq-grid-wrapper tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .mailq-grid-wrapper tbody tr:nth-child(even):hover {
+            background-color: #e3f2fd;
+        }
+        .mailq-grid-wrapper .gridjs-footer {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 8px 16px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.8125rem;
+            color: #64748b;
+        }
+        .mui-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            overflow: hidden;
+            transition: box-shadow 0.2s ease;
+        }
+        .mui-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .mui-divider {
+            height: 1px;
+            background: #e2e8f0;
+        }
+        .mui-last-update {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            padding: 6px 20px 0;
+            text-align: right;
+        }
+        .mui-empty {
+            text-align: center;
+            padding: 48px 16px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .mui-empty i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 12px;
+            color: #cbd5e1;
+        }
+        .mui-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background: #fff;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .mui-btn:hover {
+            background: #1976d2;
+            border-color: #1976d2;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(25,118,210,0.25);
+        }
+        .mui-btn:active {
+            background: #1565c0;
+            border-color: #1565c0;
+            transform: translateY(1px);
+        }
+        .mui-btn i {
+            font-size: 0.85rem;
+        }
+        .mui-btn.mui-btn-danger {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: #fff;
+        }
+        .mui-btn.mui-btn-danger:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+            box-shadow: 0 2px 6px rgba(239,68,68,0.3);
+        }
+        .mui-btn.mui-btn-danger:active {
+            background: #b91c1c;
+        }
+        .mui-btn.mui-btn-success {
+            background: #10b981;
+            border-color: #10b981;
+            color: #fff;
+        }
+        .mui-btn.mui-btn-success:hover {
+            background: #059669;
+            border-color: #059669;
+            box-shadow: 0 2px 6px rgba(16,185,129,0.3);
+        }
+        .mui-btn.mui-btn-success:active {
+            background: #047857;
+        }
+        .mui-btn.mui-btn-warning {
+            background: #f59e0b;
+            border-color: #f59e0b;
+            color: #fff;
+        }
+        .mui-btn.mui-btn-warning:hover {
+            background: #d97706;
+            border-color: #d97706;
+            box-shadow: 0 2px 6px rgba(245,158,11,0.3);
+        }
+        .mui-btn.mui-btn-warning:active {
+            background: #b45309;
+        }
+        .mui-btn.mui-btn-dark {
+            background: #1e293b;
+            border-color: #1e293b;
+            color: #fff;
+        }
+        .mui-btn.mui-btn-dark:hover {
+            background: #0f172a;
+            border-color: #0f172a;
+        }
+        .mui-filters-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .mui-filters-row .mui-filters-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .mui-filters-row .mui-filters-right {
+            display: flex;
+            align-items: center;
+        }
+        .mui-filters-row .mui-filters-right input {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 200px;
+        }
+        .mui-filters-row .mui-filters-right input:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+        }
+        .mui-select-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            cursor: pointer;
+            user-select: none;
+        }
+        .mui-select-all input {
+            accent-color: #1976d2;
+            margin: 0;
+        }
+        .mui-btn-sep {
+            width: 1px;
+            height: 24px;
+            background: #e2e8f0;
+        }
+        .mailq-grid-wrapper td a {
+            color: #1976d2;
+            text-decoration: none;
+        }
+        .mailq-grid-wrapper td a:hover {
+            text-decoration: underline;
+        }
+        .mailq-grid-wrapper td .sender-danger {
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .action-btn {
+            background: #6c757d;
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            transition: background 0.15s;
+        }
+        .action-btn:hover {
+            background: #5a6268;
+        }
+        .action-btn .material-icons {
+            font-size: 14px;
+        }
+        .action-btn.btn-whitelist { background-color: #17a2b8; }
+        .action-btn.btn-whitelist:hover { background-color: #138496; }
+        .action-btn.btn-blacklist { background-color: #000; }
+        .action-btn.btn-blacklist:hover { background-color: #333; }
+        .preview-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7); z-index: 100;
+            display: none;
+        }
+        .preview-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: #fff; padding: 20px; border-radius: 10px;
+            width: 85vw; height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        .preview-modal-content h2 {
+            margin: 0 0 10px 0;
+        }
+        .preview-modal-content iframe {
+            flex: 1; border: 1px solid #ddd; border-radius: 4px;
+        }
+        .listing-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: #fff; padding: 24px; border-radius: 10px;
+            min-width: 420px; max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+    link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
+
+block scripts
+    script(src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js")
+
+block content
+    script.
+        var hsFilterUser = !{JSON.stringify(filterUser || null)};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var emailData = !{JSON.stringify(emails)};
+            var emailStore = {};
+            var allData = emailData.map(function(e) {
+                var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
+                var row = [e.filepath, e.recipients, e.sender, e.subject, String(score), e.antiSpam, e.date, e.clientip, e.dkim, e.safe, e.clientipinfo];
+                emailStore[e.filepath] = { subject: e.subject, sender: e.sender, recipients: e.recipients, spamScore: score, antiSpam: e.antiSpam, clientip: e.clientip, datetime: e.date, dkim: e.dkim };
+                return row;
+            });
+
+            var grid = null;
+            var filteredData = allData.slice();
+            var customSearchInput = document.getElementById('custom-search');
+            document.getElementById('last-update').textContent = '#{currentTime}';
+
+            setTimeout(function() { location.reload(true); }, 600000);
+
+            function selectAll(checked) {
+                document.querySelectorAll('.mailq-chk').forEach(function(cb) { cb.checked = checked; });
+            }
+
+            function getCheckedFilepaths() {
+                var result = [];
+                document.querySelectorAll('.mailq-chk:checked').forEach(function(cb) { result.push(cb.value); });
+                return result;
+            }
+
+            function confirmCheck(action) {
+                var checked = getCheckedFilepaths();
+                if (checked.length === 0) {
+                    alert('Please select one or more messages.');
+                    return false;
+                }
+                return confirm('Are you sure you wish to ' + action + ' ' + checked.length + ' email(s)?');
+            }
+
+            function doBatchAction(action) {
+                if (!confirmCheck(action)) return;
+                var checked = getCheckedFilepaths();
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/mailq';
+                form.style.display = 'none';
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'action';
+                inp.value = action.charAt(0).toUpperCase() + action.slice(1);
+                form.appendChild(inp);
+                checked.forEach(function(fp) {
+                    var h = document.createElement('input');
+                    h.type = 'hidden';
+                    h.name = fp;
+                    h.value = 'on';
+                    form.appendChild(h);
+                    var data = emailStore[fp];
+                    if (data) {
+                        Object.keys(data).forEach(function(k) {
+                            var f = document.createElement('input');
+                            f.type = 'hidden';
+                            f.name = 'data[' + fp + '][' + k + ']';
+                            f.value = data[k];
+                            form.appendChild(f);
+                        });
+                    }
+                });
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            function doFilterClear() {
+                if (!confirm('Clear MailQ user filter?')) return;
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/mailq';
+                form.style.display = 'none';
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'action';
+                inp.value = 'Filter Clear';
+                form.appendChild(inp);
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            function showBatchListingModal(action) {
+                var checked = getCheckedFilepaths();
+                if (checked.length === 0) {
+                    alert('Please select one or more messages.');
+                    return;
+                }
+                pendingAction = action;
+                pendingItems = [];
+                checked.forEach(function(fp) {
+                    var data = emailStore[fp];
+                    if (data) pendingItems.push({ sender: data.sender });
+                });
+                document.getElementById('listingModalTitle').textContent = (action === 'whitelist' ? 'Whitelist' : 'Blacklist') + ' Senders';
+                renderListingPreview();
+                document.getElementById('listingModal').style.display = 'block';
+            }
+
+            var pendingAction = null;
+            var pendingItems = [];
+
+            function renderListingPreview() {
+                var isDomain = document.querySelector('input[name="listTypeChoice"]:checked').value === 'domain';
+                var seen = {};
+                var list = document.getElementById('listingAddressList');
+                list.innerHTML = '';
+                pendingItems.forEach(function(item) {
+                    var display = isDomain ? extractDomain(item.sender) : item.sender;
+                    if (!seen[display]) {
+                        seen[display] = true;
+                        var div = document.createElement('div');
+                        div.textContent = display;
+                        list.appendChild(div);
+                    }
+                });
+            }
+
+            function extractDomain(email) {
+                var atIndex = email.lastIndexOf('@');
+                if (atIndex !== -1) return '@' + email.slice(atIndex + 1);
+                return email;
+            }
+
+            function confirmListing() {
+                var isDomain = document.querySelector('input[name="listTypeChoice"]:checked').value === 'domain';
+                document.getElementById('listingModal').style.display = 'none';
+                if (pendingItems.length === 1 && pendingItems[0]._btn) {
+                    performSingleAction(pendingAction, pendingItems[0], isDomain ? 'domain' : 'email');
+                } else {
+                    var checked = getCheckedFilepaths();
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/mailq';
+                    form.style.display = 'none';
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = 'action';
+                    inp.value = pendingAction;
+                    form.appendChild(inp);
+                    var lt = document.createElement('input');
+                    lt.type = 'hidden';
+                    lt.name = 'listType';
+                    lt.value = isDomain ? 'domain' : 'email';
+                    form.appendChild(lt);
+                    checked.forEach(function(fp) {
+                        var h = document.createElement('input');
+                        h.type = 'hidden';
+                        h.name = fp;
+                        h.value = 'on';
+                        form.appendChild(h);
+                        var data = emailStore[fp];
+                        if (data) {
+                            Object.keys(data).forEach(function(k) {
+                                var f = document.createElement('input');
+                                f.type = 'hidden';
+                                f.name = 'data[' + fp + '][' + k + ']';
+                                f.value = data[k];
+                                form.appendChild(f);
+                            });
+                        }
+                    });
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+                pendingAction = null;
+                pendingItems = [];
+            }
+
+            function closeListingModal() {
+                document.getElementById('listingModal').style.display = 'none';
+                pendingAction = null;
+                pendingItems = [];
+            }
+
+            function showSingleListingModal(btn) {
+                var action = btn.classList.contains('btn-blacklist') ? 'blacklist' : 'whitelist';
+                var rawKey = btn.getAttribute('data-mailkey') || '';
+                var filepath = rawKey ? decodeURIComponent(rawKey) : '';
+                if (!filepath) return;
+                pendingAction = action;
+                pendingItems = [];
+                var data = emailStore[filepath];
+                pendingItems.push({
+                    filepath: filepath,
+                    sender: data ? data.sender : '',
+                    _btn: btn,
+                    subject: data ? data.subject : '',
+                    recipients: data ? data.recipients : '',
+                    spamScore: data ? data.spamScore : '',
+                    antiSpam: data ? data.antiSpam : '',
+                    datetime: data ? data.datetime : '',
+                    dkim: data ? data.dkim : ''
+                });
+                document.getElementById('listingModalTitle').textContent = (action === 'whitelist' ? 'Whitelist' : 'Blacklist') + ' Sender';
+                renderListingPreview();
+                document.getElementById('listingModal').style.display = 'block';
+            }
+
+            function performSingleAction(action, item, listType) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/mailq/action';
+                form.style.display = 'none';
+                function addField(name, value) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+                addField('action', action);
+                addField('filePath', item.filepath);
+                addField('subject', item.subject);
+                addField('sender', item.sender);
+                addField('recipients', item.recipients);
+                addField('spamScore', item.spamScore);
+                addField('antiSpam', item.antiSpam);
+                addField('clientip', '');
+                addField('datetime', item.datetime);
+                addField('dkim', item.dkim);
+                addField('listType', listType);
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            function closePreviewModal() {
+                document.getElementById('emailPreviewModal').style.display = 'none';
+                document.getElementById('emailPreviewFrame').src = '';
+            }
+
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('.preview-link');
+                if (!link) return;
+                e.preventDefault();
+                var key = link.getAttribute('data-mailkey');
+                var view = link.getAttribute('data-view');
+                if (!key) return;
+                var url = view === 'html' ? 'emailPreview?view=HTML&mailKey=' + encodeURIComponent(key) : 'emailPreview?mailKey=' + encodeURIComponent(key);
+                document.getElementById('emailPreviewFrame').src = url;
+                document.getElementById('emailPreviewModal').style.display = 'block';
+            });
+
+            document.getElementById('chkSelectAll').addEventListener('change', function() {
+                selectAll(this.checked);
+            });
+
+            document.getElementById('btn-delete-all').addEventListener('click', function() {
+                selectAll(true);
+                doBatchAction('delete');
+            });
+
+            document.getElementById('btn-delete').addEventListener('click', function() { doBatchAction('delete'); });
+            document.getElementById('btn-release').addEventListener('click', function() { doBatchAction('release'); });
+            document.getElementById('btn-whitelist').addEventListener('click', function() { showBatchListingModal('whitelist'); });
+            document.getElementById('btn-blacklist').addEventListener('click', function() { showBatchListingModal('blacklist'); });
+
+            var filterClearBtn = document.getElementById('btn-filter-clear');
+            if (filterClearBtn) {
+                filterClearBtn.addEventListener('click', doFilterClear);
+            }
+
+            document.querySelectorAll('input[name="listTypeChoice"]').forEach(function(el) {
+                el.addEventListener('change', renderListingPreview);
+            });
+
+            document.getElementById('listingModalCloseBtn').addEventListener('click', closeListingModal);
+            document.getElementById('listingConfirmBtn').addEventListener('click', confirmListing);
+            document.getElementById('listingCancelBtn').addEventListener('click', closeListingModal);
+            document.getElementById('previewCloseBtn').addEventListener('click', closePreviewModal);
+
+            function renderGrid() {
+                var container = document.getElementById('mailq-grid');
+                if (grid) {
+                    grid.updateConfig({ data: filteredData }).forceRender();
+                } else {
+                    grid = new gridjs.Grid({
+                        columns: [
+                            {
+                                name: ' ',
+                                width: '40px',
+                                sort: false,
+                                formatter: function(cell) {
+                                    return gridjs.html('<input type="checkbox" class="mailq-chk" value="' + cell.replace(/"/g, '&quot;') + '">');
+                                }
+                            },
+                            { name: 'Recipients', width: '180px', sort: true },
+                            {
+                                name: 'Sender',
+                                width: '200px',
+                                sort: true,
+                                formatter: function(cell, row) {
+                                    var raw = cell;
+                                    var safe = row.cells[9].data;
+                                    var cls = (safe === false || safe === 'false') ? 'sender-danger' : '';
+                                    return gridjs.html('<span class="' + cls + '">' + raw.replace(/</g, '&lt;') + '</span>');
+                                }
+                            },
+                            { name: 'Subject', width: '220px', sort: true },
+                            { name: 'Score', width: '65px', sort: true },
+                            { name: 'Reason', width: '150px', sort: true },
+                            { name: 'Date/Time', width: '160px', sort: true },
+                            {
+                                name: 'ClientIP',
+                                width: '130px',
+                                sort: true,
+                                formatter: function(cell) {
+                                    return gridjs.html('<a href="https://www.ipqualityscore.com/ip-reputation-check/lookup/' + encodeURIComponent(cell) + '" target="_blank">' + cell + '</a>');
+                                }
+                            },
+                            { name: 'DKIM', width: '80px', sort: true },
+                            {
+                                name: 'Actions',
+                                width: '150px',
+                                sort: false,
+                                formatter: function(cell, row) {
+                                    var fp = row.cells[0].data;
+                                    var safe = row.cells[9].data;
+                                    var html = '<button class="action-btn preview-link" data-mailkey="' + fp.replace(/"/g, '&quot;') + '" data-view="text" title="Plain Text Preview"><i class="material-icons">article</i></button>';
+                                    if (safe === true || safe === 'true') {
+                                        html += '&nbsp;<button class="action-btn preview-link" data-mailkey="' + fp.replace(/"/g, '&quot;') + '" data-view="html" title="HTML Preview"><i class="material-icons">visibility</i></button>';
+                                    }
+                                    html += '&nbsp;<button class="action-btn btn-whitelist" type="button" title="Whitelist Sender" data-mailkey="' + encodeURIComponent(fp) + '"><i class="material-icons">check_circle</i></button>';
+                                    html += '&nbsp;<button class="action-btn btn-blacklist" type="button" title="Blacklist Sender" data-mailkey="' + encodeURIComponent(fp) + '"><i class="material-icons">block</i></button>';
+                                    return gridjs.html(html);
+                                }
+                            },
+                            { name: 'safe', hidden: true },
+                            { name: 'clientipinfo', hidden: true }
+                        ],
+                        data: filteredData,
+                        pagination: false,
+                        search: { enabled: false },
+                        sort: true,
+                        language: {
+                            'nothing found': '<div class="mui-empty"><i class="fas fa-inbox"></i>Nothing to see here move along.</div>'
+                        },
+                        className: {
+                            table: 'gridjs-table',
+                            thead: 'gridjs-thead',
+                            th: 'gridjs-th',
+                            tbody: 'gridjs-tbody',
+                            td: 'gridjs-td'
+                        }
+                    }).render(container);
+                }
+            }
+
+            function doCustomSearch() {
+                var q = customSearchInput.value.toLowerCase();
+                if (!q) {
+                    filteredData = allData.slice();
+                } else {
+                    filteredData = allData.filter(function(row) {
+                        for (var ci = 1; ci < row.length - 2; ci++) {
+                            if (String(row[ci]).toLowerCase().indexOf(q) !== -1) return true;
+                        }
+                        return false;
+                    });
+                }
+                renderGrid();
+            }
+
+            customSearchInput.addEventListener('input', doCustomSearch);
+
+            document.getElementById('btn-csv').addEventListener('click', function() {
+                var rows = grid ? grid.config.data : filteredData;
+                var header = ['File','Recipients','Sender','Subject','Score','Reason','Date/Time','ClientIP','DKIM'];
+                var csv = header.join(',') + '\\n';
+                rows.forEach(function(r) {
+                    var vals = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]];
+                    var esc = vals.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
+                    csv += esc.join(',') + '\\n';
+                });
+                var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'MailQueue.csv';
+                link.click();
+                URL.revokeObjectURL(link.href);
+            });
+
+            document.getElementById('btn-copy').addEventListener('click', function() {
+                var rows = grid ? grid.config.data : filteredData;
+                var header = ['Recipients','Sender','Subject','Score','Reason','Date/Time','ClientIP','DKIM'];
+                var pad = [22, 30, 40, 8, 18, 20, 16, 10];
+                function fmtRow(arr) {
+                    var vals = [arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7], arr[8]];
+                    return vals.map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
+                }
+                var text = fmtRow(header) + '\\n' + '-'.repeat(fmtRow(header).length) + '\\n';
+                text += rows.map(fmtRow).join('\\n');
+                navigator.clipboard.writeText(text).then(function() {
+                    var btn = document.getElementById('btn-copy');
+                    var orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(function() { btn.innerHTML = orig; }, 2000);
+                });
+            });
+
+            document.getElementById('btn-print').addEventListener('click', function() {
+                var rows = grid ? grid.config.data : filteredData;
+                var win = window.open('', '_blank');
+                var html = '<!DOCTYPE html><html><head><title>Mail Queue</title>';
+                html += '<style>body{font-family:Roboto,sans-serif;margin:20px;}';
+                html += 'h2{color:#1e293b;}table{border-collapse:collapse;width:100%;font-size:12px;}';
+                html += 'th{background:#1976d2;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}';
+                html += 'td{padding:6px 10px;border-bottom:1px solid #e2e8f0;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
+                html += '<h2>Mail Queue</h2><table><thead><tr>';
+                html += '<th>Recipients</th><th>Sender</th><th>Subject</th><th>Score</th><th>Reason</th><th>Date/Time</th><th>ClientIP</th><th>DKIM</th>';
+                html += '</tr></thead><tbody>';
+                rows.forEach(function(r) {
+                    html += '<tr><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td><td>' + r[5] + '</td><td>' + r[6] + '</td><td>' + r[7] + '</td><td>' + r[8] + '</td></tr>';
+                });
+                html += '</tbody></table></body></html>';
+                win.document.write(html);
+                win.document.close();
+                win.focus();
+                win.print();
+            });
+
+            document.documentElement.addEventListener('click', function(e) {
+                var btn = e.target.closest('.btn-whitelist, .btn-blacklist');
+                if (btn && btn.closest('.mailq-grid-wrapper')) {
+                    showSingleListingModal(btn);
+                }
+            });
+
+            renderGrid();
+        });
+
+    .mailq-grid-wrapper
+        .mui-card
+            .mui-last-update Last updated: <span id="last-update"></span>
+            .mui-filters-row
+                .mui-filters-left
+                    .mui-btn#btn-csv
+                        i.fas.fa-file-csv
+                        | CSV
+                    .mui-btn#btn-copy
+                        i.fas.fa-copy
+                        | Copy
+                    .mui-btn#btn-print
+                        i.fas.fa-print
+                        | Print
+                    .mui-btn-sep
+                    .mui-btn.mui-btn-danger#btn-delete-all
+                        i.fas.fa-trash-can
+                        | Delete All
+                    .mui-btn.mui-btn-danger#btn-delete
+                        i.fas.fa-trash-can
+                        | Delete
+                    .mui-btn.mui-btn-success#btn-release
+                        i.fas.fa-paper-plane
+                        | Release
+                    .mui-btn-sep
+                    .mui-btn.mui-btn-warning#btn-whitelist
+                        i.fas.fa-check-circle
+                        | Whitelist
+                    .mui-btn.mui-btn-dark#btn-blacklist
+                        i.fas.fa-ban
+                        | Blacklist
+                    if filterUser
+                        .mui-btn-sep
+                        .mui-btn#btn-filter-clear
+                            i.fas.fa-times
+                            | Filter Clear
+                    .mui-btn-sep
+                    .mui-select-all
+                        input#chkSelectAll(type="checkbox")
+                        label(for="chkSelectAll" style="cursor:pointer;") Select All
+                .mui-filters-right
+                    input#custom-search(type="search" placeholder="Search...")
+            .mui-divider
+            #mailq-grid
+
+    #listingModal.preview-modal
+        .listing-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2#listingModalTitle
+                button#listingModalCloseBtn.mui-btn(type="button" style="background:transparent;border:none;font-size:1.5rem;cursor:pointer;") &times;
+            div(style="margin:14px 0;")
+                label(style="margin-right:20px;cursor:pointer;")
+                    input#listTypeEmail(type="radio" name="listTypeChoice" value="email" checked)
+                    | &nbsp;Full Email Address
+                label(style="cursor:pointer;")
+                    input#listTypeDomain(type="radio" name="listTypeChoice" value="domain")
+                    | &nbsp;Domain Only
+            div(style="margin:12px 0;font-weight:bold;") The following will be added:
+            div#listingAddressList(style="max-height:260px;overflow-y:auto;border:1px solid #ccc;padding:10px;border-radius:4px;font-family:monospace;font-size:0.9rem;background:#fafafa;")
+            div(style="margin-top:18px;text-align:right;")
+                button#listingConfirmBtn.mui-btn(type="button" style="margin-right:8px;") Confirm
+                button#listingCancelBtn.mui-btn(type="button") Cancel
+
+    #emailPreviewModal.preview-modal
+        .preview-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2 Email Preview
+                button#previewCloseBtn.mui-btn(type="button") Close
+            iframe#emailPreviewFrame

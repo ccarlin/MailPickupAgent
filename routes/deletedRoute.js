@@ -10,7 +10,7 @@ const { recentlyReleased } = require('../index.js');
 router.get('/', function(req, res) {
     getDeletedEmails(function(err, emails) {
         let title = "Deleted Messages";
-        res.render('deleted', { title, emails, currentTime: new Date().toLocaleString(), formatTime });
+        res.render('DeletedGrid', { title, emails, currentTime: new Date().toLocaleString(), formatTime });
     });
 });
 

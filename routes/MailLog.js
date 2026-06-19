@@ -79,7 +79,7 @@ router.get('/', function(req, res) {
         tools.logData(results, "INFO");
         
         let title = "EMail Analyzer";
-        res.render('MailLog', { title, logData: logList, currentTime: now});
+        res.render('MailLogGrid', { title, logData: logList, currentTime: now});
     });  
 }); 
 
