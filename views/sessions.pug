@@ -1,101 +1,410 @@
 extends adminLayout
 
 block css
-  link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png" sizes="16x16")
-  style.
-    .sessions-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 16px;
-    }
-    .sessions-table th,
-    .sessions-table td {
-      padding: 10px 12px;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: 14px;
-    }
-    .sessions-table th {
-      background: #f8fafc;
-      font-weight: 600;
-      color: #475569;
-      white-space: nowrap;
-    }
-    .sessions-table tr:hover {
-      background: #f1f5f9;
-    }
-    .sessions-table td {
-      color: #334155;
-    }
-    .sessions-table .user-agent {
-      font-size: 12px;
-      color: #64748b;
-      max-width: 300px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .badge-current {
-      display: inline-block;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 600;
-      background: #dbeafe;
-      color: #1d4ed8;
-      border-radius: 10px;
-    }
-    .btn-destroy {
-      padding: 6px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      background: #ef4444;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn-destroy:hover {
-      background: #dc2626;
-    }
-    .btn-destroy:disabled {
-      background: #94a3b8;
-      cursor: not-allowed;
-    }
-    .empty-state {
-      padding: 40px;
-      text-align: center;
-      color: #94a3b8;
-      font-size: 16px;
-    }
+    link(href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet")
+    link(href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet")
+    link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png" sizes="16x16")
+    style.
+        .sessions-grid-wrapper {
+            font-family: 'Roboto', sans-serif;
+            margin: 0.5rem 0;
+        }
+        .sessions-grid-wrapper .gridjs-container {
+            font-family: 'Roboto', sans-serif;
+            color: #1e293b;
+        }
+        .sessions-grid-wrapper .gridjs-head {
+            display: none;
+        }
+        .sessions-grid-wrapper table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.8125rem;
+        }
+        .sessions-grid-wrapper td {
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+        .sessions-grid-wrapper th {
+            background: #1976d2;
+            color: #fff;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 6px 8px;
+            text-align: left;
+            white-space: nowrap;
+            border: none;
+            user-select: none;
+            vertical-align: middle;
+            line-height: 1.6;
+        }
+        .sessions-grid-wrapper th:hover {
+            background: #1565c0;
+        }
+        .sessions-grid-wrapper th .gridjs-th-content {
+            float: left;
+            white-space: nowrap;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            width: calc(100% - 16px);
+        }
+        .sessions-grid-wrapper th .gridjs-sort {
+            filter: brightness(0) invert(1);
+            opacity: 0.7;
+        }
+        .sessions-grid-wrapper th .gridjs-sort:hover {
+            opacity: 1;
+        }
+        .sessions-grid-wrapper td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            word-break: break-word;
+        }
+        .sessions-grid-wrapper tbody tr {
+            transition: background-color 0.15s ease;
+        }
+        .sessions-grid-wrapper tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+        .sessions-grid-wrapper tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .sessions-grid-wrapper tbody tr:nth-child(even):hover {
+            background-color: #e3f2fd;
+        }
+        .sessions-grid-wrapper .gridjs-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.8125rem;
+            color: #64748b;
+        }
+        .sessions-grid-wrapper .gridjs-pagination {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sessions-grid-wrapper .gridjs-pagination button {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fff;
+            color: #334155;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .sessions-grid-wrapper .gridjs-pagination button:hover:not(:disabled) {
+            background: #e3f2fd;
+            border-color: #1976d2;
+            color: #1976d2;
+        }
+        .sessions-grid-wrapper .gridjs-pagination button:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        .sessions-grid-wrapper .gridjs-pagination button.gridjs-currentPage {
+            background: #1976d2;
+            color: #fff;
+            border-color: #1976d2;
+            font-weight: 500;
+        }
+        .sessions-grid-wrapper .gridjs-summary {
+            color: #64748b;
+            font-size: 0.8125rem;
+        }
+        .sessions-grid-wrapper .gridjs-table-wrap {
+            overflow-x: auto;
+        }
+        .mui-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            overflow: hidden;
+            transition: box-shadow 0.2s ease;
+        }
+        .mui-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .mui-divider {
+            height: 1px;
+            background: #e2e8f0;
+        }
+        .mui-empty {
+            text-align: center;
+            padding: 48px 16px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .mui-empty i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 12px;
+            color: #cbd5e1;
+        }
+        .mui-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background: #fff;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .mui-btn:hover {
+            background: #1976d2;
+            border-color: #1976d2;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(25,118,210,0.25);
+        }
+        .mui-btn:active {
+            background: #1565c0;
+            border-color: #1565c0;
+            transform: translateY(1px);
+        }
+        .mui-btn i {
+            font-size: 0.85rem;
+        }
+        .mui-filters-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .mui-filters-row .mui-filters-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .mui-filters-row .mui-filters-right {
+            display: flex;
+            align-items: center;
+        }
+        .mui-filters-row .mui-filters-right input {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 200px;
+        }
+        .mui-filters-row .mui-filters-right input:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+        }
+        .badge-current {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #dbeafe;
+            color: #1d4ed8;
+            border-radius: 10px;
+        }
+        .sessions-grid-wrapper td a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .sessions-grid-wrapper td a:hover {
+            text-decoration: underline;
+        }
+        .user-agent-cell {
+            font-size: 12px;
+            color: #64748b;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .action-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border: 1px solid #ef4444;
+            border-radius: 4px;
+            background: #fff;
+            color: #ef4444;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .action-btn:hover {
+            background: #ef4444;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(239,68,68,0.25);
+        }
+        .action-btn:active {
+            background: #dc2626;
+            transform: translateY(1px);
+        }
+        .logout-link {
+            font-size: 0.75rem;
+            color: #ef4444;
+            text-decoration: none;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .logout-link:hover {
+            text-decoration: underline;
+        }
+
+block scripts
+    script(src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js")
 
 block content
-  .container
-    .header-bar
-      h1 Active Sessions
+    script.
+        document.addEventListener('DOMContentLoaded', function() {
+            var sessions = !{JSON.stringify(sessions)};
+            var allData = sessions.map(function(s) {
+                var loginDisplay = s.loginTime ? new Date(s.loginTime).toLocaleString() : 'unknown';
+                return [s.sid, s.ip, s.userAgent, loginDisplay, s.currentUser];
+            });
 
-    if sessions.length === 0
-      .empty-state No authenticated sessions found.
-    else
-      p(style="color:#64748b;font-size:14px;")
-        | #{sessions.length} active session#{sessions.length !== 1 ? 's' : ''}
-      table.sessions-table
-        thead
-          tr
-            th IP Address
-            th Browser / User-Agent
-            th Logged In
-            th
-        tbody
-          each s in sessions
-            tr
-              td #{s.ip}
-              td
-                .user-agent(title=s.userAgent) #{s.userAgent}
-              td #{s.loginTime ? new Date(s.loginTime).toLocaleString() : 'unknown'}
-              td
-                if s.currentUser
-                  span.badge-current You
-                  a(href="/logout" style="margin-left:8px;font-size:13px;color:#ef4444;text-decoration:none;font-weight:600;" title="Logout") Logout
-                else
-                  form(method="POST" action=`/sessions/${s.sid}/destroy` onsubmit="return confirm('Force logout this user? Their session will be destroyed immediately.')")
-                    button.btn-destroy(type="submit") Force Logout
+            var grid = null;
+            var filteredData = allData.slice();
+            var customSearchInput = document.getElementById('custom-search');
+
+            function renderGrid() {
+                var container = document.getElementById('sessions-grid');
+                if (grid) {
+                    grid.updateConfig({ data: filteredData }).forceRender();
+                } else {
+                    grid = new gridjs.Grid({
+                        columns: [
+                            { name: 'sid', hidden: true },
+                            {
+                                name: 'IP Address',
+                                width: '170px',
+                                sort: true
+                            },
+                            {
+                                name: 'Browser / User-Agent',
+                                width: 'auto',
+                                sort: true,
+                                formatter: function(cell) {
+                                    return gridjs.html('<span class="user-agent-cell" title="' + String(cell).replace(/"/g, '&quot;') + '">' + String(cell).replace(/</g, '&lt;') + '</span>');
+                                }
+                            },
+                            {
+                                name: 'Logged In',
+                                width: '180px',
+                                sort: true
+                            },
+                            {
+                                name: 'Actions',
+                                width: '160px',
+                                sort: false,
+                                formatter: function(cell, row) {
+                                    var sid = row.cells[0].data;
+                                    var isCurrent = row.cells[4].data;
+                                    var html = '<div class="action-cell">';
+                                    if (isCurrent) {
+                                        html += '<span class="badge-current">You</span>';
+                                        html += '<a href="/logout" class="logout-link">Logout</a>';
+                                    } else {
+                                        html += '<form method="POST" action="/sessions/' + encodeURIComponent(sid) + '/destroy" onsubmit="return confirm(\'Force logout this user? Their session will be destroyed immediately.\')" style="margin:0;">';
+                                        html += '<button type="submit" class="action-btn">Force Logout</button>';
+                                        html += '</form>';
+                                    }
+                                    html += '</div>';
+                                    return gridjs.html(html);
+                                }
+                            }
+                        ],
+                        data: filteredData,
+                        pagination: { limit: 15, summary: true },
+                        search: { enabled: false },
+                        sort: true,
+                        language: {
+                            'nothing found': '<div class="mui-empty"><i class="fas fa-server"></i>No authenticated sessions found.</div>'
+                        },
+                        className: {
+                            table: 'gridjs-table',
+                            thead: 'gridjs-thead',
+                            th: 'gridjs-th',
+                            tbody: 'gridjs-tbody',
+                            td: 'gridjs-td'
+                        }
+                    }).render(container);
+                }
+            }
+
+            function doCustomSearch() {
+                var q = customSearchInput.value.toLowerCase();
+                if (!q) {
+                    filteredData = allData.slice();
+                } else {
+                    filteredData = allData.filter(function(row) {
+                        for (var ci = 1; ci < 4; ci++) {
+                            if (String(row[ci]).toLowerCase().indexOf(q) !== -1) return true;
+                        }
+                        return false;
+                    });
+                }
+                renderGrid();
+            }
+
+            customSearchInput.addEventListener('input', doCustomSearch);
+
+            document.getElementById('sessions-count').textContent = allData.length;
+
+            renderGrid();
+        });
+
+    .sessions-grid-wrapper
+        .mui-card
+            .mui-filters-row
+                .mui-filters-left
+                    .mui-btn#btn-csv(style="display:none;")
+                        i.fas.fa-file-csv
+                        | CSV
+                    .mui-btn#btn-copy(style="display:none;")
+                        i.fas.fa-copy
+                        | Copy
+                    .mui-btn#btn-print(style="display:none;")
+                        i.fas.fa-print
+                        | Print
+                    span(style="font-size:0.8125rem;color:#64748b;") 
+                        span#sessions-count 0
+                        |  active session(s)
+                .mui-filters-right
+                    input#custom-search(type="search" placeholder="Search sessions...")
+            .mui-divider
+            #sessions-grid

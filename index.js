@@ -294,9 +294,10 @@ async function queryOllama(prompt) {
     prompt: prompt,
     stream: false,
   };
+  //Can only wait for 5 seconds to process that might even be too long
   const resp = await axios.post(url, payload, {
     headers: { 'Content-Type': 'application/json' },
-    timeout: 15000,
+    timeout: 5000,
   });
   if (resp && resp.data) {
     tools.logData(`Ollama response: ${resp.data.response}`);
