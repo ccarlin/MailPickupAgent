@@ -410,11 +410,15 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
 
 async function processEmail(controlFilePath, messagePath, rules) {
   try {
-    tools.logData("Starting 5 second sleep.")
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    tools.logData("Ending 5 second sleep.")
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
+
+    const userMatch = commandData.match(/^User=(.*)$/m);
+    if (userMatch && userMatch[1].trim()) {
+        tools.logData(`Skipping outbound email submitted by user: ${userMatch[1].trim()}`, "INFO");
+        return;
+    }
+
     const parsed = await PostalMime.parse(message);
     const fromAddr = parsed.from?.address || 'unknown';
     const subjectText = parsed.subject || '(no subject)';
