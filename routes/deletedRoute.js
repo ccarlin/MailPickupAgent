@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const config = require('../config');
 const tools = require('../tools');
-const { simpleParser } = require('mailparser');
+const PostalMime = require('postal-mime');
 const { recentlyReleased } = require('../index.js');
 
 router.get('/', function(req, res) {
@@ -70,12 +70,12 @@ function getDeletedEmails(callback) {
                             }
                         }
 
-                        // Parse .MAI with mailparser for sender, recipients, subject
+                        // Parse .MAI with postal-mime for sender, recipients, subject
                         if (fs.existsSync(emailFilePath)) {
                             let mailMessage = fs.readFileSync(emailFilePath);
-                            let parsed = await simpleParser(mailMessage);
-                            emailInfo.sender = parsed.from?.value?.[0]?.address || 'unknown';
-                            let toAddresses = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0].toLowerCase()).filter(Boolean);
+                            let parsed = await PostalMime.parse(mailMessage);
+                            emailInfo.sender = parsed.from?.address || 'unknown';
+                            let toAddresses = (parsed.to || []).map(v => (v.address || '').split('@')[0].toLowerCase()).filter(Boolean);
                             emailInfo.recipients = toAddresses.join(', ');
                             emailInfo.subject = parsed.subject || '';
 

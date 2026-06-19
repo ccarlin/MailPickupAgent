@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const { SpamAssassinClient } = require('spamassassin-client');
-const { simpleParser } = require('mailparser');
+const PostalMime = require('postal-mime');
 const nodemailer = require('nodemailer');
 const { buildAllTestEmails } = require('./testEmails');
 const tools = require('./tools');
@@ -164,7 +164,7 @@ function extractTLD(address) {
 
 function checkCombos(parsed, combos, recipients, originatingIp) {
   if (!combos || !combos.length) return false;
-  const fromAddr = parsed.from?.value?.[0]?.address || '';
+  const fromAddr = parsed.from?.address || '';
   const subjText = parsed.subject || '';
   return combos.some(combo => {
     if (combo.recipient && recipients) {
@@ -188,12 +188,10 @@ function getKeywordText(parsed, filter) {
     case '4': {
       try {
         const headers = [];
-        if (parsed.headers && typeof parsed.headers.forEach === 'function') {
-          parsed.headers.forEach((value, key) => {
-            headers.push(`${key}: ${value}`);
+        if (parsed.headers && Array.isArray(parsed.headers)) {
+          parsed.headers.forEach(h => {
+            headers.push(`${h.key}: ${h.value}`);
           });
-        } else if (parsed.headers && typeof parsed.headers === 'object') {
-          for (const k of Object.keys(parsed.headers)) headers.push(`${k}: ${parsed.headers[k]}`);
         }
         return headers.join('\n');
       } catch (e) {
@@ -414,8 +412,8 @@ async function processEmail(controlFilePath, messagePath, rules) {
   try {
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
-    const parsed = await simpleParser(message);
-    const fromAddr = parsed.from?.value?.[0]?.address || 'unknown';
+    const parsed = await PostalMime.parse(message);
+    const fromAddr = parsed.from?.address || 'unknown';
     const subjectText = parsed.subject || '(no subject)';
 
     tools.logData(`Processing email: ${subjectText} from ${fromAddr}`);
@@ -433,9 +431,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
     const fileStats = fs.statSync(messagePath);
     const sizeKb = fileStats.size / 1024;
-    const recipientAddresses = (parsed.to?.value || []).map(v => v.address || '').filter(Boolean);
+    const recipientAddresses = (parsed.to || []).map(v => v.address || '').filter(Boolean);
     const recipientStr = recipientAddresses.join(', ');
-    const recipients = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
+    const recipients = (parsed.to || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
     const originatingIp = extractOriginatingIp(commandData);
     tools.logData(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`, "DEBUG");
 
