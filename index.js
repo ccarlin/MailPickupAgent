@@ -410,6 +410,8 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
 
 async function processEmail(controlFilePath, messagePath, rules) {
   try {
+    //TODO: Remove before flight testing hold of message so I can capture it in flight.
+    tools.sleep(5000);
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
     const parsed = await PostalMime.parse(message);

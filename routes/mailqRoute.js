@@ -8,6 +8,7 @@ const tools = require("../tools");
 const config = require('../config');
 const { recentlyReleased } = require('../index.js');
 const dnsPromises = dns.promises;
+const PostalMime = require('postal-mime').default;
 
 const prefixUTF = '=?UTF-8?B?';
 const suffix = '?=';
@@ -240,7 +241,7 @@ function getEmails(emailPath, callback)
 {
     var emailList = [];
     
-    fs.readdir(emailPath, function (err, list) 
+    fs.readdir(emailPath, async function (err, list) 
     {
         if (err == null)
         {
@@ -291,49 +292,36 @@ function getEmails(emailPath, callback)
                                 break;                            
                         }
                     }
-                    // also try to find List-Unsubscribe inside the full email content if not set
-                    // only match if the line starts with "List-Unsubscribe:" (case-insensitive)
-                    const m = emailContents.match(/^List-Unsubscribe:\s*(.+)$/im);
-                     if (m && m[1]) {
-                         emailInfo.unsubscribe = parseUnsubscribeHeader(m[1]);
-                     }                    
-                    lines = emailContents.split('\r\n');
-                    emailInfo.dkim = 'false';
-                    for(j=0;j<lines.length;j++)
-                    {
-                        let nFound = 0;
-                        if (lines[j].startsWith("X-MPA"))
-                        {
-                            let data = lines[j].split(": ");
-                            let key = data[0].substring(6);
-                            let value = data[1];
-                            switch (key)
-                            {
-                                case "Msgid":
-                                    emailInfo.msgid = value;
-                                    nFound++;
+                    try {
+                        const parsed = await PostalMime.parse(emailContents);
+                        emailInfo.dkim = 'false';
+                        for (const h of parsed.headers) {
+                            switch (h.key) {
+                                case 'x-mpa-msgid':
+                                    emailInfo.msgid = h.value;
                                     break;
-                                case "SpamScore":
-                                    emailInfo.spamScore = value;
-                                    nFound++;
+                                case 'x-mpa-spamscore':
+                                    emailInfo.spamScore = h.value;
                                     break;
-                                case "SpamDetail":
-                                    emailInfo.antiSpam = value;
-                                    nFound++;            
-                                    break;       
-                                case "SpamReason":
-                                    emailInfo.reason = value;
-                                    nFound++;                        
-                            }                
+                                case 'x-mpa-spamdetail':
+                                    emailInfo.antiSpam = h.value;
+                                    break;
+                                case 'x-mpa-spamreason':
+                                    emailInfo.reason = h.value;
+                                    break;
+                                case 'dkim-signature':
+                                    emailInfo.dkim = 'true';
+                                    break;
+                                case 'from':
+                                    emailInfo.from = h.value;
+                                    break;
+                                case 'list-unsubscribe':
+                                    emailInfo.unsubscribe = parseUnsubscribeHeader(h.value);
+                                    break;
+                            }
                         }
-                        else if (lines[j].startsWith("DKIM-Signature"))
-                            emailInfo.dkim = 'true';
-                        else if (lines[j].startsWith("From: "))
-                            emailInfo.from = lines[j].substring(6);
-
-                        //Abort once all values are found
-                        if (nFound > 3)
-                            break;
+                    } catch (parseErr) {
+                        tools.logError(`Failed to parse email ${emailFilePath}: ${parseErr}`);
                     }
                     emailList.push(emailInfo);                    
                 }
