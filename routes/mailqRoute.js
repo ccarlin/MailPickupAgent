@@ -47,7 +47,7 @@ router.post('/', async function(req, res) {
             antiSpam: entry.antiSpam || '',
             clientip: entry.clientip || 'N/A',
             date: entry.datetime || '',
-            dkim: entry.dkim || '',
+            dkim: entry.dkim == null ? '' : String(entry.dkim),
             reason: reasonText(action),
         };
         emails.push(email);
@@ -298,7 +298,7 @@ function getEmails(emailPath, callback)
                          emailInfo.unsubscribe = parseUnsubscribeHeader(m[1]);
                      }                    
                     lines = emailContents.split('\r\n');
-                    emailInfo.dkim = false;
+                    emailInfo.dkim = 'false';
                     for(j=0;j<lines.length;j++)
                     {
                         let nFound = 0;
@@ -318,7 +318,7 @@ function getEmails(emailPath, callback)
                                     nFound++;
                                     break;
                                 case "SpamDetail":
-                                    emailInfo.antiSpam = value.replace("KEYWORD [Pass], ", "").replace("RDNSBL [Pass], ", "").replace("URLBL [Pass], ", "").replace("SPAMASSASSIN [0.0], ", "").replace(", DCC_CHECK [NA]", "").replace(", DCC_CHECK [Pass]", "");
+                                    emailInfo.antiSpam = value;
                                     nFound++;            
                                     break;       
                                 case "SpamReason":
@@ -327,7 +327,7 @@ function getEmails(emailPath, callback)
                             }                
                         }
                         else if (lines[j].startsWith("DKIM-Signature"))
-                            emailInfo.dkim = true;
+                            emailInfo.dkim = 'true';
                         else if (lines[j].startsWith("From: "))
                             emailInfo.from = lines[j].substring(6);
 

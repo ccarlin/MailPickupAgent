@@ -524,9 +524,10 @@ async function processEmail(controlFilePath, messagePath, rules) {
     let spamScore = 0;
     const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters, recipients);
     if (keywordResult.score > 0) {
-      spamInfoParts.push(`Keywords(${keywordResult.score})`);
+      const keyWordInfo = `Keywords(${keywordResult.score})`; 
+      spamInfoParts.push(keyWordInfo);
       spamScore += keywordResult.score;
-      quarantineReasons.push(`Keyword Rules - ${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}`);
+      quarantineReasons.push(`${keyWordInfo} - ${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}`);
     }
 
     // 3.1 Quarantine check - SpamAssassin check (if enabled)
@@ -548,12 +549,12 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
     spamScore += aiScore;    
     spamInfoParts.push(`AI Check(${aiScore})`);
-    const processElapsed = (Date.now() - processStartTime) / 1000;
     if (aiSpamResult) {      
       quarantineReasons.push(aiReasons);
     }
 
     // 4.0 Process results of scoring and quarantine if above threshold
+    const processElapsed = (Date.now() - processStartTime) / 1000;
     let spamDetailInfo = spamInfoParts.join('; ');
     tools.logData(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
     // Check if we are across the delete threshold
