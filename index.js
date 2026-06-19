@@ -457,6 +457,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     const bl = rules.blacklist || {};
+    const countryResult = matchCountry(originatingIp, bl.countries || []);
     // 2.0 Blacklist check -  Allowed TLDs enforcement - if an allowedTLDs list exists, delete emails where sender domain is not in list    
     const allowed = (rules.allowedTLDs || []).map(s => String(s).toLowerCase().replace(/^\./, '')).filter(Boolean);
     if (allowed.length > 0) {
@@ -494,8 +495,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       return;
     }
 
-    // 2.3 Blacklist check - Check if sender IP maps to blacklisted country code
-    const countryResult = matchCountry(originatingIp, bl.countries || []);
+    // 2.3 Blacklist check - Check if sender IP maps to blacklisted country code    
     if (countryResult.matched) {
       metrics.increment('blacklisted');
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
