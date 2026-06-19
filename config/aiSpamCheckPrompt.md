@@ -6,7 +6,7 @@ Analyze the email for common spam indicators:
 - Poor grammar, generic greetings (e.g., "Dear Customer"), or vague requests.
 - Too-good-to-be-true offers (lotteries, crypto scams, inheritance).
 
-You must output your decision strictly in the following JSON format. Do not include any introductory or concluding text outside of the JSON block.
+You must output your decision strictly in the following JSON format. Do not include any introductory or concluding text outside of the JSON block.  Limit the reasons to the top three reasons you consider it SPAM or HAM.
 
 {
   "classification": "SPAM" or "HAM",

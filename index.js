@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const { SpamAssassinClient } = require('spamassassin-client');
-const { simpleParser } = require('mailparser');
+const PostalMime = require('postal-mime');
 const nodemailer = require('nodemailer');
 const { buildAllTestEmails } = require('./testEmails');
 const tools = require('./tools');
@@ -29,6 +29,8 @@ const THRESHOLD_DELETE = Number(config.THRESHOLD_DELETE || 15);
 const HEADER_SEPARATOR = '\r\n\r\n';
 const PROCESSING_LOG_DIR = config.PROCESSING_LOG;
 const QUARANTINE_LOG_DIR = config.QUARANTINE_LOG;
+const aiSpamPoints = Number(config.AI_SPAM_POINTS || 5) || 5;
+const aiHamPoints = Number((config.AI_HAM_POINTS || 2.5) * -1) || -2.5;
 
 // Cache of recently released/recovered email MessageIDs to prevent re-processing
 const RECENTLY_RELEASED_TTL = 5 * 60 * 1000; // 5 minutes
@@ -162,7 +164,7 @@ function extractTLD(address) {
 
 function checkCombos(parsed, combos, recipients, originatingIp) {
   if (!combos || !combos.length) return false;
-  const fromAddr = parsed.from?.value?.[0]?.address || '';
+  const fromAddr = parsed.from?.address || '';
   const subjText = parsed.subject || '';
   return combos.some(combo => {
     if (combo.recipient && recipients) {
@@ -186,12 +188,10 @@ function getKeywordText(parsed, filter) {
     case '4': {
       try {
         const headers = [];
-        if (parsed.headers && typeof parsed.headers.forEach === 'function') {
-          parsed.headers.forEach((value, key) => {
-            headers.push(`${key}: ${value}`);
+        if (parsed.headers && Array.isArray(parsed.headers)) {
+          parsed.headers.forEach(h => {
+            headers.push(`${h.key}: ${h.value}`);
           });
-        } else if (parsed.headers && typeof parsed.headers === 'object') {
-          for (const k of Object.keys(parsed.headers)) headers.push(`${k}: ${parsed.headers[k]}`);
         }
         return headers.join('\n');
       } catch (e) {
@@ -203,12 +203,18 @@ function getKeywordText(parsed, filter) {
   }
 }
 
-function matchKeywordFilter(parsed, filter) {
+function matchKeywordFilter(parsed, filter, recipients) {
   if (!filter) return false;
   // If Enabled is explicitly present and falsy, skip the filter
   if (typeof filter.Enabled !== 'undefined') {
     const en = String(filter.Enabled).trim();
     if (en === '0' || en.toLowerCase() === 'false') return false;
+  }
+
+  // If the filter has a specific Recipient, only apply if one matches
+  if (filter.Recipient && recipients) {
+    const filterRecipient = String(filter.Recipient).trim().toLowerCase();
+    if (!recipients.some(r => r.toLowerCase() === filterRecipient)) return false;
   }
 
   const text = getKeywordText(parsed, filter);
@@ -265,10 +271,10 @@ function matchKeywordFilter(parsed, filter) {
   return expressions.some(e => testExpression(e));
 }
 
-function scoreKeywordFilters(parsed, filters) {
+function scoreKeywordFilters(parsed, filters, recipients) {
   if (!filters || !filters.length) return { score: 0, matches: [] };
   return filters.reduce((acc, filter) => {
-    if (matchKeywordFilter(parsed, filter)) {
+    if (matchKeywordFilter(parsed, filter, recipients)) {
       const score = Number(filter.Score) || 0;
       const filterName = filter.FilterName || 'Keyword';
       tools.logData(`Keyword filter matched: "${filterName}", score: ${score}`);
@@ -367,40 +373,71 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
   }
 }
 
+async function checkAiSpam(fromAddr, subjectText, parsed) {
+  let aiSpamResult = false;
+  let aiReasons = '';
+  let aiScore = 0;
+  let aiResponse;
+  if (AI_CHECK_ENABLED) {
+    try {
+      const promptPath = path.join(__dirname, 'config', 'aiSpamCheckPrompt.md');
+      let promptTemplate = fs.readFileSync(promptPath, 'utf8');
+      const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
+      const aiPrompt = promptTemplate + emailContent;
+      aiResponse = await queryOllama(aiPrompt);
+      const parsedJson = JSON.parse(aiResponse);
+      const classification = (parsedJson.classification || '').toUpperCase();
+      const confidence = parseFloat(parsedJson.confidence_score) || 0;
+      const reasons = parsedJson.reasons || [];
+      if (classification === 'SPAM') {
+        aiScore = Math.round(aiSpamPoints * confidence * 10) / 10;
+        aiReasons = `AI Check(${aiScore}) - ${reasons.join('; ')}`;
+        aiSpamResult = true;
+      } else if (classification === 'HAM') {
+        aiScore = Math.round(aiHamPoints * confidence * 10) / 10;
+        aiSpamResult = false;
+      }
+    } catch (err) {
+      if (aiResponse)
+        tools.logError(`Ollama query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
+      else
+        tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
+    }
+  }
+
+  return { aiSpamResult, aiScore, aiReasons };
+}
+
 async function processEmail(controlFilePath, messagePath, rules) {
   try {
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
-    const parsed = await simpleParser(message);
-    const fromAddr = parsed.from?.value?.[0]?.address || 'unknown';
+    const parsed = await PostalMime.parse(message);
+    const fromAddr = parsed.from?.address || 'unknown';
     const subjectText = parsed.subject || '(no subject)';
 
     tools.logData(`Processing email: ${subjectText} from ${fromAddr}`);
 
-    // const rules = loadRules();
     const destMessageName = path.basename(messagePath);
     const processStartTime = Date.now();
     const messageId = path.parse(messagePath).name;
+
+    //Skip messages that have already been processed
     purgeExpiredCacheEntries();
     if (recentlyReleased.has(messageId)) {
       recentlyReleased.delete(messageId);
       tools.logData(`Skipping recently released/recovered email ${messageId}`);
-      logProcessingEntry(messageId, 0, null, fromAddr, '', subjectText, 0, 'Skipped', 'Recently released/recovered email - skipping processing', 0);
       return;
     }
     const fileStats = fs.statSync(messagePath);
     const sizeKb = fileStats.size / 1024;
-    const recipientAddresses = (parsed.to?.value || []).map(v => v.address || '').filter(Boolean);
+    const recipientAddresses = (parsed.to || []).map(v => v.address || '').filter(Boolean);
     const recipientStr = recipientAddresses.join(', ');
-    const recipients = (parsed.to?.value || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
+    const recipients = (parsed.to || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
     const originatingIp = extractOriginatingIp(commandData);
-    tools.logData(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`);
+    tools.logData(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`, "DEBUG");
 
-    // Country lookup — used for blacklist matching and MPA-Country header on quarantined emails
-    const bl = rules.blacklist || {};
-    const countryResult = matchCountry(originatingIp, bl.countries || []);
-
-    // 1. Whitelist check — release immediately if matched
+    // 1.0 Whitelist check — Check if sender email is whiltelisted
     const wl = rules.whitelist || {};
     if (matchSender(fromAddr, wl.senders, recipients)) {
       metrics.increment('whitelisted');
@@ -409,6 +446,8 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Sender ${fromAddr} is whitelisted, releasing`);
       return;
     }
+    
+    // 1.1 Whitelist check - Check if IP Addresses is whitelisted
     if (ipInRange(originatingIp, wl.ipRanges)) {
       metrics.increment('whitelisted');
       const elapsed = (Date.now() - processStartTime) / 1000;
@@ -417,8 +456,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
       return;
     }
 
-    // 1.5 Allowed TLDs enforcement - if an allowedTLDs list exists, delete emails
-    // where the sender's TLD is not present in that list. Recipient TLDs are ignored.
+    const bl = rules.blacklist || {};
+    const countryResult = matchCountry(originatingIp, bl.countries || []);
+    // 2.0 Blacklist check -  Allowed TLDs enforcement - if an allowedTLDs list exists, delete emails where sender domain is not in list    
     const allowed = (rules.allowedTLDs || []).map(s => String(s).toLowerCase().replace(/^\./, '')).filter(Boolean);
     if (allowed.length > 0) {
       const fromTld = extractTLD(fromAddr);
@@ -427,139 +467,113 @@ async function processEmail(controlFilePath, messagePath, rules) {
         tools.logData(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
         const elapsed = (Date.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
-        await updateEmailHeaders(messagePath, destMessageName, ['TLD not allowed'], 99, countryResult.country, 'Blacklisted Sender TLD: ' + fromTld);
-        await deleteEmail(controlFilePath, messagePath, destMessageName);
+        await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted TLD(99) - TLD ${fromTld} not allowed`], 99, countryResult.country, 'Blacklisted TLD(99)');
+        await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
         return;
       }
     }
 
-    // 2. Blacklist check — delete immediately if matched
+    // 2.1 Blacklist check — Check if sender email is blacklisted
     if (matchSender(fromAddr, bl.senders)) {
       metrics.increment('blacklisted');
       tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
-      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted sender'], 99, countryResult.country, 'Blacklisted Sender: ' + fromAddr);
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted Sender(99) - Sender ${fromAddr}`], 99, countryResult.country, 'Blacklisted Sender(99)');
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
       return;
     }
 
+    // 2.2 Blacklist check - Check if sender IP Address is blacklisted
     if (ipInRange(originatingIp, bl.ipRanges)) {
       metrics.increment('blacklisted');
       tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
-      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted IP'], 99, countryResult.country, 'Blacklisted Originating IP: ' + originatingIp);
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted IP(99) - IP ${originatingIp}`], 99, countryResult.country, 'Blacklisted IP(99)');
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
       return;
     }
 
+    // 2.3 Blacklist check - Check if sender IP maps to blacklisted country code    
     if (countryResult.matched) {
       metrics.increment('blacklisted');
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
-      await updateEmailHeaders(messagePath, destMessageName, ['Blacklisted country'], 99, countryResult.country, 'Originating country: ' + countryResult.country);
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted Country(99) - Country ${countryResult.country}`], 99, countryResult.country, 'Blacklisted Country(99)');
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
       return;
     }
 
+    // 2.4 Blacklist check - Check if a recipient has an IP blocked or a sender blocked
     if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
       metrics.increment('blacklisted');
       tools.logData(`Combo rule matched, deleting`);
       const elapsed = (Date.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
-      await updateEmailHeaders(messagePath, destMessageName, ['Combo rule matched'], 99, countryResult.country, 'Combo rule matched');
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
+      //TODO: Return the rule that was matched to log here
+      await updateEmailHeaders(messagePath, destMessageName, [`Combo Matched(99) - Rule Matched `], 99, countryResult.country, 'Combo Matched(99)');
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
       return;
     }
 
-    // Track reasons for header and logging purposes and sum the spam score
+    // 3.0 Quarantine check - Calculate score from keyword filters 
     let quarantineReasons = [];
+    let spamInfoParts = [];
     let spamScore = 0;
-    const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters);
+    const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters, recipients);
     if (keywordResult.score > 0) {
+      spamInfoParts.push(`Keywords(${keywordResult.score})`);
       spamScore += keywordResult.score;
-      quarantineReasons.push(`Keyword matches: ${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}`);
+      quarantineReasons.push(`Keyword Rules - ${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}`);
     }
 
-    // 3. SpamAssassin check (if enabled)
-    let saResult = null;
+    // 3.1 Quarantine check - SpamAssassin check (if enabled)
     if (SPAMASSASSIN_ENABLED) {
-      saResult = await checkSpamAssassin(message);
+      const saResult = await checkSpamAssassin(message);
       if (saResult) {
         tools.logData(`SpamAssassin score: ${saResult.score}/${saResult.threshold}, isSpam: ${saResult.isSpam}`);
         spamScore += saResult.score;
-        if (saResult.isSpam) {
-          quarantineReasons.push('SpamAssassin flagged as spam');
-        }
-      } else if (SPAMASSASSIN_ENABLED) {
-        tools.logData(`SpamAssassin check unavailable, continuing with other checks`);
+        const saInfo = `SpamAssassin(${saResult.score})`;
+        spamInfoParts.push(saInfo);
+        if (saResult.fullReport && saResult.score > 0) 
+          quarantineReasons.push(`${saInfo} - ${saResult.fullReport}`);        
+      } else {
+        tools.logError('SpamAssassin check unavailable, continuing with other checks');
       }
     }
 
-    // 4. Ollama AI spam check
-    let aiSpamResult = false;
-    let aiLabel = '';
-    if (AI_CHECK_ENABLED) {
-      try {
-        const promptPath = path.join(__dirname, 'config', 'aiSpamCheckPrompt.md');
-        let promptTemplate = fs.readFileSync(promptPath, 'utf8');
-        const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
-        const aiPrompt = promptTemplate + emailContent;
-        const aiResponse = await queryOllama(aiPrompt);
-        const parsedJson = JSON.parse(aiResponse);
-        const classification = (parsedJson.classification || '').toUpperCase();
-        const confidence = parseFloat(parsedJson.confidence_score) || 0;
-        const reasons = parsedJson.reasons || [];
-        if (classification === 'SPAM') {
-          const score = Math.round(5 * confidence * 100) / 100;
-          spamScore += score;
-          aiLabel = `SPAM(${score})`;
-          quarantineReasons.push(`AI classified as spam - ${reasons.join('; ')}`);
-          aiSpamResult = true;
-        } else if (classification === 'HAM') {
-          const score = Math.round(-5 * confidence * 100) / 100;
-          spamScore += score;
-          aiLabel = `HAM(${score})`;
-        }
-      } catch (err) {
-        tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
-      }
-    }
-
+    // 3.2 Quaranetine check - Ollama AI spam check
+    const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
+    spamScore += aiScore;    
+    spamInfoParts.push(`AI Check${aiScore}`);
     const processElapsed = (Date.now() - processStartTime) / 1000;
-    const spamInfoParts = [];
-    if (keywordResult.matches.length > 0) {
-      spamInfoParts.push(`Keyword - [${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}]`);
+    if (aiSpamResult) {      
+      quarantineReasons.push(aiReasons);
     }
-    if (aiSpamResult || aiLabel) {
-      spamInfoParts.push(`AI Check - ${aiLabel}`);
-    }
-    if (SPAMASSASSIN_ENABLED && saResult) {
-      let saInfo = `SpamAssassin(${saResult.score})`;
-      if (saResult.fullReport && saResult.score > 0) {
-        saInfo += ` - ${saResult.fullReport}`;
-      }
-      spamInfoParts.push(saInfo);
-    }
+
+    // 4.0 Process results of scoring and quarantine if above threshold
     let spamDetailInfo = spamInfoParts.join('; ');
-
     tools.logData(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
-
+    // Check if we are across the delete threshold
     if (spamScore >= THRESHOLD_DELETE) {
       metrics.increment('blacklisted');
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Blacklisted', spamDetailInfo, spamScore);
       tools.logData(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
-      await deleteEmail(controlFilePath, messagePath, destMessageName);
-    } else if (spamScore >= THRESHOLD_QUARANTINE) {
+      await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+    } 
+    // Check if we are above the quarantine threshold
+    else if (spamScore >= THRESHOLD_QUARANTINE) {
       metrics.increment('quarantined');
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo, spamScore);
       tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
-      await quarantineEmail(controlFilePath, messagePath, destMessageName);
-    } else {
+      await quarantineEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+    } 
+    // No threshold reached release email
+    else {
       metrics.increment('released');
       if (spamDetailInfo.length == 0) spamDetailInfo = 'No significant spam indicators';
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Released', spamDetailInfo, spamScore);
@@ -568,13 +582,15 @@ async function processEmail(controlFilePath, messagePath, rules) {
   } catch (error) {
     tools.logError(`Error processing ${controlFilePath} and ${messagePath}: ${error}`);
   }
-
 }
 
 // Moves email to quarantine directory for further analysis and potential release by administrators
-async function quarantineEmail(controlFilePath, messagePath, destMessageName) {
+async function quarantineEmail(controlFilePath, messagePath, destMessageName, fromAddr) {
   const destHeader = path.join(QUARANTINE_DIR, destMessageName.replace(".MAI", ".H00"));
   const destMessage = path.join(QUARANTINE_DIR, destMessageName);
+  if (fromAddr) {
+    fs.appendFileSync(controlFilePath, `\r\nFromAddr=${fromAddr}\r\n`, 'utf8');
+  }
   fs.renameSync(controlFilePath, destHeader);
   fs.renameSync(messagePath, destMessage);
   tools.logData(`Email quarantined: ${destHeader}, ${destMessage}`);
@@ -582,9 +598,12 @@ async function quarantineEmail(controlFilePath, messagePath, destMessageName) {
 
 // Moves email to deleted directory, effectively deleting it from the pickup queue
 // These will be purged after several days by a separate cleanup process, allowing for recovery if needed
-async function deleteEmail(controlFilePath, messagePath, destMessageName) {
+async function deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr) {
   const destHeader = path.join(DELETED_DIR, destMessageName.replace(".MAI", ".H00"));
   const destMessage = path.join(DELETED_DIR, destMessageName);
+  if (fromAddr) {
+    fs.appendFileSync(controlFilePath, `\r\nFromAddr=${fromAddr}\r\n`, 'utf8');
+  }
   fs.renameSync(controlFilePath, destHeader);
   fs.renameSync(messagePath, destMessage);
   tools.logData(`Email deleted: ${destHeader}, ${destMessage}`);

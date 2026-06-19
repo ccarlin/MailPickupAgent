@@ -231,7 +231,7 @@ router.get('/', function(req, res) {
         if (filterUser && filterUser != "all")
             res.render('mailqCard', { title, emails, currentTime: now, filterUser });    
         else
-            res.render('mailq', { title, emails, currentTime: now, filterUser});
+            res.render('MailqGrid', { title, emails, currentTime: now, filterUser});
     });    
 }); 
 
@@ -281,7 +281,12 @@ function getEmails(emailPath, callback)
                                 emailInfo.subject = GetSubject(value);
                                 break;
                             case "Sender":
-                                value = GetEmailRecipient(value, false);
+                                if (!emailInfo.sender) {
+                                    value = GetEmailRecipient(value, false);
+                                    emailInfo.sender = value;
+                                }
+                                break;
+                            case "FromAddr":
                                 emailInfo.sender = value;
                                 break;                            
                         }
@@ -432,7 +437,7 @@ function GetEmailRecipient(emailList, bFirstOnly)
                 if (retValue.Length > 0)
                     retValue += ", ";
                 if (bFirstOnly)
-                    retValue += piece.split('@')[0];
+                    retValue += piece.split('@')[0].toLowerCase();
                 else
                     retValue += piece;
             }

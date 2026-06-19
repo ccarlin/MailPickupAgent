@@ -1,6 +1,8 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
+const config = require('../config');
 
 const router = express.Router();
 
@@ -43,6 +45,13 @@ function normalizeRules(rulesObj) {
     if (rulesObj.blacklist.countries) lowerStrings(rulesObj.blacklist.countries);
     if (rulesObj.blacklist.ipRanges && Array.isArray(rulesObj.blacklist.ipRanges))
       rulesObj.blacklist.ipRanges = rulesObj.blacklist.ipRanges.map(s => s.toLowerCase());
+    if (rulesObj.blacklist.keywordFilters) {
+      rulesObj.blacklist.keywordFilters.forEach(item => {
+        if (item.Recipient && typeof item.Recipient === 'string') {
+          item.Recipient = item.Recipient.trim().toUpperCase();
+        }
+      });
+    }
   }
   if (rulesObj.allowedTLDs) lowerStrings(rulesObj.allowedTLDs);
   return rulesObj;
@@ -64,6 +73,80 @@ router.post('/api/rules/save', (req, res) => {
   } catch (error) {
     console.error('Error saving rules file:', error);
     res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Generate a keyword filter via Ollama AI
+router.post('/api/rules/generate-keyword-filter', async (req, res) => {
+  const { description } = req.body;
+  if (!description || !description.trim()) {
+    return res.status(400).json({ message: 'Description is required' });
+  }
+
+  const OLLAMA_HOST = config.OLLAMA_SERVER || 'localhost';
+  const OLLAMA_PORT = config.OLLAMA_PORT || 11434;
+  const OLLAMA_MODEL = config.OLLAMA_MODEL || 'llama3.2';
+
+  const systemPrompt = `You are a spam filter rule generator. Given a user description, output ONLY a valid JSON object for a keyword filter with these fields:
+- FilterName: short uppercase snake_case name
+- FilterExpression: regex or plain text pattern
+- FilterType: "0" for regex, "1" for plain text
+- SearchScope: "0" body, "1" subject, "2" full message, "3" headers
+- FilterExpressionType: "0" for simple "1" for complex
+- FilterMatchType: "0" for any match, "1" for start with, "2" for ends with, "3" for whole word
+- FilterCaseSensitive: "0" not case sensitive or "1" is case sensitive
+- Score: string number 1-10 based on severity
+- Comment: short description of what this detects
+- Recipient: if the rule is to apply only for a name recipient put that name here otherwise leave blank
+
+Output ONLY the JSON object, no markdown or explanation.`;
+
+  try {
+    const url = `http://${OLLAMA_HOST}:${OLLAMA_PORT}/api/generate`;
+    const payload = {
+      model: OLLAMA_MODEL,
+      prompt: `${systemPrompt}\n\nUser request: ${description.trim()}`,
+      stream: false,
+    };
+    const resp = await axios.post(url, payload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000,
+    });
+
+    let responseText = '';
+    if (resp && resp.data) {
+      responseText = resp.data.response || '';
+    }
+
+    // Strip markdown code fences if present
+    responseText = responseText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    const filter = JSON.parse(responseText);
+
+    // Validate required fields
+    if (!filter.FilterName || !filter.FilterExpression) {
+      throw new Error('AI response missing required fields');
+    }
+
+    filter.FilterName = String(filter.FilterName).trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+    filter.FilterExpression = String(filter.FilterExpression).trim();
+    filter.Score = String(filter.Score || '1');
+    filter.FilterType = String(filter.FilterType === '1' ? '1' : '0');
+    filter.SearchScope = String(['1', '2', '3', '4'].includes(filter.SearchScope) ? filter.SearchScope : '1');
+    filter.FilterExpressionType = '1';
+    filter.FilterMatchType = '0';
+    filter.FilterCaseSensitive = String(filter.FilterCaseSensitive === '1' ? '1' : '0');
+    if (filter.Comment) filter.Comment = String(filter.Comment).trim();
+    if (filter.Recipient && String(filter.Recipient).trim()) {
+      filter.Recipient = String(filter.Recipient).trim().toLowerCase();
+    } else {
+      delete filter.Recipient;
+    }
+
+    res.json(filter);
+  } catch (error) {
+    console.error('Error generating filter with AI:', error);
+    res.status(500).json({ message: 'AI generation failed: ' + (error.message || 'Unknown error') });
   }
 });
 

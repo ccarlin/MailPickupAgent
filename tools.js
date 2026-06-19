@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const simpleParser = require('mailparser').simpleParser;
+const PostalMime = require('postal-mime');
 const config = require('./config');
 
 module.exports = {
@@ -99,9 +99,10 @@ module.exports = {
           return "No message available";
         }
         const mailMessage = fs.readFileSync(mailFile);
-        const parsed = await simpleParser(mailMessage);
+        const parsed = await PostalMime.parse(mailMessage);
         if (inHTML) return parsed.html || "No HTML part available";
-        return parsed.textAsHtml || parsed.text || "No text available";
+        const textContent = parsed.text || "";
+        return textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>\n') || "No text available";
       } catch (err) {
         this.logError(`Error parsing email file: ${mailFile}, Error: ${err}`);
         return "Error parsing email message.";

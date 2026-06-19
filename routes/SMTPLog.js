@@ -211,7 +211,7 @@ router.get('/', function(req, res) {
         tools.logData(results, "INFO");
         
         let title = "SMTPLog Analyzer";
-        res.render('SMTPLog', { title, logData: logList});
+        res.render('SMTPLogGrid', { title, logData: logList});
     });  
 }); 
 

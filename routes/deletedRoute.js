@@ -4,12 +4,13 @@ const fs = require("fs");
 const path = require("path");
 const config = require('../config');
 const tools = require('../tools');
+const PostalMime = require('postal-mime');
 const { recentlyReleased } = require('../index.js');
 
 router.get('/', function(req, res) {
     getDeletedEmails(function(err, emails) {
         let title = "Deleted Messages";
-        res.render('deleted', { title, emails, currentTime: new Date().toLocaleString(), formatTime });
+        res.render('DeletedGrid', { title, emails, currentTime: new Date().toLocaleString(), formatTime });
     });
 });
 
@@ -43,47 +44,45 @@ function getDeletedEmails(callback) {
         return;
     }
 
-    fs.readdir(deletedPath, function(err, list) {
+    fs.readdir(deletedPath, async function(err, list) {
         if (err == null) {
-            for(var i=0; i<list.length; i++) {
+            for(let i=0; i<list.length; i++) {
                 if(path.extname(list[i]).toLowerCase() === ".h00") {
                     let emailInfo = {};
                     let filePath = path.join(deletedPath, list[i]);
                     let emailFilePath = filePath.toLowerCase().replace(".h00", ".mai");
+                    emailInfo.filepath = list[i].slice(0, -4);
+                    emailInfo.subject = "";
+                    emailInfo.spamScore = "N/A";
+                    emailInfo.antiSpam = "N/A";
+                    emailInfo.safe = true;
 
                     try {
+                        // Only read TimeAcquired from .H00 (exclusive to header)
                         let headerContents = fs.readFileSync(filePath).toString();
-                        let lines = headerContents.split('\r\n');
-                        emailInfo.filepath = list[i].slice(0, -4);
-                        emailInfo.subject = "";
-                        emailInfo.spamScore = "N/A";
-                        emailInfo.antiSpam = "N/A";
-                        emailInfo.safe = true;
-
-                        for(var j=0;j<lines.length;j++) {
-                            let data = lines[j].split(/=(.+)/);
+                        let headerLines = headerContents.split('\r\n');
+                        for(let j=0;j<headerLines.length;j++) {
+                            let data = headerLines[j].split(/=(.+)/);
                             let key = data[0];
-                            let value = data[1];
-                            switch(key) {
-                                case "Recipients":
-                                    emailInfo.recipients = value;
-                                    break;
-                                case "Subject":
-                                    emailInfo.subject = value;
-                                    break;
-                                case "Sender":
-                                    emailInfo.sender = value;
-                                    break;
-                                case "TimeAcquired":
-                                    emailInfo.timeAcquired = value;
-                                    break;
+                            if (key === "TimeAcquired") {
+                                emailInfo.timeAcquired = data[1];
+                                break;
                             }
                         }
 
+                        // Parse .MAI with postal-mime for sender, recipients, subject
                         if (fs.existsSync(emailFilePath)) {
-                            let emailContents = fs.readFileSync(emailFilePath).toString();
+                            let mailMessage = fs.readFileSync(emailFilePath);
+                            let parsed = await PostalMime.parse(mailMessage);
+                            emailInfo.sender = parsed.from?.address || 'unknown';
+                            let toAddresses = (parsed.to || []).map(v => (v.address || '').split('@')[0].toLowerCase()).filter(Boolean);
+                            emailInfo.recipients = toAddresses.join(', ');
+                            emailInfo.subject = parsed.subject || '';
+
+                            // Read X-MPA headers from raw email
+                            let emailContents = mailMessage.toString();
                             let emailLines = emailContents.split('\r\n');
-                            for(j=0;j<emailLines.length;j++) {
+                            for(let j=0;j<emailLines.length;j++) {
                                 if (emailLines[j].startsWith("X-MPA")) {
                                     let parts = emailLines[j].split(": ");
                                     let key = parts[0].substring(6);

@@ -235,7 +235,7 @@ Replace the existing `GeoLite2-Country.mmdb` file in the project root with the d
 - **cookie-parser** — HTTP cookie parsing middleware
 - **express** — Web server framework
 - **express-session** — Session management middleware
-- **mailparser** — Email parsing
+- **postal-mime** — Email parsing
 - **mmdb-reader** — GeoIP country lookup
 - **moment** — Date/time formatting and manipulation
 - **spamassassin-client** — SpamAssassin SPAMC protocol client

@@ -86,11 +86,13 @@ block scripts
                     { key: 'SMTP_USER', label: 'SMTP Username', hint: 'Authentication user (if required)' },
                     { key: 'SMTP_PASS', label: 'SMTP Password', type: 'password', hint: 'Authentication password' },                   
                 ]},
-                { key: 'ai', title: 'AI / Ollama', icon: '&#x1F916;', description: 'AI-powered spam classification via Ollama SPAM messages given 5 points', fields: [
+                { key: 'ai', title: 'AI / Ollama', icon: '&#x1F916;', description: 'AI-powered spam classification via Ollama', fields: [
                     { key: 'AI_CHECK_ENABLED', label: 'AI Check Enabled', type: 'checkbox', hint: 'Enable Ollama AI spam classification' },
                     { key: 'OLLAMA_SERVER', label: 'Ollama Server', hint: 'Hostname or IP of Ollama server' },
                     { key: 'OLLAMA_PORT', label: 'Ollama Port', type: 'number', hint: 'Default 11434' },
                     { key: 'OLLAMA_MODEL', label: 'Ollama Model', hint: 'Model name like llama3.2, mistral, etc.' },
+                    { key: 'AI_SPAM_POINTS', label: 'AI Spam Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points added to score when AI classifies as SPAM (0.0 - 10.0)' },
+                    { key: 'AI_HAM_POINTS', label: 'AI Ham Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points removed from score when AI classifies as HAM (0.0 - 10.0)' },
                 ]},
                 { key: 'spamassassin', title: 'SpamAssassin', icon: '&#x1F6E1;', description: 'Spam filtering via SpamAssassin daemon 0-15 score range', fields: [
                     { key: 'SPAMASSASSIN_ENABLED', label: 'SpamAssassin Enabled', type: 'checkbox', hint: 'Enable SpamAssassin spam checks' },
@@ -163,6 +165,9 @@ block scripts
                         if (field.type === 'password') {
                             input.type = 'password';
                         }
+                        if (field.step) input.step = field.step;
+                        if (field.min !== undefined) input.min = field.min;
+                        if (field.max !== undefined) input.max = field.max;
                         fieldDiv.appendChild(input);
                     }
 

@@ -1,0 +1,752 @@
+extends adminLayout
+
+block css
+    link(href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet")
+    link(href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet")
+    link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
+    style.
+        .deleted-grid-wrapper {
+            font-family: 'Roboto', sans-serif;
+            margin: 0.5rem 0;
+        }
+        .deleted-grid-wrapper .gridjs-container {
+            font-family: 'Roboto', sans-serif;
+            color: #1e293b;
+        }
+        .deleted-grid-wrapper .gridjs-head {
+            display: none;
+        }
+        .deleted-grid-wrapper table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.8125rem;
+        }
+        .deleted-grid-wrapper td {
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+        .deleted-grid-wrapper th {
+            background: #1976d2;
+            color: #fff;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 6px 8px;
+            text-align: left;
+            white-space: nowrap;
+            border: none;
+            user-select: none;
+            vertical-align: middle;
+            line-height: 1.6;
+        }
+        .deleted-grid-wrapper th:hover {
+            background: #1565c0;
+        }
+        .deleted-grid-wrapper th .gridjs-th-content {
+            float: left;
+            white-space: nowrap;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            width: calc(100% - 16px);
+        }
+        .deleted-grid-wrapper th .gridjs-sort {
+            filter: brightness(0) invert(1);
+            opacity: 0.7;
+        }
+        .deleted-grid-wrapper th .gridjs-sort:hover {
+            opacity: 1;
+        }
+        .deleted-grid-wrapper td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            word-break: break-word;
+        }
+        .deleted-grid-wrapper tbody tr {
+            transition: background-color 0.15s ease;
+        }
+        .deleted-grid-wrapper tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+        .deleted-grid-wrapper tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .deleted-grid-wrapper tbody tr:nth-child(even):hover {
+            background-color: #e3f2fd;
+        }
+        .deleted-grid-wrapper .gridjs-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.8125rem;
+            color: #64748b;
+        }
+        .deleted-grid-wrapper .gridjs-pagination {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .deleted-grid-wrapper .gridjs-pagination button {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fff;
+            color: #334155;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .deleted-grid-wrapper .gridjs-pagination button:hover:not(:disabled) {
+            background: #e3f2fd;
+            border-color: #1976d2;
+            color: #1976d2;
+        }
+        .deleted-grid-wrapper .gridjs-pagination button:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        .deleted-grid-wrapper .gridjs-pagination button.gridjs-currentPage {
+            background: #1976d2;
+            color: #fff;
+            border-color: #1976d2;
+            font-weight: 500;
+        }
+        .deleted-grid-wrapper .gridjs-summary {
+            color: #64748b;
+            font-size: 0.8125rem;
+        }
+        .deleted-grid-wrapper .gridjs-table-wrap {
+            overflow-x: auto;
+        }
+        .mui-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            overflow: hidden;
+            transition: box-shadow 0.2s ease;
+        }
+        .mui-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .mui-divider {
+            height: 1px;
+            background: #e2e8f0;
+        }
+        .mui-last-update {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            padding: 6px 20px 0;
+            text-align: right;
+        }
+        .mui-empty {
+            text-align: center;
+            padding: 48px 16px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .mui-empty i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 12px;
+            color: #cbd5e1;
+        }
+        .mui-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background: #fff;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .mui-btn:hover {
+            background: #1976d2;
+            border-color: #1976d2;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(25,118,210,0.25);
+        }
+        .mui-btn:active {
+            background: #1565c0;
+            border-color: #1565c0;
+            transform: translateY(1px);
+        }
+        .mui-btn i {
+            font-size: 0.85rem;
+        }
+        .mui-btn.mui-btn-recover {
+            background: #10b981;
+            border-color: #10b981;
+            color: #fff;
+        }
+        .mui-btn.mui-btn-recover:hover {
+            background: #059669;
+            border-color: #059669;
+            box-shadow: 0 2px 6px rgba(16,185,129,0.3);
+        }
+        .mui-btn.mui-btn-recover:active {
+            background: #047857;
+        }
+        .mui-filters-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .mui-filters-row .mui-filters-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .mui-filters-row .mui-filters-right {
+            display: flex;
+            align-items: center;
+        }
+        .mui-filters-row .mui-filters-right input {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 200px;
+        }
+        .mui-filters-row .mui-filters-right input:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+        }
+        .mui-multiselect {
+            position: relative;
+            display: inline-block;
+        }
+        .mui-multiselect-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            color: #334155;
+            background: #fff;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 130px;
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mui-multiselect-toggle:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+        }
+        .mui-multiselect-toggle .mui-chevron {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+        .mui-multiselect.open .mui-chevron {
+            transform: rotate(180deg);
+        }
+        .mui-multiselect-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            min-width: 200px;
+            max-height: 260px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            padding: 4px 0;
+            margin-top: 2px;
+        }
+        .mui-multiselect.open .mui-multiselect-dropdown {
+            display: block;
+        }
+        .mui-multiselect-dropdown label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            font-size: 0.8125rem;
+            color: #334155;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .mui-multiselect-dropdown label:hover {
+            background: #e3f2fd;
+        }
+        .mui-multiselect-dropdown input[type="checkbox"] {
+            accent-color: #1976d2;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        .mui-filter-clear {
+            padding: 4px 10px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            color: #1976d2;
+            cursor: pointer;
+        }
+        .mui-filter-clear:hover {
+            background: #e3f2fd;
+        }
+        .mui-select-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            cursor: pointer;
+            user-select: none;
+        }
+        .mui-select-all input {
+            accent-color: #1976d2;
+            margin: 0;
+        }
+        .preview-btn {
+            background: #6c757d;
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            transition: background 0.15s;
+        }
+        .preview-btn:hover {
+            background: #5a6268;
+        }
+        .preview-btn .material-icons {
+            font-size: 14px;
+        }
+        .preview-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7); z-index: 100;
+            display: none;
+        }
+        .preview-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: #fff; padding: 20px; border-radius: 10px;
+            width: 85vw; height: 85vh;
+            display: flex; flex-direction: column;
+        }
+        .preview-modal-content h2 {
+            margin: 0 0 10px 0;
+        }
+        .preview-modal-content iframe {
+            flex: 1; border: 1px solid #ddd; border-radius: 4px;
+        }
+    link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
+
+block scripts
+    script(src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js")
+
+block content
+    script.
+        document.addEventListener('DOMContentLoaded', function() {
+            var emailData = !{JSON.stringify(emails)};
+            emailData.sort(function(a, b) {
+                return (parseInt(b.timeAcquired) || 0) - (parseInt(a.timeAcquired) || 0);
+            });
+            var allData = emailData.map(function(e) {
+                var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
+                var time = e.timeAcquired ? new Date(parseInt(e.timeAcquired) * 1000).toLocaleString() : '';
+                return [e.filepath, time, e.sender, e.recipients, e.subject, String(score), e.antiSpam, e.safe];
+            });
+
+            var grid = null;
+            var filteredData = allData.slice();
+
+            var filterConfig = [
+                { idx: 3, label: 'Recipient', key: 'recipient' }
+            ];
+
+            var customSearchInput = document.getElementById('custom-search');
+            document.getElementById('last-update').textContent = '#{currentTime}';
+
+            setTimeout(function() { location.reload(true); }, 600000);
+
+            function getDistinct(colIdx) {
+                var set = {};
+                allData.forEach(function(row) {
+                    var v = (row[colIdx] || '').trim();
+                    if (v) set[v] = true;
+                });
+                return Object.keys(set).sort(function(a, b) { return a.localeCompare(b); });
+            }
+
+            function buildMultiSelect(containerId, config) {
+                var container = document.getElementById(containerId);
+                var vals = getDistinct(config.idx);
+                var html = '<div class="mui-multiselect" data-key="' + config.key + '">';
+                html += '<button type="button" class="mui-multiselect-toggle" onclick="event.stopPropagation();this.closest(\'.mui-multiselect\').classList.toggle(\'open\')">';
+                html += '<span class="mui-multiselect-label">All</span>';
+                html += '<i class="fas fa-chevron-down mui-chevron"></i>';
+                html += '</button>';
+                html += '<div class="mui-multiselect-dropdown">';
+                html += '<label><input type="checkbox" class="mui-ms-option" value="" checked data-key="' + config.key + '"> <span>All</span></label>';
+                vals.forEach(function(v) {
+                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + v.replace(/"/g, '&quot;') + '" data-key="' + config.key + '"> <span>' + v + '</span></label>';
+                });
+                html += '</div></div>';
+                container.innerHTML = html;
+
+                container.querySelectorAll('.mui-ms-option').forEach(function(cb) {
+                    cb.addEventListener('change', function() {
+                        var key = this.dataset.key;
+                        var ms = this.closest('.mui-multiselect');
+                        var allCb = ms.querySelector('input[data-key="' + key + '"][value=""]');
+                        if (this.value === '') {
+                            var checked = this.checked;
+                            ms.querySelectorAll('input[data-key="' + key + '"]').forEach(function(c) { c.checked = checked; });
+                        } else {
+                            var allChecked = true;
+                            ms.querySelectorAll('input[data-key="' + key + '"]:not([value=""])').forEach(function(c) {
+                                if (!c.checked) allChecked = false;
+                            });
+                            allCb.checked = allChecked;
+                        }
+                        updateLabel(ms, key);
+                        applyFilters();
+                    });
+                });
+
+                container.querySelector('.mui-multiselect-dropdown').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!container.contains(e.target)) {
+                        container.querySelector('.mui-multiselect').classList.remove('open');
+                    }
+                });
+            }
+
+            function updateLabel(ms, key) {
+                var checked = [];
+                ms.querySelectorAll('input[data-key="' + key + '"]:not([value=""])').forEach(function(c) {
+                    if (c.checked) checked.push(c.value);
+                });
+                var label = ms.querySelector('.mui-multiselect-label');
+                if (checked.length === 0 || checked.length === ms.querySelectorAll('input[data-key="' + key + '"]:not([value=""])').length) {
+                    label.textContent = 'All';
+                } else {
+                    label.textContent = checked.length + ' selected';
+                }
+            }
+
+            function getSelected(key) {
+                var ms = document.querySelector('.mui-multiselect[data-key="' + key + '"]');
+                if (!ms) return [];
+                var selected = [];
+                ms.querySelectorAll('input[data-key="' + key + '"]:not([value=""])').forEach(function(c) {
+                    if (c.checked) selected.push(c.value);
+                });
+                return selected;
+            }
+
+            function applyFilters() {
+                var filters = {};
+                filterConfig.forEach(function(fc) {
+                    filters[fc.idx] = getSelected(fc.key);
+                });
+                filteredData = allData.filter(function(row) {
+                    for (var colIdx in filters) {
+                        var vals = filters[colIdx];
+                        if (vals.length > 0 && vals.indexOf(row[colIdx]) === -1) return false;
+                    }
+                    return true;
+                });
+                renderGrid();
+            }
+
+            function clearFilters() {
+                document.querySelectorAll('.mui-ms-option').forEach(function(cb) { cb.checked = cb.value === ''; });
+                filterConfig.forEach(function(fc) {
+                    var ms = document.querySelector('.mui-multiselect[data-key="' + fc.key + '"]');
+                    if (ms) updateLabel(ms, fc.key);
+                });
+                applyFilters();
+            }
+
+            function selectAll(checked) {
+                document.querySelectorAll('.deleted-chk').forEach(function(cb) { cb.checked = checked; });
+            }
+
+            function doRecover() {
+                var checked = document.querySelectorAll('.deleted-chk:checked');
+                if (checked.length === 0) {
+                    alert('Please select one or more messages.');
+                    return;
+                }
+                if (!confirm('Are you sure you wish to recover ' + checked.length + ' email(s)?')) return;
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/deleted';
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'action';
+                inp.value = 'Recover';
+                form.appendChild(inp);
+                checked.forEach(function(cb) {
+                    var h = document.createElement('input');
+                    h.type = 'hidden';
+                    h.name = cb.value;
+                    h.value = 'on';
+                    form.appendChild(h);
+                });
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            function closePreviewModal() {
+                document.getElementById('emailPreviewModal').style.display = 'none';
+                document.getElementById('emailPreviewFrame').src = '';
+            }
+
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('.preview-link');
+                if (!link) return;
+                e.preventDefault();
+                var key = link.dataset.mailkey;
+                var view = link.dataset.view;
+                if (!key) return;
+                var url = view === 'html' ? 'emailPreview?isDeleted=true&view=HTML&mailKey=' + encodeURIComponent(key) : 'emailPreview?isDeleted=true&mailKey=' + encodeURIComponent(key);
+                document.getElementById('emailPreviewFrame').src = url;
+                document.getElementById('emailPreviewModal').style.display = 'block';
+            });
+
+            document.getElementById('chkSelectAll').addEventListener('change', function() {
+                selectAll(this.checked);
+            });
+
+            document.getElementById('btn-recover').addEventListener('click', doRecover);
+            document.getElementById('previewCloseBtn').addEventListener('click', closePreviewModal);
+
+            function renderGrid() {
+                var container = document.getElementById('deleted-grid');
+                if (grid) {
+                    grid.updateConfig({ data: filteredData }).forceRender();
+                } else {
+                    grid = new gridjs.Grid({
+                        columns: [
+                            {
+                                name: '',
+                                width: '40px',
+                                sort: false,
+                                formatter: function(cell) {
+                                    return gridjs.html('<input type="checkbox" class="deleted-chk" value="' + cell.replace(/"/g, '&quot;') + '">');
+                                }
+                            },
+                            { name: 'Time', width: '160px', sort: true },
+                            { name: 'Sender', width: '220px', sort: true },
+                            { name: 'Recipient', width: '120px', sort: true },
+                            { name: 'Subject', width: '300px', sort: true },
+                            { name: 'Score', width: '65px', sort: true },
+                            { name: 'Reason', width: '200px', sort: true },
+                            {
+                                name: 'Actions',
+                                width: '90px',
+                                sort: false,
+                                formatter: function(cell, row) {
+                                    var filepath = row.cells[0].data;
+                                    var safe = cell === true || cell === 'true';
+                                    var html = '<button class="preview-btn preview-link" data-mailkey="' + filepath.replace(/"/g, '&quot;') + '" data-view="text" title="Plain Text Preview"><i class="material-icons">article</i></button>';
+                                    if (safe) {
+                                        html += '&nbsp;<button class="preview-btn preview-link" data-mailkey="' + filepath.replace(/"/g, '&quot;') + '" data-view="html" title="HTML Preview"><i class="material-icons">visibility</i></button>';
+                                    }
+                                    return gridjs.html(html);
+                                }
+                            }
+                        ],
+                        data: filteredData,
+                        pagination: { limit: 10, summary: true },
+                        search: { enabled: false },
+                        sort: true,
+                        language: {
+                            'nothing found': '<div class="mui-empty"><i class="fas fa-trash-can"></i>No deleted messages found.</div>'
+                        },
+                        className: {
+                            table: 'gridjs-table',
+                            thead: 'gridjs-thead',
+                            th: 'gridjs-th',
+                            tbody: 'gridjs-tbody',
+                            td: 'gridjs-td'
+                        }
+                    }).render(container);
+                }
+            }
+
+            function doCustomSearch() {
+                var q = customSearchInput.value.toLowerCase();
+                if (!q) {
+                    filteredData = allData.slice();
+                    filterConfig.forEach(function(fc) {
+                        var sel = getSelected(fc.key);
+                        if (sel.length > 0 && sel.length < getDistinct(fc.idx).length) {
+                            filteredData = filteredData.filter(function(row) { return sel.indexOf(row[fc.idx]) !== -1; });
+                        }
+                    });
+                } else {
+                    filteredData = allData.filter(function(row) {
+                        for (var ci = 1; ci < row.length; ci++) {
+                            if (String(row[ci]).toLowerCase().indexOf(q) !== -1) return true;
+                        }
+                        return false;
+                    });
+                    filterConfig.forEach(function(fc) {
+                        var sel = getSelected(fc.key);
+                        if (sel.length > 0 && sel.length < getDistinct(fc.idx).length) {
+                            filteredData = filteredData.filter(function(row) { return sel.indexOf(row[fc.idx]) !== -1; });
+                        }
+                    });
+                }
+                renderGrid();
+            }
+
+            customSearchInput.addEventListener('input', doCustomSearch);
+
+            document.getElementById('btn-csv').addEventListener('click', function() {
+                var rows = grid ? grid.config.data : filteredData;
+                var header = ['File','Time','Sender','Recipient','Subject','Score','Reason'];
+                var csv = header.join(',') + '\\n';
+                rows.forEach(function(r) {
+                    var vals = [r[0], r[1], r[2], r[3], r[4], r[5], r[6]];
+                    var esc = vals.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
+                    csv += esc.join(',') + '\\n';
+                });
+                var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                var link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'DeletedMessages.csv';
+                link.click();
+                URL.revokeObjectURL(link.href);
+            });
+
+            document.getElementById('btn-copy').addEventListener('click', function() {
+                var rows = grid ? grid.config.data : filteredData;
+                var header = ['Time','Sender','Recipient','Subject','Score','Reason'];
+                var pad = [20, 30, 30, 40, 8, 20];
+                function fmtRow(arr) {
+                    var vals = [arr[1], arr[2], arr[3], arr[4], arr[5], arr[6]];
+                    return vals.map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
+                }
+                var text = fmtRow(header) + '\\n' + '-'.repeat(fmtRow(header).length) + '\\n';
+                text += rows.map(fmtRow).join('\\n');
+                navigator.clipboard.writeText(text).then(function() {
+                    var btn = document.getElementById('btn-copy');
+                    var orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(function() { btn.innerHTML = orig; }, 2000);
+                });
+            });
+
+            document.getElementById('btn-print').addEventListener('click', function() {
+                var rows = grid ? grid.config.data : filteredData;
+                var win = window.open('', '_blank');
+                var html = '<!DOCTYPE html><html><head><title>Deleted Messages</title>';
+                html += '<style>body{font-family:Roboto,sans-serif;margin:20px;}';
+                html += 'h2{color:#1e293b;}table{border-collapse:collapse;width:100%;font-size:12px;}';
+                html += 'th{background:#1976d2;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}';
+                html += 'td{padding:6px 10px;border-bottom:1px solid #e2e8f0;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
+                html += '<h2>Deleted Messages</h2><table><thead><tr>';
+                html += '<th>Time</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Score</th><th>Reason</th>';
+                html += '</tr></thead><tbody>';
+                rows.forEach(function(r) {
+                    html += '<tr><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td><td>' + r[5] + '</td><td>' + r[6] + '</td></tr>';
+                });
+                html += '</tbody></table></body></html>';
+                win.document.write(html);
+                win.document.close();
+                win.focus();
+                win.print();
+            });
+
+            document.getElementById('btn-clear-filters').addEventListener('click', clearFilters);
+
+            filterConfig.forEach(function(fc) {
+                buildMultiSelect('ms-' + fc.key, fc);
+            });
+
+            renderGrid();
+        });
+
+    .deleted-grid-wrapper
+        .mui-card
+            .mui-last-update Last updated: <span id="last-update"></span>
+            .mui-filters-row
+                .mui-filters-left
+                    .mui-btn#btn-csv
+                        i.fas.fa-file-csv
+                        | CSV
+                    .mui-btn#btn-copy
+                        i.fas.fa-copy
+                        | Copy
+                    .mui-btn#btn-print
+                        i.fas.fa-print
+                        | Print
+                    .mui-btn-separator(style="width:1px;height:24px;background:#e2e8f0;margin:0 4px;")
+                    .mui-btn.mui-btn-recover#btn-recover
+                        i.fas.fa-undo-alt
+                        | Recover
+                    .mui-btn-separator(style="width:1px;height:24px;background:#e2e8f0;margin:0 4px;")
+                    .mui-select-all
+                        input#chkSelectAll(type="checkbox")
+                        label(for="chkSelectAll" style="cursor:pointer;") Select All
+                    .mui-btn-separator(style="width:1px;height:24px;background:#e2e8f0;margin:0 4px;")
+                    .mui-filter-group
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;margin-right:4px;") Recipient
+                        #ms-recipient
+                    button.mui-filter-clear#btn-clear-filters Clear
+                .mui-filters-right
+                    input#custom-search(type="search" placeholder="Search...")
+            .mui-divider
+            #deleted-grid
+
+    #emailPreviewModal.preview-modal
+        .preview-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2 Email Preview
+                button#previewCloseBtn.mui-btn(type="button") Close
+            iframe#emailPreviewFrame

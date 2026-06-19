@@ -2,16 +2,11 @@ extends adminLayout
 
 block css
     link(href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.min.css" rel="stylesheet" integrity="sha384-lidBvvi7oLJ2j9e3nFlBSXfo+giBJ9L7QnUdgjc3AvLiynS0HdKEEEZtvZ4izE46" crossorigin="anonymous")
+    link(href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.min.css" rel="stylesheet" integrity="sha384-gZdV4/a6Gt/Qu0qCP3bchrOj0WlpkAfszB1m4/eFzOSnvvHUFMv9+C/KcgMO8CeR" crossorigin="anonymous")
     link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
     link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
-    style.
-       body {
-            background-color: white;
-        }
-        .myMiniButton {
-            margin-left: 5px;
-        }
-
+    link(href="css/sumoselect.min.css" rel="stylesheet"  type="text/css")    
+    style.       
         #GridView1 td, #GridView1 th { white-space: normal; word-break: break-word; }
         .btn-preview { background-color: #6c757d; color: white; padding: 4px 6px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
         .btn-preview .material-icons { font-size: 14px; vertical-align: middle; }
@@ -33,12 +28,22 @@ block css
         .preview-modal-content iframe {
             flex: 1; border: 1px solid #ddd; border-radius: 4px;
         }
+        .last-update {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
     
 block scripts
-    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
+    script(src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha384-NXgwF8Kv9SSAr+jemKKcbvQsz+teULH/a5UNJvZc6kP47hZgl62M1vGnw6gHQhb1" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous")
+    script(src="https://cdn.datatables.net/buttons/3.2.2/js/dataTables.buttons.min.js" integrity="sha384-DmaAfo+/+UjRKHPidNNswlNqd9ybuE6yx9zKHyMY+vYy9SZhQEu4nauMVgwSx4Z/" crossorigin="anonymous")
+    script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.html5.min.js" integrity="sha384-+E6fb8f66UPOVDHKlEc1cfguF7DOTQQ70LNUnlbtywZiyoyQWqtrMjfTnWyBlN/Y" crossorigin="anonymous")
+    script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.print.min.js" integrity="sha384-FvTRywo5HrkPlBKFrm2tT8aKxIcI/VU819roC/K/8UrVwrl4XsF3RKRKiCAKWNly" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
+    script(src="scripts/jquery.sumoselect.min.js")
+    script(src="scripts/filtercontrol.js")
 
 block content
     script.
@@ -48,11 +53,32 @@ block content
                 $('input:checkbox').not(this).prop('checked', this.checked);
             });
             var table = $('#GridView1').DataTable({
-                 order: [[ 1, "desc" ]],
-                 paging: false,
-                 info: false,
-                 responsive: true,
-                 language: {"emptyTable": "No deleted messages found.", "zeroRecords": "No matches found."}
+                order: [[ 1, "desc" ]],
+                pageLength: 10, 
+                layout: {
+                    topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'print',
+                        {
+                            text: 'Recover',
+                            className: 'myMiniButton',
+                            action: function(e, dt, node, config) {
+                                if (ConfirmFunction('recover')) {
+                                    $('<input>').attr({ type: 'hidden', name: 'action', value: 'Recover' }).appendTo('form');
+                                    $('form').submit();
+                                }
+                            }
+                        }
+                    ]},
+                    topEnd: 'search',
+                    bottomStart: 'info',
+                    bottomEnd: 'paging'                
+                },
+                language: {"emptyTable": "No deleted messages found.", "zeroRecords": "No matches found."},         
+                initComplete: function () {    
+                    var btns = $('.dt-button');
+                    btns.addClass('myMiniButton');
+                    btns.removeClass('dt-button');               
+                    [3].forEach(idx => multiFilterSetup(this.api().column(idx), 100));                             
+                }
             });
         });
 
@@ -82,25 +108,20 @@ block content
             $('#emailPreviewModal').show();
         });
 
+    div.last-update(align="right") Last updated: #{currentTime}
     form(action='/deleted', method="POST")
-        table(style='width: 100%')
-            tr
-                td(align="left")
-                    input#butRecover(type='submit' name='action' value='Recover' onclick="return ConfirmFunction('recover');" class="myMiniButton")
-                td(align="right")
-                    | #{currentTime}
         div
             table#GridView1(class="row-border compact order-column hover stripe" style='width: 100%; font-size: small')
                 thead
                     th(scope='col')
                         input#chkSelectAll(type='checkbox')
-                    th(scope='col') Time
+                    th(align='left' scope='col' style='white-space: nowrap;') Time
                     th(scope='col') Sender
                     th(scope='col') Recipient
                     th(scope='col') Subject
-                    th(scope='col') SpamScore
+                    th(align='left' scope='col' style='white-space: nowrap;') Score
                     th(scope='col') Reason
-                    th(scope='col') Actions
+                    th(align='left' scope='col' style='white-space: nowrap;') Actions
                 each email, idx in emails
                     tr
                         td
@@ -110,7 +131,7 @@ block content
                         td #{email.sender}
                         td #{email.recipients}
                         td #{email.subject}
-                        td #{email.spamScore}
+                        td #{isNaN(Number(email.spamScore)) ? email.spamScore : +Number(email.spamScore).toFixed(1)}
                         td #{email.antiSpam}
                         td(style="white-space: nowrap;")
                             button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="text" title="Plain Text Preview")
@@ -119,6 +140,17 @@ block content
                                 |&nbsp;
                                 button.btn.btn-preview.preview-link(type="button" data-mailkey=email.filepath data-view="html" title="HTML Preview")
                                     i.material-icons visibility
+                tfoot 
+                    tr 
+                        td 
+                        td 
+                        td 
+                        td 
+                        td 
+                        td 
+                        td 
+                        td 
+
 
     #emailPreviewModal.preview-modal
         .preview-modal-content

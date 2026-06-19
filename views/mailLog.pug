@@ -5,13 +5,7 @@ block css
     link(href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.min.css" rel="stylesheet" integrity="sha384-gZdV4/a6Gt/Qu0qCP3bchrOj0WlpkAfszB1m4/eFzOSnvvHUFMv9+C/KcgMO8CeR" crossorigin="anonymous")
     link(href="https://cdn.datatables.net/responsive/3.0.4/css/responsive.dataTables.min.css" rel="stylesheet" integrity="sha384-kz9bozrCHP/y+wTJV8P+n/dMBOh00rqNmmIAgHckzFWpoSB49V5ornW1aY+uYTyA" crossorigin="anonymous")
     link(href="/css/sumoselect.min.css" rel="stylesheet"  type="text/css")
-    style.
-        body {
-            background-color: white;
-        }         
-        .hideChat {
-            display: none;
-        }
+    style.       
         #myTable {
             table-layout: fixed;
             width: 100%;
@@ -23,14 +17,18 @@ block css
         .dataTables_wrapper {
             overflow-x: hidden;
         }
+        .last-update {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: right;
+            margin-bottom: 4px;
+        }
         
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
     script(src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha384-NXgwF8Kv9SSAr+jemKKcbvQsz+teULH/a5UNJvZc6kP47hZgl62M1vGnw6gHQhb1" crossorigin="anonymous")
-    script(src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous")
-    script(src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous")
-    script(src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/buttons/3.2.2/js/dataTables.buttons.min.js" integrity="sha384-DmaAfo+/+UjRKHPidNNswlNqd9ybuE6yx9zKHyMY+vYy9SZhQEu4nauMVgwSx4Z/" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.html5.min.js" integrity="sha384-+E6fb8f66UPOVDHKlEc1cfguF7DOTQQ70LNUnlbtywZiyoyQWqtrMjfTnWyBlN/Y" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.print.min.js" integrity="sha384-FvTRywo5HrkPlBKFrm2tT8aKxIcI/VU819roC/K/8UrVwrl4XsF3RKRKiCAKWNly" crossorigin="anonymous")
@@ -38,6 +36,7 @@ block scripts
     script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
     script(src="/scripts/jquery.sumoselect.min.js")
     script(src="/scripts/filtercontrol.js")
+    script(src="/scripts/dynamicPageLength.js")
 
 block content
     script.            
@@ -48,7 +47,7 @@ block content
                 pageLength: 22,  
                 order: [[0, "desc"]], 
                 layout: {
-                    topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'pdf', 'print'] },
+                    topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'print'] },
                     topEnd: 'search',
                     bottomStart: 'info',
                     bottomEnd: 'paging'                
@@ -59,13 +58,14 @@ block content
                     btns.addClass('myMiniButton');
                     btns.removeClass('dt-button');   
                     [2].forEach(idx => standardFilterSetup(this.api().column(idx)));
-                    [4,8].forEach(idx => multiFilterSetup(this.api().column(idx), 140));                                   
+                    [4,8].forEach(idx => multiFilterSetup(this.api().column(idx), 140));
+                    dynamicPageLength('#myTable');                                   
                  }
             });
         });  
                
     form
-        div #{currentTime} 
+        .last-update Last updated: #{currentTime} 
         table#myTable(class="row-border compact order-column hover stripe" style="font-size: small;")
             thead    
                 th(align='left' scope='col' style='white-space: nowrap;') Time Stamp
@@ -88,7 +88,7 @@ block content
                     td #{logEntry.recipient}
                     td #{logEntry.subject}
                     td #{logEntry.msgSize}
-                    td #{logEntry.spamScore} 
+                    td #{isNaN(Number(logEntry.spamScore)) ? logEntry.spamScore : +Number(logEntry.spamScore).toFixed(1)} 
                     td #{logEntry.spamResult}   
                     td #{logEntry.spamInfo}      
             tfoot 

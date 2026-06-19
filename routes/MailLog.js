@@ -54,7 +54,7 @@ router.get('/', function(req, res) {
                             obj.Country = "Unknown";
                         obj.msgSize = lineParts[3];
                         obj.sender = lineParts[6];
-                        obj.recipient = lineParts[7].split('@')[0];
+                        obj.recipient = lineParts[7].split('@')[0].toLowerCase();
                         obj.subject = lineParts[8];
                         obj.msgTime = lineParts[9];
                         obj.spamResult = lineParts[10];
@@ -79,7 +79,7 @@ router.get('/', function(req, res) {
         tools.logData(results, "INFO");
         
         let title = "EMail Analyzer";
-        res.render('MailLog', { title, logData: logList, currentTime: now});
+        res.render('MailLogGrid', { title, logData: logList, currentTime: now});
     });  
 }); 
 

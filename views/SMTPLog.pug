@@ -9,16 +9,15 @@ block css
 
 block scripts
     script(src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha384-NXgwF8Kv9SSAr+jemKKcbvQsz+teULH/a5UNJvZc6kP47hZgl62M1vGnw6gHQhb1" crossorigin="anonymous")
-    script(src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous")
-    script(src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js" integrity="sha384-VFQrHzqBh5qiJIU0uGU5CIW3+OWpdGGJM9LBnGbuIH2mkICcFZ7lPd/AAtI7SNf7" crossorigin="anonymous")
-    script(src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js" integrity="sha384-/RlQG9uf0M2vcTw3CX7fbqgbj/h8wKxw7C3zu9/GxcBPRKOEcESxaxufwRXqzq6n" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/2.2.2/js/dataTables.min.js" integrity="sha384-AenwROccLjIcbIsJuEZmrLlBzwrhvO94q+wm9RwETq4Kkqv9npFR2qbpdMhsehX3" crossorigin="anonymous")
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/buttons/3.2.2/js/dataTables.buttons.min.js" integrity="sha384-DmaAfo+/+UjRKHPidNNswlNqd9ybuE6yx9zKHyMY+vYy9SZhQEu4nauMVgwSx4Z/" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.html5.min.js" integrity="sha384-+E6fb8f66UPOVDHKlEc1cfguF7DOTQQ70LNUnlbtywZiyoyQWqtrMjfTnWyBlN/Y" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.print.min.js" integrity="sha384-FvTRywo5HrkPlBKFrm2tT8aKxIcI/VU819roC/K/8UrVwrl4XsF3RKRKiCAKWNly" crossorigin="anonymous")
     script(src="https://cdn.datatables.net/responsive/3.0.4/js/dataTables.responsive.min.js" integrity="sha384-A6In5tKqlvPZKDpH+ei4A3A4TZrEsyvvN2Fe+oCB1IaQfGD5HNqDIxwjztNKSGDd" crossorigin="anonymous")
     script(src="scripts/jquery.sumoselect.min.js")
     script(src="scripts/filtercontrol.js")
+    script(src="scripts/dynamicPageLength.js")
 
 block content
     script.           
@@ -26,9 +25,9 @@ block content
         {              
             var table = $('#myTable').DataTable({ 
                 order: [[ 6, "desc" ]], 
-                pageLength: 22,  
+                pageLength: 22,
                 layout: {
-                    topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'pdf', 'print']},
+                    topStart: { buttons: ['pageLength', 'copy', 'csv', 'excel', 'print']},
                     topEnd: 'search',
                     bottomStart: 'info',
                     bottomEnd: 'paging'                
@@ -38,16 +37,14 @@ block content
                     var btns = $('.dt-button');
                     btns.addClass('myMiniButton');
                     btns.removeClass('dt-button');  
-                    [1].forEach(idx => multiFilterSetup(this.api().column(idx)));                     
+                    [1].forEach(idx => multiFilterSetup(this.api().column(idx)));
+                    dynamicPageLength('#myTable');
                  },
                 footerCallback: function (row, data, start, end, display) {
                     var api = this.api();
-                    // Remove the formatting to get integer data for summation
                     var intVal = function (i) {
                         return typeof i === 'string' ? i.replace(/[\$,]/g, '') * 1 : typeof i === 'number' ? i : 0;
                     };
-    
-                    // Total over all pages
                     totalAttempts = api.column(5, {search:'applied'}).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
@@ -60,8 +57,6 @@ block content
                     totalSuccess = api.column(8, {search:'applied'}).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    
-                    // Update footer
                     $(api.column(5).footer()).html(totalAttempts.toLocaleString("en-US"));
                     $(api.column(6).footer()).html(totalFailures.toLocaleString("en-US"));
                     $(api.column(7).footer()).html(totalFailedRelays.toLocaleString("en-US"));
