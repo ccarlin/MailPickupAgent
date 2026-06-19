@@ -336,6 +336,8 @@ block content
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 return [e.dateTime, e.action, e.sender, e.recipient, e.subject, String(score), e.spamResults, e.ipAddress];
+            }).sort(function(a, b) {
+                return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0;
             });
 
             var grid = null;

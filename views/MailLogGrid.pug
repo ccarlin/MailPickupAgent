@@ -330,6 +330,8 @@ block content
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 return [e.dateTime, e.ipAddress, e.Country, e.sender, e.recipient, e.subject, e.msgSize, String(score), e.spamResult, e.spamInfo, e.ipLookup];
+            }).sort(function(a, b) {
+                return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0;
             });
 
             var grid = null;
@@ -460,7 +462,13 @@ block content
                             {
                                 name: 'IP Address',
                                 width: '140px',
-                                sort: true,
+                        sort: {
+                            enabled: true,
+                            default: {
+                                column: 0,
+                                order: 'desc'
+                            }
+                        },
                                 formatter: function(cell, row) {
                                     var ip = cell;
                                     var lookup = row.cells[row.cells.length - 1].data;

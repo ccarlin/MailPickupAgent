@@ -386,6 +386,9 @@ block content
     script.
         document.addEventListener('DOMContentLoaded', function() {
             var emailData = !{JSON.stringify(emails)};
+            emailData.sort(function(a, b) {
+                return (parseInt(b.timeAcquired) || 0) - (parseInt(a.timeAcquired) || 0);
+            });
             var allData = emailData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 var time = e.timeAcquired ? new Date(parseInt(e.timeAcquired) * 1000).toLocaleString() : '';

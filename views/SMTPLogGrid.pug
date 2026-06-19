@@ -362,6 +362,8 @@ block content
                     ipDisplay = e.ipAddress + ' (' + e.UniqueIPCount + ')';
                 }
                 return [ipDisplay, e.Country, e.FirstSeen, e.LastSeen, e.DaysSeen, e.Attempts, e.Failures, e.FailedSend, e.Success, e.UserCount, e.UserDisplay, danger, e.ipLookup, e.BlockedIP];
+            }).sort(function(a, b) {
+                return (Number(b[6]) || 0) - (Number(a[6]) || 0);
             });
 
             var grid = null;
