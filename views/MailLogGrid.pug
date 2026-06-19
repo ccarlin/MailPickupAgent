@@ -329,7 +329,8 @@ block content
             var logData = !{JSON.stringify(logData)};
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
-                return [e.dateTime, e.ipAddress, e.Country, e.sender, e.recipient, e.subject, e.msgSize, String(score), e.spamResult, e.spamInfo, e.ipLookup];
+                var ts = e.dateTime.replace(/:\d{2}(?=\s|$)/, '');
+                return [ts, e.ipAddress, e.Country === 'Unknown' ? '' : e.Country, e.sender, e.recipient, e.subject, +Number(e.msgTime).toFixed(1), e.msgSize, String(score), e.spamResult, e.spamInfo, e.ipLookup];
             }).sort(function(a, b) {
                 return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0;
             });
@@ -340,7 +341,7 @@ block content
             var filterConfig = [
                 { idx: 2, label: 'Country', key: 'country' },
                 { idx: 4, label: 'Recipient', key: 'recipient' },
-                { idx: 8, label: 'Results', key: 'results' }
+                { idx: 9, label: 'Results', key: 'results' }
             ];
 
             var customSearchInput = document.getElementById('custom-search');
@@ -458,7 +459,7 @@ block content
                 } else {
                     grid = new gridjs.Grid({
                         columns: [
-                            { name: 'Time Stamp', width: '150px', sort: true },
+                            { name: 'Time Stamp', width: '124px', sort: true },
                             {
                                 name: 'IP Address',
                                 width: '140px',
@@ -475,10 +476,11 @@ block content
                                     return gridjs.html('<a href="' + lookup + '" target="_blank">' + ip + '</a>');
                                 }
                             },
-                            { name: 'Country', width: '100px', sort: true },
+                            { name: 'Ctry', width: '60px', sort: true },
                             { name: 'Sender', width: '200px', sort: true },
                             { name: 'Recipient', width: '120px', sort: true },
                             { name: 'Subject', width: '220px', sort: true },
+                            { name: 'Sec', width: '60px', sort: true },
                             { name: 'Size(Kb)', width: '80px', sort: true },
                             { name: 'Score', width: '80px', sort: true },
                             { name: 'Result', width: '120px', sort: true },
@@ -534,10 +536,10 @@ block content
 
             document.getElementById('btn-csv').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Time Stamp','IP Address','Country','Sender','Recipient','Subject','Size(Kb)','Score','Result','Details'];
+                var header = ['Time Stamp','IP Address','Country','Sender','Recipient','Subject','Sec','Size(Kb)','Score','Result','Details'];
                 var csv = header.join(',') + '\\n';
                 rows.forEach(function(r) {
-                    var esc = r.slice(0, 10).map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
+                    var esc = r.slice(0, 11).map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
                     csv += esc.join(',') + '\\n';
                 });
                 var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -550,10 +552,10 @@ block content
 
             document.getElementById('btn-copy').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Time Stamp','IP Address','Country','Sender','Recipient','Subject','Size(Kb)','Score','Result','Details'];
-                var pad = [20, 16, 10, 30, 30, 40, 10, 8, 14, 20];
+                var header = ['Time Stamp','IP Address','Country','Sender','Recipient','Subject','Sec','Size(Kb)','Score','Result','Details'];
+                var pad = [20, 16, 10, 30, 30, 40, 6, 10, 8, 14, 20];
                 function fmtRow(arr) {
-                    return arr.slice(0, 10).map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
+                    return arr.slice(0, 11).map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
                 }
                 var text = fmtRow(header) + '\\n' + '-'.repeat(fmtRow(header).length) + '\\n';
                 text += rows.map(fmtRow).join('\\n');
@@ -574,10 +576,10 @@ block content
                 html += 'th{background:#1976d2;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}';
                 html += 'td{padding:6px 10px;border-bottom:1px solid #e2e8f0;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
                 html += '<h2>Mail Log</h2><table><thead><tr>';
-                html += '<th>Time Stamp</th><th>IP Address</th><th>Country</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Size(Kb)</th><th>Score</th><th>Result</th><th>Details</th>';
+                html += '<th>Time Stamp</th><th>IP Address</th><th>Country</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Sec</th><th>Size(Kb)</th><th>Score</th><th>Result</th><th>Details</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
-                    html += '<tr>' + r.slice(0, 10).map(function(c) { return '<td>' + String(c) + '</td>'; }).join('') + '</tr>';
+                    html += '<tr>' + r.slice(0, 11).map(function(c) { return '<td>' + String(c) + '</td>'; }).join('') + '</tr>';
                 });
                 html += '</tbody></table></body></html>';
                 win.document.write(html);

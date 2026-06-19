@@ -410,10 +410,11 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
 
 async function processEmail(controlFilePath, messagePath, rules) {
   try {
+    const processStartTime = performance.now();
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
-
     const userMatch = commandData.match(/^User=(.*)$/m);
+    //Skip emails sent outbound (no user (internal postoffice recipient))
     if (userMatch && userMatch[1].trim()) {
         tools.logData(`Skipping outbound email submitted by user: ${userMatch[1].trim()}`, "INFO");
         return;
@@ -426,7 +427,6 @@ async function processEmail(controlFilePath, messagePath, rules) {
     tools.logData(`Processing email: ${subjectText} from ${fromAddr}`);
 
     const destMessageName = path.basename(messagePath);
-    const processStartTime = Date.now();
     const messageId = path.parse(messagePath).name;
 
     //Skip messages that have already been processed
@@ -448,7 +448,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const wl = rules.whitelist || {};
     if (matchSender(fromAddr, wl.senders, recipients)) {
       metrics.increment('whitelisted');
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Whitelisted Sender', 0);
       tools.logData(`Sender ${fromAddr} is whitelisted, releasing`);
       return;
@@ -457,7 +457,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     // 1.1 Whitelist check - Check if IP Addresses is whitelisted
     if (ipInRange(originatingIp, wl.ipRanges)) {
       metrics.increment('whitelisted');
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Whitelisted Originating IP', 0);
       tools.logData(`Originating IP is whitelisted, releasing`);
       return;
@@ -472,7 +472,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       if (fromTld && !allowed.includes(fromTld)) {
         metrics.increment('blacklisted');
         tools.logData(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
-        const elapsed = (Date.now() - processStartTime) / 1000;
+        const elapsed = (performance.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
         await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted TLD(99) - TLD ${fromTld} not allowed`], 99, countryResult.country, 'Blacklisted TLD(99)');
         await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
@@ -484,7 +484,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (matchSender(fromAddr, bl.senders)) {
       metrics.increment('blacklisted');
       tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted Sender(99) - Sender ${fromAddr}`], 99, countryResult.country, 'Blacklisted Sender(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
@@ -495,7 +495,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (ipInRange(originatingIp, bl.ipRanges)) {
       metrics.increment('blacklisted');
       tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted IP(99) - IP ${originatingIp}`], 99, countryResult.country, 'Blacklisted IP(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
@@ -506,7 +506,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (countryResult.matched) {
       metrics.increment('blacklisted');
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted Country(99) - Country ${countryResult.country}`], 99, countryResult.country, 'Blacklisted Country(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
@@ -517,7 +517,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
       metrics.increment('blacklisted');
       tools.logData(`Combo rule matched, deleting`);
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
       //TODO: Return the rule that was matched to log here
       await updateEmailHeaders(messagePath, destMessageName, [`Combo Matched(99) - Rule Matched `], 99, countryResult.country, 'Combo Matched(99)');
@@ -561,7 +561,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     // 4.0 Process results of scoring and quarantine if above threshold
-    const processElapsed = (Date.now() - processStartTime) / 1000;
+    const processElapsed = (performance.now() - processStartTime) / 1000;
     let spamDetailInfo = spamInfoParts.join('; ');
     tools.logData(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
     // Check if we are across the delete threshold
