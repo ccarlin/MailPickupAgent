@@ -547,7 +547,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     // 3.2 Quaranetine check - Ollama AI spam check
     const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
     spamScore += aiScore;    
-    spamInfoParts.push(`AI Check${aiScore}`);
+    spamInfoParts.push(`AI Check(${aiScore})`);
     const processElapsed = (Date.now() - processStartTime) / 1000;
     if (aiSpamResult) {      
       quarantineReasons.push(aiReasons);
