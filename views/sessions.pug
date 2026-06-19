@@ -294,7 +294,7 @@ block content
             var sessions = !{JSON.stringify(sessions)};
             var allData = sessions.map(function(s) {
                 var loginDisplay = s.loginTime ? new Date(s.loginTime).toLocaleString() : 'unknown';
-                return [s.sid, s.ip, s.userAgent, loginDisplay, s.currentUser];
+                return [s.sid, s.ip, s.userAgent, s.identifier || '', loginDisplay, s.currentUser];
             });
 
             var grid = null;
@@ -323,6 +323,11 @@ block content
                                 }
                             },
                             {
+                                name: 'Identifier',
+                                width: '160px',
+                                sort: true
+                            },
+                            {
                                 name: 'Logged In',
                                 width: '180px',
                                 sort: true
@@ -333,7 +338,7 @@ block content
                                 sort: false,
                                 formatter: function(cell, row) {
                                     var sid = row.cells[0].data;
-                                    var isCurrent = row.cells[4].data;
+                                    var isCurrent = row.cells[5].data;
                                     var html = '<div class="action-cell">';
                                     if (isCurrent) {
                                         html += '<span class="badge-current">You</span>';
@@ -372,7 +377,7 @@ block content
                     filteredData = allData.slice();
                 } else {
                     filteredData = allData.filter(function(row) {
-                        for (var ci = 1; ci < 4; ci++) {
+                        for (var ci = 1; ci < 5; ci++) {
                             if (String(row[ci]).toLowerCase().indexOf(q) !== -1) return true;
                         }
                         return false;
