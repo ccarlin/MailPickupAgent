@@ -20,6 +20,7 @@ const AI_CHECK_ENABLED = config.AI_CHECK_ENABLED;
 const OLLAMA_HOST = config.OLLAMA_SERVER;
 const OLLAMA_PORT = config.OLLAMA_PORT;
 const OLLAMA_MODEL = config.OLLAMA_MODEL;
+const OLLAMA_TIMEOUT = config.OLLAMA_TIMEOUT || 5;
 const SPAMASSASSIN_ENABLED = config.SPAMASSASSIN_ENABLED;
 const SPAMASSASSIN_HOST = config.SPAMASSASSIN_HOST;
 const SPAMASSASSIN_PORT = Number(config.SPAMASSASSIN_PORT);
@@ -96,7 +97,10 @@ function matchSender(address, senders, recipients) {
       if (atIndex !== -1 && addrLower.slice(atIndex + 1) === e.slice(1)) return true;
     } else {
       const atIndex = addrLower.lastIndexOf('@');
-      if (atIndex !== -1 && addrLower.slice(atIndex + 1) === e) return true;
+      if (atIndex !== -1) {
+        const domain = addrLower.slice(atIndex + 1);
+        if (domain === e || domain.endsWith('.' + e)) return true;
+      }
     }
   }
   return false;
@@ -294,10 +298,10 @@ async function queryOllama(prompt) {
     prompt: prompt,
     stream: false,
   };
-  //Can only wait for 5 seconds to process that might even be too long
+  //Wait length based on config option
   const resp = await axios.post(url, payload, {
     headers: { 'Content-Type': 'application/json' },
-    timeout: 5000,
+    timeout: OLLAMA_TIMEOUT,
   });
   if (resp && resp.data) {
     tools.logData(`Ollama response: ${resp.data.response}`);
@@ -386,7 +390,26 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
       const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
       const aiPrompt = promptTemplate + emailContent;
       aiResponse = await queryOllama(aiPrompt);
-      const parsedJson = JSON.parse(aiResponse);
+      // Strip markdown code fences and trim
+      aiResponse = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      let parsedJson;
+      try {
+        parsedJson = JSON.parse(aiResponse);
+      } catch {
+        // Attempt to recover truncated JSON by adding missing closing brackets
+        const openB = (aiResponse.match(/\{/g) || []).length;
+        const closeB = (aiResponse.match(/\}/g) || []).length;
+        const openBr = (aiResponse.match(/\[/g) || []).length;
+        const closeBr = (aiResponse.match(/\]/g) || []).length;
+        let fixed = aiResponse;
+        for (let i = openBr - closeBr; i > 0; i--) fixed += ']';
+        for (let i = openB - closeB; i > 0; i--) fixed += '}';
+        try {
+          parsedJson = JSON.parse(fixed);
+        } catch {
+          throw new SyntaxError(`Unable to parse AI response as JSON: ${aiResponse.substring(0, 100)}`);
+        }
+      }
       const classification = (parsedJson.classification || '').toUpperCase();
       const confidence = parseFloat(parsedJson.confidence_score) || 0;
       const reasons = parsedJson.reasons || [];
