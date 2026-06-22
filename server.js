@@ -332,6 +332,15 @@ if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
   });
 }
 
+// Global uncaught exception and rejection handlers
+process.on('uncaughtException', (err) => {
+  tools.logError(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`);
+});
+
+process.on('unhandledRejection', (reason) => {
+  tools.logError(`UNHANDLED REJECTION: ${reason instanceof Error ? reason.message : reason}\n${reason instanceof Error ? reason.stack : ''}`);
+});
+
 // Listen for the PM2 shutdown signal
 process.on('SIGINT', () => {
   console.log('SIGINT signal received: closing HTTP server');
