@@ -44,7 +44,8 @@ router.get('/', function(req, res) {
                         
                         let ipAddress = lineParts[5];
 
-                        obj = {};                     
+                        obj = {};    
+                        obj.messageId = lineParts[1];                 
                         obj.ipAddress = ipAddress;   
                         obj.dateTime = dateTime;                    
                         let ipLookup = mmdb.lookup(ipAddress);                           
