@@ -421,10 +421,13 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
       aiSpamResult = false;
     }
   } catch (err) {
-    if (aiResponse)
+    if (err.code === 'ECONNABORTED') {
+      tools.logWarn(`Ollama request timed out after ${OLLAMA_TIMEOUT / 1000}s, not assigning score for AI check`);
+    } else if (aiResponse) {
       tools.logError(`Ollama query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
-    else
+    } else {
       tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
+    }
   }
 
   return { aiSpamResult, aiScore, aiReasons };
