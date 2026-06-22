@@ -91,6 +91,7 @@ block scripts
                     { key: 'OLLAMA_SERVER', label: 'Ollama Server', hint: 'Hostname or IP of Ollama server' },
                     { key: 'OLLAMA_PORT', label: 'Ollama Port', type: 'number', hint: 'Default 11434' },
                     { key: 'OLLAMA_MODEL', label: 'Ollama Model', hint: 'Model name like llama3.2, mistral, etc.' },
+                    { key: 'OLLAMA_TIMEOUT', label: 'Ollama Timeout', type: 'number', min: 1, max: 120, hint: 'Request timeout in seconds (1-120, default 5)' },
                     { key: 'AI_SPAM_POINTS', label: 'AI Spam Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points added to score when AI classifies as SPAM (0.0 - 10.0)' },
                     { key: 'AI_HAM_POINTS', label: 'AI Ham Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points removed from score when AI classifies as HAM (0.0 - 10.0)' },
                 ]},

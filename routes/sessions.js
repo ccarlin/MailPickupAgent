@@ -34,6 +34,7 @@ router.get('/', async (req, res) => {
           ip: meta.ip || 'unknown',
           userAgent: meta.userAgent || 'unknown',
           loginTime: meta.loginTime || null,
+          identifier: meta.identifier || null,
           currentUser: row.sid === req.sessionID
         };
       }).filter(Boolean)

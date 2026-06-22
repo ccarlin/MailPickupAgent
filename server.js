@@ -11,8 +11,8 @@ const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
 const tools = require('./tools');
 const appConfig = require('./config');
 const { verifyPassword } = require('./middleware/hash');
-
 const PORT = appConfig.PORT || 6245;
+let server;
 
 // View engine setup
 app.set('view engine', 'pug');
@@ -316,18 +316,35 @@ if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
     const privateKey = fs.readFileSync(appConfig.CERT_KEY_PATH, 'utf8');
     const certificate = fs.readFileSync(appConfig.CERT_PATH, 'utf8');
     const credentials = { key: privateKey, cert: certificate };
-    https.createServer(credentials, app).listen(PORT, () => {
+    server = https.createServer(credentials, app).listen(PORT, () => {
       startServer('https');
     });
   } catch (err) {
     tools.logError(`Failed to load SSL certificates: ${err.message}`);
     tools.logData('Falling back to HTTP.');
-    app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       startServer('http');
     });
   }
 } else {
-  app.listen(PORT, () => {
+  server = app.listen(PORT, () => {
     startServer('http');
   });
 }
+
+// Listen for the PM2 shutdown signal
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  
+  server.close(() => {
+    console.log('HTTP server closed');
+    // Close database connections or other persistent resources here
+    process.exit(0); 
+  });
+
+  // Force close after 10 seconds if it's taking too long
+  setTimeout(() => {
+    console.error('Forcing shutdown...');
+    process.exit(1);
+  }, 10000);
+});

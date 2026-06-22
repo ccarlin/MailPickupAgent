@@ -20,6 +20,7 @@
   "OLLAMA_MODEL": "llama3.2",
   "AI_SPAM_POINTS": "5",
   "AI_HAM_POINTS": "2.5",
+  "OLLAMA_TIMEOUT": 5,
 
   "SPAMASSASSIN_HOST": "localhost",
   "SPAMASSASSIN_PORT": 783,

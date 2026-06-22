@@ -390,7 +390,7 @@ block content
                             td(style='color: red;font-weight:bold;') #{email.sender}
                         td #{email.subject}
                         td #{isNaN(Number(email.spamScore)) ? email.spamScore : +Number(email.spamScore).toFixed(1)}
-                        td #{email.antiSpam}
+                        td #{email.reason}
                         td #{email.date}
                         td
                             a(href=`https://www.ipqualityscore.com/ip-reputation-check/lookup/${email.clientip}`, target='_blank') #{email.clientip}
@@ -412,7 +412,7 @@ block content
                             input(type='hidden' name='data[' + email.filepath + '][sender]' value=email.sender)
                             input(type='hidden' name='data[' + email.filepath + '][recipients]' value=email.recipients)
                             input(type='hidden' name='data[' + email.filepath + '][spamScore]' value=email.spamScore)
-                            input(type='hidden' name='data[' + email.filepath + '][antiSpam]' value=email.antiSpam)
+                            input(type='hidden' name='data[' + email.filepath + '][antiSpam]' value=email.reason)
                             input(type='hidden' name='data[' + email.filepath + '][clientip]' value=email.clientip)
                             input(type='hidden' name='data[' + email.filepath + '][datetime]' value=email.date)
                             input(type='hidden' name='data[' + email.filepath + '][dkim]' value=email.dkim)

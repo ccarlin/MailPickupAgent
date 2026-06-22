@@ -20,6 +20,7 @@ const AI_CHECK_ENABLED = config.AI_CHECK_ENABLED;
 const OLLAMA_HOST = config.OLLAMA_SERVER;
 const OLLAMA_PORT = config.OLLAMA_PORT;
 const OLLAMA_MODEL = config.OLLAMA_MODEL;
+const OLLAMA_TIMEOUT = (config.OLLAMA_TIMEOUT || 5) * 1000;
 const SPAMASSASSIN_ENABLED = config.SPAMASSASSIN_ENABLED;
 const SPAMASSASSIN_HOST = config.SPAMASSASSIN_HOST;
 const SPAMASSASSIN_PORT = Number(config.SPAMASSASSIN_PORT);
@@ -96,7 +97,10 @@ function matchSender(address, senders, recipients) {
       if (atIndex !== -1 && addrLower.slice(atIndex + 1) === e.slice(1)) return true;
     } else {
       const atIndex = addrLower.lastIndexOf('@');
-      if (atIndex !== -1 && addrLower.slice(atIndex + 1) === e) return true;
+      if (atIndex !== -1) {
+        const domain = addrLower.slice(atIndex + 1);
+        if (domain === e || domain.endsWith('.' + e)) return true;
+      }
     }
   }
   return false;
@@ -294,9 +298,10 @@ async function queryOllama(prompt) {
     prompt: prompt,
     stream: false,
   };
+  //Wait length based on config option
   const resp = await axios.post(url, payload, {
     headers: { 'Content-Type': 'application/json' },
-    timeout: 15000,
+    timeout: OLLAMA_TIMEOUT,
   });
   if (resp && resp.data) {
     tools.logData(`Ollama response: ${resp.data.response}`);
@@ -378,30 +383,50 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
   let aiReasons = '';
   let aiScore = 0;
   let aiResponse;
-  if (AI_CHECK_ENABLED) {
+  try {
+    const promptPath = path.join(__dirname, 'config', 'aiSpamCheckPrompt.md');
+    let promptTemplate = fs.readFileSync(promptPath, 'utf8');
+    const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
+    const aiPrompt = promptTemplate + emailContent;
+    aiResponse = await queryOllama(aiPrompt);
+    // Strip markdown code fences and trim
+    aiResponse = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    let parsedJson;
     try {
-      const promptPath = path.join(__dirname, 'config', 'aiSpamCheckPrompt.md');
-      let promptTemplate = fs.readFileSync(promptPath, 'utf8');
-      const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
-      const aiPrompt = promptTemplate + emailContent;
-      aiResponse = await queryOllama(aiPrompt);
-      const parsedJson = JSON.parse(aiResponse);
-      const classification = (parsedJson.classification || '').toUpperCase();
-      const confidence = parseFloat(parsedJson.confidence_score) || 0;
-      const reasons = parsedJson.reasons || [];
-      if (classification === 'SPAM') {
-        aiScore = Math.round(aiSpamPoints * confidence * 10) / 10;
-        aiReasons = `AI Check(${aiScore}) - ${reasons.join('; ')}`;
-        aiSpamResult = true;
-      } else if (classification === 'HAM') {
-        aiScore = Math.round(aiHamPoints * confidence * 10) / 10;
-        aiSpamResult = false;
+      parsedJson = JSON.parse(aiResponse);
+    } catch {
+      // Attempt to recover truncated JSON by adding missing closing brackets
+      const openB = (aiResponse.match(/\{/g) || []).length;
+      const closeB = (aiResponse.match(/\}/g) || []).length;
+      const openBr = (aiResponse.match(/\[/g) || []).length;
+      const closeBr = (aiResponse.match(/\]/g) || []).length;
+      let fixed = aiResponse;
+      for (let i = openBr - closeBr; i > 0; i--) fixed += ']';
+      for (let i = openB - closeB; i > 0; i--) fixed += '}';
+      try {
+        parsedJson = JSON.parse(fixed);
+      } catch {
+        throw new SyntaxError(`Unable to parse AI response as JSON: ${aiResponse.substring(0, 100)}`);
       }
-    } catch (err) {
-      if (aiResponse)
-        tools.logError(`Ollama query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
-      else
-        tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
+    }
+    const classification = (parsedJson.classification || '').toUpperCase();
+    const confidence = parseFloat(parsedJson.confidence_score) || 0;
+    const reasons = parsedJson.reasons || [];
+    if (classification === 'SPAM') {
+      aiScore = Math.round(aiSpamPoints * confidence * 10) / 10;
+      aiReasons = `AI Check(${aiScore}) - ${reasons.join('; ')}`;
+      aiSpamResult = true;
+    } else if (classification === 'HAM') {
+      aiScore = Math.round(aiHamPoints * confidence * 10) / 10;
+      aiSpamResult = false;
+    }
+  } catch (err) {
+    if (err.code === 'ECONNABORTED') {
+      tools.logWarn(`Ollama request timed out after ${OLLAMA_TIMEOUT / 1000}s, not assigning score for AI check`);
+    } else if (aiResponse) {
+      tools.logError(`Ollama query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
+    } else {
+      tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
     }
   }
 
@@ -410,8 +435,16 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
 
 async function processEmail(controlFilePath, messagePath, rules) {
   try {
+    const processStartTime = performance.now();
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
+    const userMatch = commandData.match(/^User=(.*)$/m);
+    //Skip emails sent outbound (no user (internal postoffice recipient))
+    if (userMatch && userMatch[1].trim()) {
+        tools.logData(`Skipping outbound email submitted by user: ${userMatch[1].trim()}`, "INFO");
+        return;
+    }
+
     const parsed = await PostalMime.parse(message);
     const fromAddr = parsed.from?.address || 'unknown';
     const subjectText = parsed.subject || '(no subject)';
@@ -419,7 +452,6 @@ async function processEmail(controlFilePath, messagePath, rules) {
     tools.logData(`Processing email: ${subjectText} from ${fromAddr}`);
 
     const destMessageName = path.basename(messagePath);
-    const processStartTime = Date.now();
     const messageId = path.parse(messagePath).name;
 
     //Skip messages that have already been processed
@@ -441,7 +473,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const wl = rules.whitelist || {};
     if (matchSender(fromAddr, wl.senders, recipients)) {
       metrics.increment('whitelisted');
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Whitelisted Sender', 0);
       tools.logData(`Sender ${fromAddr} is whitelisted, releasing`);
       return;
@@ -450,7 +482,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     // 1.1 Whitelist check - Check if IP Addresses is whitelisted
     if (ipInRange(originatingIp, wl.ipRanges)) {
       metrics.increment('whitelisted');
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', 'Whitelisted Originating IP', 0);
       tools.logData(`Originating IP is whitelisted, releasing`);
       return;
@@ -465,7 +497,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       if (fromTld && !allowed.includes(fromTld)) {
         metrics.increment('blacklisted');
         tools.logData(`From address TLD '${fromTld}' not in allowedTLDs, deleting`);
-        const elapsed = (Date.now() - processStartTime) / 1000;
+        const elapsed = (performance.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
         await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted TLD(99) - TLD ${fromTld} not allowed`], 99, countryResult.country, 'Blacklisted TLD(99)');
         await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
@@ -477,7 +509,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (matchSender(fromAddr, bl.senders)) {
       metrics.increment('blacklisted');
       tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted Sender(99) - Sender ${fromAddr}`], 99, countryResult.country, 'Blacklisted Sender(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
@@ -488,7 +520,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (ipInRange(originatingIp, bl.ipRanges)) {
       metrics.increment('blacklisted');
       tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted IP(99) - IP ${originatingIp}`], 99, countryResult.country, 'Blacklisted IP(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
@@ -499,7 +531,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (countryResult.matched) {
       metrics.increment('blacklisted');
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted Country(99) - Country ${countryResult.country}`], 99, countryResult.country, 'Blacklisted Country(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
@@ -510,7 +542,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
       metrics.increment('blacklisted');
       tools.logData(`Combo rule matched, deleting`);
-      const elapsed = (Date.now() - processStartTime) / 1000;
+      const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
       //TODO: Return the rule that was matched to log here
       await updateEmailHeaders(messagePath, destMessageName, [`Combo Matched(99) - Rule Matched `], 99, countryResult.country, 'Combo Matched(99)');
@@ -524,9 +556,10 @@ async function processEmail(controlFilePath, messagePath, rules) {
     let spamScore = 0;
     const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters, recipients);
     if (keywordResult.score > 0) {
-      spamInfoParts.push(`Keywords(${keywordResult.score})`);
+      const keyWordInfo = `Keywords(${keywordResult.score})`; 
+      spamInfoParts.push(keyWordInfo);
       spamScore += keywordResult.score;
-      quarantineReasons.push(`Keyword Rules - ${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}`);
+      quarantineReasons.push(`${keyWordInfo} - ${keywordResult.matches.map(m => `${m.name}(${m.score})`).join(', ')}`);
     }
 
     // 3.1 Quarantine check - SpamAssassin check (if enabled)
@@ -545,15 +578,18 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     // 3.2 Quaranetine check - Ollama AI spam check
-    const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
-    spamScore += aiScore;    
-    spamInfoParts.push(`AI Check${aiScore}`);
-    const processElapsed = (Date.now() - processStartTime) / 1000;
-    if (aiSpamResult) {      
-      quarantineReasons.push(aiReasons);
+    if (AI_CHECK_ENABLED)
+    {
+      const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
+      spamScore += aiScore;    
+      spamInfoParts.push(`AI Check(${aiScore})`);
+      if (aiSpamResult) {      
+        quarantineReasons.push(aiReasons);
+      }
     }
 
     // 4.0 Process results of scoring and quarantine if above threshold
+    const processElapsed = (performance.now() - processStartTime) / 1000;
     let spamDetailInfo = spamInfoParts.join('; ');
     tools.logData(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
     // Check if we are across the delete threshold
