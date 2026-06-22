@@ -369,8 +369,14 @@ block scripts
     $(document).ready(function() {
       fetchStatus();
       setInterval(fetchStatus, 60000);
-      $('#card-total, #card-whitelisted, #card-released').on('click', function() {
+      $('#card-total').on('click', function() {
         window.open('/MailLog?today=true', '_blank');
+      });
+      $('#card-whitelisted').on('click', function() {
+        window.open('/MailLog?today=true&result=whitelisted', '_blank');
+      });
+      $('#card-released').on('click', function() {
+        window.open('/MailLog?today=true&result=released', '_blank');
       });
       $('#card-blacklisted').on('click', function() {
         window.open('/deleted', '_blank');

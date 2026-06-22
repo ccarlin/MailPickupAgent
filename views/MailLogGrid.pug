@@ -318,6 +318,33 @@ block css
         .mail-grid-wrapper td a:hover {
             text-decoration: underline;
         }
+        .mui-filter-banner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: #e3f2fd;
+            border-bottom: 1px solid #bbdefb;
+            font-size: 0.8125rem;
+            color: #1565c0;
+        }
+        .mui-filter-banner i {
+            font-size: 0.85rem;
+        }
+        .mui-filter-banner-clear {
+            margin-left: auto;
+        }
+        .mui-filter-banner-clear a {
+            color: #1565c0;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .mui-filter-banner-clear a:hover {
+            text-decoration: underline;
+        }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
 block scripts
@@ -624,5 +651,17 @@ block content
                     button.mui-filter-clear#btn-clear-filters Clear
                 .mui-filters-right
                     input#custom-search(type="search" placeholder="Search...")
+            if resultFilter
+                .mui-filter-banner
+                    i.fas.fa-filter
+                    |  Showing only:&nbsp;
+                    each val, idx in resultFilter.split(',')
+                        if idx > 0
+                            | ,&nbsp;
+                        strong= val.trim()
+                    .mui-filter-banner-clear
+                        a(href='/MailLog' + currentQuery)
+                            i.fas.fa-times
+                            |  Clear filter
             .mui-divider
             #mail-grid

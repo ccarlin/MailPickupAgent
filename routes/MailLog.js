@@ -70,6 +70,14 @@ router.get('/', function(req, res) {
             if (req.query.today)
                 break;
         }
+
+        //Filter by result if query parameter provided
+        if (req.query.result) {
+            let allowedResults = req.query.result.split(',').map(s => s.trim().toLowerCase());
+            logList = logList.filter(function(entry) {
+                return allowedResults.indexOf(entry.spamResult.toLowerCase()) !== -1;
+            });
+        }
         
         //Tracking timing.. File Count per file timing 
         let endTime = performance.now()    
@@ -79,7 +87,9 @@ router.get('/', function(req, res) {
         tools.logData(results, "INFO");
         
         let title = "EMail Analyzer";
-        res.render('MailLogGrid', { title, logData: logList, currentTime: now});
+        let currentQuery = '';
+        if (req.query.today) currentQuery = '?today=true';
+        res.render('MailLogGrid', { title, logData: logList, currentTime: now, resultFilter: req.query.result || null, currentQuery });
     });  
 }); 
 
