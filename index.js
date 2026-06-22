@@ -20,7 +20,7 @@ const AI_CHECK_ENABLED = config.AI_CHECK_ENABLED;
 const OLLAMA_HOST = config.OLLAMA_SERVER;
 const OLLAMA_PORT = config.OLLAMA_PORT;
 const OLLAMA_MODEL = config.OLLAMA_MODEL;
-const OLLAMA_TIMEOUT = config.OLLAMA_TIMEOUT || 5;
+const OLLAMA_TIMEOUT = (config.OLLAMA_TIMEOUT || 5) * 1000;
 const SPAMASSASSIN_ENABLED = config.SPAMASSASSIN_ENABLED;
 const SPAMASSASSIN_HOST = config.SPAMASSASSIN_HOST;
 const SPAMASSASSIN_PORT = Number(config.SPAMASSASSIN_PORT);
@@ -383,50 +383,48 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
   let aiReasons = '';
   let aiScore = 0;
   let aiResponse;
-  if (AI_CHECK_ENABLED) {
+  try {
+    const promptPath = path.join(__dirname, 'config', 'aiSpamCheckPrompt.md');
+    let promptTemplate = fs.readFileSync(promptPath, 'utf8');
+    const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
+    const aiPrompt = promptTemplate + emailContent;
+    aiResponse = await queryOllama(aiPrompt);
+    // Strip markdown code fences and trim
+    aiResponse = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    let parsedJson;
     try {
-      const promptPath = path.join(__dirname, 'config', 'aiSpamCheckPrompt.md');
-      let promptTemplate = fs.readFileSync(promptPath, 'utf8');
-      const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
-      const aiPrompt = promptTemplate + emailContent;
-      aiResponse = await queryOllama(aiPrompt);
-      // Strip markdown code fences and trim
-      aiResponse = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      let parsedJson;
+      parsedJson = JSON.parse(aiResponse);
+    } catch {
+      // Attempt to recover truncated JSON by adding missing closing brackets
+      const openB = (aiResponse.match(/\{/g) || []).length;
+      const closeB = (aiResponse.match(/\}/g) || []).length;
+      const openBr = (aiResponse.match(/\[/g) || []).length;
+      const closeBr = (aiResponse.match(/\]/g) || []).length;
+      let fixed = aiResponse;
+      for (let i = openBr - closeBr; i > 0; i--) fixed += ']';
+      for (let i = openB - closeB; i > 0; i--) fixed += '}';
       try {
-        parsedJson = JSON.parse(aiResponse);
+        parsedJson = JSON.parse(fixed);
       } catch {
-        // Attempt to recover truncated JSON by adding missing closing brackets
-        const openB = (aiResponse.match(/\{/g) || []).length;
-        const closeB = (aiResponse.match(/\}/g) || []).length;
-        const openBr = (aiResponse.match(/\[/g) || []).length;
-        const closeBr = (aiResponse.match(/\]/g) || []).length;
-        let fixed = aiResponse;
-        for (let i = openBr - closeBr; i > 0; i--) fixed += ']';
-        for (let i = openB - closeB; i > 0; i--) fixed += '}';
-        try {
-          parsedJson = JSON.parse(fixed);
-        } catch {
-          throw new SyntaxError(`Unable to parse AI response as JSON: ${aiResponse.substring(0, 100)}`);
-        }
+        throw new SyntaxError(`Unable to parse AI response as JSON: ${aiResponse.substring(0, 100)}`);
       }
-      const classification = (parsedJson.classification || '').toUpperCase();
-      const confidence = parseFloat(parsedJson.confidence_score) || 0;
-      const reasons = parsedJson.reasons || [];
-      if (classification === 'SPAM') {
-        aiScore = Math.round(aiSpamPoints * confidence * 10) / 10;
-        aiReasons = `AI Check(${aiScore}) - ${reasons.join('; ')}`;
-        aiSpamResult = true;
-      } else if (classification === 'HAM') {
-        aiScore = Math.round(aiHamPoints * confidence * 10) / 10;
-        aiSpamResult = false;
-      }
-    } catch (err) {
-      if (aiResponse)
-        tools.logError(`Ollama query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
-      else
-        tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
     }
+    const classification = (parsedJson.classification || '').toUpperCase();
+    const confidence = parseFloat(parsedJson.confidence_score) || 0;
+    const reasons = parsedJson.reasons || [];
+    if (classification === 'SPAM') {
+      aiScore = Math.round(aiSpamPoints * confidence * 10) / 10;
+      aiReasons = `AI Check(${aiScore}) - ${reasons.join('; ')}`;
+      aiSpamResult = true;
+    } else if (classification === 'HAM') {
+      aiScore = Math.round(aiHamPoints * confidence * 10) / 10;
+      aiSpamResult = false;
+    }
+  } catch (err) {
+    if (aiResponse)
+      tools.logError(`Ollama query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
+    else
+      tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
   }
 
   return { aiSpamResult, aiScore, aiReasons };
@@ -577,11 +575,14 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
 
     // 3.2 Quaranetine check - Ollama AI spam check
-    const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
-    spamScore += aiScore;    
-    spamInfoParts.push(`AI Check(${aiScore})`);
-    if (aiSpamResult) {      
-      quarantineReasons.push(aiReasons);
+    if (AI_CHECK_ENABLED)
+    {
+      const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
+      spamScore += aiScore;    
+      spamInfoParts.push(`AI Check(${aiScore})`);
+      if (aiSpamResult) {      
+        quarantineReasons.push(aiReasons);
+      }
     }
 
     // 4.0 Process results of scoring and quarantine if above threshold
