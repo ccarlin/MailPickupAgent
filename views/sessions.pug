@@ -285,6 +285,56 @@ block css
             text-decoration: underline;
         }
 
+        @media (max-width: 768px) {
+            .sessions-grid-wrapper td {
+                padding: 6px 8px;
+                font-size: 0.75rem;
+            }
+            .sessions-grid-wrapper th {
+                padding: 4px 6px;
+                font-size: 0.65rem;
+            }
+            .user-agent-cell {
+                max-width: 120px;
+                font-size: 11px;
+            }
+            .action-btn {
+                padding: 2px 6px;
+                font-size: 0.6rem;
+            }
+            .badge-current {
+                font-size: 9px;
+                padding: 1px 5px;
+            }
+        }
+        @media (max-width: 480px) {
+            .user-agent-cell {
+                max-width: 80px;
+                font-size: 10px;
+            }
+            .sessions-grid-wrapper td {
+                padding: 4px 4px;
+                font-size: 0.7rem;
+            }
+            .sessions-grid-wrapper th {
+                padding: 3px 4px;
+                font-size: 0.6rem;
+            }
+            .mui-filters-row {
+                padding: 6px 10px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .mui-filters-row .mui-filters-right input {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .sessions-grid-wrapper .gridjs-footer {
+                flex-direction: column;
+                gap: 6px;
+            }
+        }
+
 block scripts
     script(src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js")
 
