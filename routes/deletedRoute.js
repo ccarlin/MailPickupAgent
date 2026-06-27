@@ -10,7 +10,31 @@ const { recentlyReleased } = require('../index.js');
 router.get('/', function(req, res) {
     getDeletedEmails(function(err, emails) {
         let title = "Deleted Messages";
-        res.render('DeletedGrid', { title, emails, currentTime: new Date().toLocaleString(), formatTime });
+
+        let dateFrom = req.query.dateFrom || null;
+        let dateTo = req.query.dateTo || null;
+
+        if (!dateFrom && !dateTo && req.query.today) {
+            let now = new Date();
+            dateFrom = now.toISOString().split('T')[0];
+            dateTo = dateFrom;
+        }
+
+        if (dateFrom || dateTo) {
+            emails = emails.filter(function(e) {
+                if (!e.timeAcquired) return false;
+                let t = parseInt(e.timeAcquired) * 1000;
+                if (dateFrom && t < new Date(dateFrom).getTime()) return false;
+                if (dateTo) {
+                    let toEnd = new Date(dateTo);
+                    toEnd.setDate(toEnd.getDate() + 1);
+                    if (t >= toEnd.getTime()) return false;
+                }
+                return true;
+            });
+        }
+
+        res.render('DeletedGrid', { title, emails, currentTime: new Date().toLocaleString(), formatTime, dateFrom, dateTo });
     });
 });
 
