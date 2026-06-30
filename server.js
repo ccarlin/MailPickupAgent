@@ -93,6 +93,7 @@ app.use('/emailPreview', require('./routes/emailPreview'));
 app.use('/deleted', require('./routes/deletedRoute'));
 app.use('/status', require('./routes/status'));
 app.use('/sessions', require('./routes/sessions'));
+app.use('/notifications', require('./routes/notifications'));
 
 // Configuration loaded at startup
 let config = {
