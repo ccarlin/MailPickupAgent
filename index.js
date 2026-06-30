@@ -10,6 +10,7 @@ const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
 const config = require('./config');
 const metrics = require('./metrics');
+const notifications = require('./notifications');
 
 const QUARANTINE_DIR = config.QUARANTINE_DIR;
 const DELETED_DIR = config.DELETED_DIR;
@@ -607,6 +608,13 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await quarantineEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+
+      // Send push notifications
+      notifications.notifyQuarantine({
+        from: fromAddr,
+        subject: subjectText,
+        recipientAddresses: recipientAddresses
+      }).catch(err => tools.logError(`Push notification failed: ${err.message}`));
     } 
     // No threshold reached release email
     else {
