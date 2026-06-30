@@ -12,11 +12,9 @@ quarantine/
 release/
 config/rules.json
 config/sessions.sqlite*
-config/.session-secret
 config/.vapid-keys.json
-.env.deleteme
-config/development.json*
-config/production.json*
+config/development.json
+config/production.json
 .eslintrc.json
 eslint.config.mjs
 ecosystem.config.js

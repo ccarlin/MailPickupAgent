@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
 const tools = require('./tools');
-const config = require('./config');
 
 const keysFile = path.join(__dirname, 'config', '.vapid-keys.json');
 let vapidKeys;

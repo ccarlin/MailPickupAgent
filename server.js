@@ -44,7 +44,7 @@ if (!sessionSecret || sessionSecret === 'change-this-to-a-random-secret-in-produ
 }
 
 const sessionStore = new SQLiteStore({
-  client: new Database('./config/sessions.sqlite'),
+  client: new Database(path.join(__dirname, 'config', 'sessions.sqlite')),
   expired: {
     clear: true,
     intervalMs: 900000 // 15 minutes
