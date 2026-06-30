@@ -6,6 +6,7 @@ const net = require('net');
 const tools = require('../tools');
 const metrics = require('../metrics');
 const config = require('../config');
+const notifications = require('../notifications');
 const { purgeOldFiles } = require('../index');
 
 function checkTcpPort(host, port, timeout = 3000) {
@@ -106,7 +107,8 @@ router.get('/api', async function(req, res) {
     aiRunning,
     saEnabled,
     saRunning,
-    loggedInUsers: await countActiveUsers(req.sessionStore)
+    loggedInUsers: await countActiveUsers(req.sessionStore),
+    notificationCount: notifications.getAll().length
   });
 });
 

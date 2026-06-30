@@ -16,7 +16,17 @@ const Notifications = {
       this.publicKey = data.publicKey;
 
       const subscription = await this.swRegistration.pushManager.getSubscription();
-      this.isSubscribed = !(subscription === null);
+      if (subscription) {
+        try {
+          const checkRes = await fetch(`/notifications/check?endpoint=${encodeURIComponent(subscription.endpoint)}`);
+          const checkData = await checkRes.json();
+          this.isSubscribed = checkData.registered;
+        } catch {
+          this.isSubscribed = false;
+        }
+      } else {
+        this.isSubscribed = false;
+      }
       this.updateUI();
     } catch (err) {
       console.error('Service Worker registration failed: ', err);

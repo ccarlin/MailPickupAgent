@@ -39,16 +39,38 @@ db.prepare(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     subscription TEXT NOT NULL,
     email_filter TEXT,
+    ip_address TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `).run();
 
+// Migration: add ip_address column if it doesn't exist (for databases created before this column was added)
+try {
+  db.prepare('ALTER TABLE notification_subscriptions ADD COLUMN ip_address TEXT').run();
+} catch (e) {
+  // Column already exists — ignore
+}
+
 module.exports = {
   publicKey: vapidKeys.publicKey,
 
-  subscribe: (subscription, emailFilter) => {
-    const stmt = db.prepare('INSERT INTO notification_subscriptions (subscription, email_filter) VALUES (?, ?)');
-    return stmt.run(JSON.stringify(subscription), emailFilter);
+  getAll: () => {
+    return db.prepare('SELECT * FROM notification_subscriptions ORDER BY created_at DESC').all();
+  },
+
+  deleteById: (id) => {
+    const stmt = db.prepare('DELETE FROM notification_subscriptions WHERE id = ?');
+    return stmt.run(id);
+  },
+
+  subscribe: (subscription, emailFilter, ipAddress) => {
+    const stmt = db.prepare('INSERT INTO notification_subscriptions (subscription, email_filter, ip_address) VALUES (?, ?, ?)');
+    return stmt.run(JSON.stringify(subscription), emailFilter, ipAddress || null);
+  },
+
+  checkSubscription: (endpoint) => {
+    const row = db.prepare('SELECT COUNT(*) AS count FROM notification_subscriptions WHERE subscription LIKE ?').get(`%${endpoint}%`);
+    return row.count > 0;
   },
 
   unsubscribe: (endpoint) => {

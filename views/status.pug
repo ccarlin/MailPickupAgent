@@ -46,6 +46,7 @@ block css
     .status-card.uptime .icon { color: #8b5cf6; }
     .status-card.pending .icon { color: #f97316; }
     .status-card.users .icon { color: #06b6d4; }
+    .status-card.notifications .icon { color: #a855f7; }
 
     .status-card .icon-wrap {
       position: relative;
@@ -218,6 +219,11 @@ block content
           i.fas.fa-users
         .count#count-users 0
         .label Logged In Users
+      .status-card.notifications.clickable#card-notifications
+        .icon
+          i.fas.fa-bell
+        .count#count-notifications 0
+        .label Notifications
 
       .status-card.purge-off.clickable#card-purge
         .icon
@@ -259,6 +265,7 @@ block scripts
           } else {
             $('#card-sa').addClass('hidden');
           }
+          $('#count-notifications').text(data.notificationCount);
           $('#last-update-time').text(new Date().toLocaleTimeString());
           $('#server-offline').hide();
           $('#status-content').show();
@@ -386,6 +393,9 @@ block scripts
       });
       $('#card-users').on('click', function() {
         window.open('/sessions', '_blank');
+      });
+      $('#card-notifications').on('click', function() {
+        window.open('/notificationsAdmin', '_blank');
       });
       $('#card-pending').on('click', function() {
         window.open('/mailq?user=all', '_blank');
