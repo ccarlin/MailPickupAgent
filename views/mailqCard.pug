@@ -134,6 +134,9 @@ block css
             border-radius: 6px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.08);
             text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .preview-modal {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -194,9 +197,15 @@ block scripts
             });
             var now = new Date().toLocaleString();
             var text = 'Updated: ' + now;
-            document.querySelectorAll('.last-updated').forEach(function(el) {
-                el.textContent = text;
-            });
+            var timeEl = document.getElementById('lastUpdatedText');
+            if (timeEl) timeEl.textContent = text;
+
+            const subBtn = document.getElementById('subscribe-btn');
+            if (subBtn) {
+                subBtn.addEventListener('click', function() {
+                    Notifications.toggleSubscription(hsFilterUser);
+                });
+            }
         });
 
         function performAction(action, filepath, el) {
@@ -333,7 +342,11 @@ block scripts
 
 block content
     // local time display (client-side)
-    .last-updated#lastUpdated Local time:
+    .last-updated#lastUpdated
+        span#lastUpdatedText Local time:
+        button.btn#subscribe-btn(style="font-size: 0.7rem; display: flex; align-items: center; gap: 4px;")
+            i.material-icons(style="font-size: 1rem;") notifications
+            span Notifications
     if emails && emails.length > 0
         .swiper-container
             .swiper-wrapper

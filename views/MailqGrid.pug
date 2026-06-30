@@ -263,6 +263,11 @@ block css
             height: 24px;
             background: #e2e8f0;
         }
+        .mui-btn.subscribed {
+            background-color: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
         .mailq-grid-wrapper td a {
             color: #1976d2;
             text-decoration: none;
@@ -604,6 +609,10 @@ block content
             document.getElementById('listingCancelBtn').addEventListener('click', closeListingModal);
             document.getElementById('previewCloseBtn').addEventListener('click', closePreviewModal);
 
+            document.getElementById('subscribe-btn').addEventListener('click', function() {
+                Notifications.toggleSubscription(hsFilterUser);
+            });
+
             function renderGrid() {
                 var container = document.getElementById('mailq-grid');
                 if (grid) {
@@ -876,6 +885,10 @@ block content
                         .mui-btn#btn-filter-clear
                             i.fas.fa-times
                             | Filter Clear
+                    .mui-btn-sep
+                    .mui-btn#subscribe-btn
+                        i.fas.fa-bell
+                        span Notifications
                     .mui-btn-sep
                     .mui-select-all
                         input#chkSelectAll(type="checkbox")

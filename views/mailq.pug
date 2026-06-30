@@ -40,6 +40,20 @@ block css
             font-size: 0.8rem;
             color: #94a3b8;
         }
+        .btn-notifications {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+        .btn-notifications.subscribed {
+            background-color: #28a745;
+            color: white;
+        }
 
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
@@ -121,6 +135,15 @@ block content
                     }
                 });
             }
+
+            buttons.push({
+                text: 'Notifications',
+                className: 'myMiniButton',
+                attr: { id: 'subscribe-btn' },
+                action: function(e, dt, node, config) {
+                    Notifications.toggleSubscription(hsFilterUser);
+                }
+            });
 
             var table = $('#GridView1').DataTable({
                  order: [[ 6, "asc" ]],  
