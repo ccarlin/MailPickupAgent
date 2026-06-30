@@ -324,6 +324,26 @@ block css
         .mui-filter-clear:hover {
             background: #e3f2fd;
         }
+        .mui-date-filter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .mui-date-input {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 140px;
+            box-sizing: border-box;
+        }
+        .mui-date-input:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+        }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
 block scripts
@@ -578,6 +598,16 @@ block content
                 buildMultiSelect('ms-' + fc.key, fc);
             });
 
+            document.getElementById('btn-date-go').addEventListener('click', function() {
+                var df = document.getElementById('dateFrom').value;
+                var dt = document.getElementById('dateTo').value;
+                var params = new URLSearchParams(window.location.search);
+                params.delete('today');
+                if (df) params.set('dateFrom', df); else params.delete('dateFrom');
+                if (dt) params.set('dateTo', dt); else params.delete('dateTo');
+                window.location.search = params.toString();
+            });
+
             renderGrid();
         });
 
@@ -603,6 +633,12 @@ block content
                         #ms-recipient
                     button.mui-filter-clear#btn-clear-filters Clear
                 .mui-filters-right
-                    input#custom-search(type="search" placeholder="Search...")
+                    .mui-date-filter
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;") From
+                        input.mui-date-input#dateFrom(type="date" value=dateFrom || '')
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;") To
+                        input.mui-date-input#dateTo(type="date" value=dateTo || '')
+                        button.mui-btn#btn-date-go(type="button" style="padding:4px 8px;") Go
+                    input#custom-search(type="search" placeholder="Search..." style="margin-left:8px;")
             .mui-divider
             #quarantine-grid

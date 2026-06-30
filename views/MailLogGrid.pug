@@ -310,6 +310,26 @@ block css
         .mui-filter-clear:hover {
             background: #e3f2fd;
         }
+        .mui-date-filter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .mui-date-input {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 140px;
+            box-sizing: border-box;
+        }
+        .mui-date-input:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+        }
         .mail-grid-wrapper td a {
             color: #1976d2;
             text-decoration: none;
@@ -317,6 +337,107 @@ block css
         }
         .mail-grid-wrapper td a:hover {
             text-decoration: underline;
+        }
+        .mui-filter-banner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: #e3f2fd;
+            border-bottom: 1px solid #bbdefb;
+            font-size: 0.8125rem;
+            color: #1565c0;
+        }
+        .mui-filter-banner i {
+            font-size: 0.85rem;
+        }
+        .mui-filter-banner-clear {
+            margin-left: auto;
+        }
+        .mui-filter-banner-clear a {
+            color: #1565c0;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .mui-filter-banner-clear a:hover {
+            text-decoration: underline;
+        }
+        .preview-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7); z-index: 100;
+            display: none;
+        }
+        .info-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: #fff; padding: 24px; border-radius: 10px;
+            width: 600px; max-width: 90vw;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .info-modal-content h2 {
+            margin: 0 0 16px 0;
+        }
+        .info-field {
+            display: flex;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+        }
+        .info-field:last-child {
+            border-bottom: none;
+        }
+        .info-field-label {
+            flex: 0 0 120px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            padding-top: 2px;
+        }
+        .info-field-value {
+            flex: 1;
+            color: #1e293b;
+            word-break: break-word;
+        }
+        .info-email-status {
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            margin-top: 12px;
+        }
+        .info-email-status.found {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        .info-email-status.not-found {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        .info-reason-box {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            color: #334155;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .info-reason-box strong {
+            color: #1e293b;
+        }
+        .info-modal-actions {
+            margin-top: 16px;
+            text-align: right;
         }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
@@ -330,7 +451,7 @@ block content
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 var ts = e.dateTime.replace(/:\d{2}(?=\s|$)/, '');
-                return [ts, e.ipAddress, e.Country === 'Unknown' ? '' : e.Country, e.sender, e.recipient, e.subject, +Number(e.msgTime).toFixed(1), e.msgSize, String(score), e.spamResult, e.spamInfo, e.ipLookup];
+                return [ts, e.ipAddress, e.Country === 'Unknown' ? '' : e.Country, e.sender, e.recipient, e.subject, +Number(e.msgTime).toFixed(1), e.msgSize, String(score), e.spamResult, e.spamInfo, e.ipLookup, e.messageId || ''];
             }).sort(function(a, b) {
                 return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0;
             });
@@ -472,8 +593,9 @@ block content
                         },
                                 formatter: function(cell, row) {
                                     var ip = cell;
-                                    var lookup = row.cells[row.cells.length - 1].data;
-                                    return gridjs.html('<a href="' + lookup + '" target="_blank">' + ip + '</a>');
+                                    var lookup = row.cells[11].data;
+                                    var msgId = (row.cells[12] || {}).data || '';
+                                    return gridjs.html('<a href="' + lookup + '" target="_blank" data-messageid="' + msgId.replace(/"/g, '&quot;') + '">' + ip + '</a>');
                                 }
                             },
                             { name: 'Ctry', width: '60px', sort: true },
@@ -485,7 +607,8 @@ block content
                             { name: 'Score', width: '80px', sort: true },
                             { name: 'Result', width: '120px', sort: true },
                             { name: 'Details', width: '180px', sort: true },
-                            { name: 'ipLookup', hidden: true }
+                            { name: 'ipLookup', hidden: true },
+                            { name: 'messageId', hidden: true }
                         ],
                         data: filteredData,
                         pagination: { limit: 10, summary: true },
@@ -594,6 +717,71 @@ block content
                 buildMultiSelect('ms-' + fc.key, fc);
             });
 
+            // Double-click to look up email details
+            document.getElementById('mail-grid').addEventListener('dblclick', function(e) {
+                var row = e.target.closest('tr');
+                if (!row) return;
+                var ipLink = row.querySelector('a[data-messageid]');
+                var filepath = ipLink ? ipLink.getAttribute('data-messageid') : '';
+                if (!filepath) {
+                    document.getElementById('infoModalEmailStatus').textContent = 'No email ID available in processing log';
+                    document.getElementById('infoModalEmailStatus').className = 'info-email-status not-found';
+                    document.getElementById('infoModalReasonContainer').innerHTML = '';
+                    document.getElementById('infoModal').style.display = 'block';
+                    return;
+                }
+                var cells = row.querySelectorAll('td');
+                document.getElementById('infoModalFilepath').textContent = filepath;
+                document.getElementById('infoModalDate').textContent = cells[0] ? cells[0].textContent.trim() : 'N/A';
+                document.getElementById('infoModalSender').textContent = cells[3] ? cells[3].textContent.trim() : 'N/A';
+                document.getElementById('infoModalRecipients').textContent = cells[4] ? cells[4].textContent.trim() : 'N/A';
+                document.getElementById('infoModalSubject').textContent = cells[5] ? cells[5].textContent.trim() : 'N/A';
+                document.getElementById('infoModalScore').textContent = cells[8] ? cells[8].textContent.trim() : 'N/A';
+                document.getElementById('infoModalDetail').textContent = cells[10] ? cells[10].textContent.trim() : 'N/A';
+                document.getElementById('infoModalResult').textContent = cells[9] ? cells[9].textContent.trim() : 'N/A';
+                document.getElementById('infoModalEmailStatus').textContent = 'Looking up email...';
+                document.getElementById('infoModalEmailStatus').className = 'info-email-status';
+                document.getElementById('infoModalReasonContainer').innerHTML = '';
+                document.getElementById('infoModal').style.display = 'block';
+                fetch('/api/email-lookup/' + encodeURIComponent(filepath))
+                    .then(function(r) { return r.json(); })
+                    .then(function(result) {
+                        var statusEl = document.getElementById('infoModalEmailStatus');
+                        var reasonEl = document.getElementById('infoModalReasonContainer');
+                        if (result.found) {
+                            statusEl.textContent = 'Email found in ' + result.type + ' directory';
+                            statusEl.className = 'info-email-status found';
+                            if (result.reason) {
+                                reasonEl.innerHTML = '<div class="info-reason-box"><strong>Spam Reason:</strong> ' + result.reason.replace(/</g, '&lt;') + '</div>';
+                            } else {
+                                reasonEl.innerHTML = '<div class="info-reason-box"><strong>Spam Reason:</strong> Not available</div>';
+                            }
+                        } else {
+                            statusEl.textContent = 'Email no longer available (delivered or purged)';
+                            statusEl.className = 'info-email-status not-found';
+                            reasonEl.innerHTML = '';
+                        }
+                    })
+                    .catch(function() {
+                        document.getElementById('infoModalEmailStatus').textContent = 'Error looking up email';
+                        document.getElementById('infoModalEmailStatus').className = 'info-email-status not-found';
+                    });
+            });
+
+            document.getElementById('infoModalCloseBtn').addEventListener('click', function() {
+                document.getElementById('infoModal').style.display = 'none';
+            });
+
+            document.getElementById('btn-date-go').addEventListener('click', function() {
+                var df = document.getElementById('dateFrom').value;
+                var dt = document.getElementById('dateTo').value;
+                var params = new URLSearchParams(window.location.search);
+                params.delete('today');
+                if (df) params.set('dateFrom', df); else params.delete('dateFrom');
+                if (dt) params.set('dateTo', dt); else params.delete('dateTo');
+                window.location.search = params.toString();
+            });
+
             renderGrid();
         });
 
@@ -623,6 +811,57 @@ block content
                         #ms-results
                     button.mui-filter-clear#btn-clear-filters Clear
                 .mui-filters-right
-                    input#custom-search(type="search" placeholder="Search...")
+                    .mui-date-filter
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;") From
+                        input.mui-date-input#dateFrom(type="date" value=dateFrom || '')
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;") To
+                        input.mui-date-input#dateTo(type="date" value=dateTo || '')
+                        button.mui-btn#btn-date-go(type="button" style="padding:4px 8px;") Go
+                    input#custom-search(type="search" placeholder="Search..." style="margin-left:8px;")
+            if resultFilter
+                .mui-filter-banner
+                    i.fas.fa-filter
+                    |  Showing only:&nbsp;
+                    each val, idx in resultFilter.split(',')
+                        if idx > 0
+                            | ,&nbsp;
+                        strong= val.trim()
+                    .mui-filter-banner-clear
+                        a(href='/MailLog' + currentQuery)
+                            i.fas.fa-times
+                            |  Clear filter
             .mui-divider
             #mail-grid
+
+    #infoModal.preview-modal
+        .info-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2 Email Details
+                button#infoModalCloseBtn.mui-btn(type="button") Close
+            div#infoModalBody
+                .info-field
+                    .info-field-label File
+                    .info-field-value#infoModalFilepath
+                .info-field
+                    .info-field-label Date
+                    .info-field-value#infoModalDate
+                .info-field
+                    .info-field-label Sender
+                    .info-field-value#infoModalSender
+                .info-field
+                    .info-field-label Recipients
+                    .info-field-value#infoModalRecipients
+                .info-field
+                    .info-field-label Subject
+                    .info-field-value#infoModalSubject
+                .info-field
+                    .info-field-label Score
+                    .info-field-value#infoModalScore
+                .info-field
+                    .info-field-label Result
+                    .info-field-value#infoModalResult
+                .info-field
+                    .info-field-label Spam Detail
+                    .info-field-value#infoModalDetail
+                .info-email-status#infoModalEmailStatus
+                #infoModalReasonContainer

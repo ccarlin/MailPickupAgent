@@ -324,6 +324,26 @@ block css
         .mui-filter-clear:hover {
             background: #e3f2fd;
         }
+        .mui-date-filter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .mui-date-input {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 140px;
+            box-sizing: border-box;
+        }
+        .mui-date-input:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+        }
         .mui-select-all {
             display: inline-flex;
             align-items: center;
@@ -377,6 +397,59 @@ block css
         .preview-modal-content iframe {
             flex: 1; border: 1px solid #ddd; border-radius: 4px;
         }
+        .info-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: #fff; padding: 24px; border-radius: 10px;
+            width: 600px; max-width: 90vw;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .info-modal-content h2 {
+            margin: 0 0 16px 0;
+        }
+        .info-field {
+            display: flex;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.875rem;
+        }
+        .info-field:last-child {
+            border-bottom: none;
+        }
+        .info-field-label {
+            flex: 0 0 120px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            padding-top: 2px;
+        }
+        .info-field-value {
+            flex: 1;
+            color: #1e293b;
+            word-break: break-word;
+        }
+        .info-reason-box {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            color: #334155;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .info-reason-box strong {
+            color: #1e293b;
+        }
+        .info-modal-actions {
+            margin-top: 16px;
+            text-align: right;
+        }
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
 block scripts
@@ -389,9 +462,11 @@ block content
             emailData.sort(function(a, b) {
                 return (parseInt(b.timeAcquired) || 0) - (parseInt(a.timeAcquired) || 0);
             });
+            var emailStore = {};
             var allData = emailData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 var time = e.timeAcquired ? new Date(parseInt(e.timeAcquired) * 1000).toLocaleString() : '';
+                emailStore[e.filepath] = { sender: e.sender, recipients: e.recipients, subject: e.subject, spamScore: score, antiSpam: e.antiSpam, time: time };
                 return [e.filepath, time, e.sender, e.recipients, e.subject, String(score), e.antiSpam, e.safe];
             });
 
@@ -564,6 +639,39 @@ block content
             document.getElementById('btn-recover').addEventListener('click', doRecover);
             document.getElementById('previewCloseBtn').addEventListener('click', closePreviewModal);
 
+            // Double-click to show email details
+            document.getElementById('deleted-grid').addEventListener('dblclick', function(e) {
+                var row = e.target.closest('tr');
+                if (!row) return;
+                var checkbox = row.querySelector('.deleted-chk');
+                if (!checkbox) return;
+                var filepath = checkbox.value;
+                var data = emailStore[filepath];
+                if (!data) return;
+                document.getElementById('infoModalFilepath').textContent = filepath;
+                document.getElementById('infoModalSender').textContent = data.sender || 'N/A';
+                document.getElementById('infoModalRecipients').textContent = data.recipients || 'N/A';
+                document.getElementById('infoModalSubject').textContent = data.subject || 'N/A';
+                document.getElementById('infoModalScore').textContent = data.spamScore !== undefined ? data.spamScore : 'N/A';
+                document.getElementById('infoModalDetail').textContent = data.antiSpam || 'N/A';
+                document.getElementById('infoModalDate').textContent = data.time || 'N/A';
+                document.getElementById('infoModalReason').innerHTML = '<strong>Spam Reason:</strong> <em>Loading...</em>';
+                document.getElementById('infoModal').style.display = 'block';
+                fetch('/api/spam-reason/deleted/' + encodeURIComponent(filepath))
+                    .then(function(r) { return r.json(); })
+                    .then(function(result) {
+                        var reason = result.reason || 'Not available';
+                        document.getElementById('infoModalReason').innerHTML = '<strong>Spam Reason:</strong> ' + reason.replace(/</g, '&lt;');
+                    })
+                    .catch(function() {
+                        document.getElementById('infoModalReason').innerHTML = '<strong>Spam Reason:</strong> <em>Not available</em>';
+                    });
+            });
+
+            document.getElementById('infoModalCloseBtn').addEventListener('click', function() {
+                document.getElementById('infoModal').style.display = 'none';
+            });
+
             function renderGrid() {
                 var container = document.getElementById('deleted-grid');
                 if (grid) {
@@ -709,6 +817,17 @@ block content
                 buildMultiSelect('ms-' + fc.key, fc);
             });
 
+            // Date filter navigation
+            document.getElementById('btn-date-go').addEventListener('click', function() {
+                var df = document.getElementById('dateFrom').value;
+                var dt = document.getElementById('dateTo').value;
+                var params = new URLSearchParams(window.location.search);
+                params.delete('today');
+                if (df) params.set('dateFrom', df); else params.delete('dateFrom');
+                if (dt) params.set('dateTo', dt); else params.delete('dateTo');
+                window.location.search = params.toString();
+            });
+
             renderGrid();
         });
 
@@ -740,7 +859,13 @@ block content
                         #ms-recipient
                     button.mui-filter-clear#btn-clear-filters Clear
                 .mui-filters-right
-                    input#custom-search(type="search" placeholder="Search...")
+                    .mui-date-filter
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;") From
+                        input.mui-date-input#dateFrom(type="date" value=dateFrom || '')
+                        label(style="font-size:0.75rem;font-weight:500;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;") To
+                        input.mui-date-input#dateTo(type="date" value=dateTo || '')
+                        button.mui-btn#btn-date-go(type="button" style="padding:4px 8px;") Go
+                    input#custom-search(type="search" placeholder="Search..." style="margin-left:8px;")
             .mui-divider
             #deleted-grid
 
@@ -750,3 +875,34 @@ block content
                 h2 Email Preview
                 button#previewCloseBtn.mui-btn(type="button") Close
             iframe#emailPreviewFrame
+
+    #infoModal.preview-modal
+        .info-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2 Email Details
+                button#infoModalCloseBtn.mui-btn(type="button") Close
+            div#infoModalBody
+                .info-field
+                    .info-field-label File
+                    .info-field-value#infoModalFilepath
+                .info-field
+                    .info-field-label Sender
+                    .info-field-value#infoModalSender
+                .info-field
+                    .info-field-label Recipients
+                    .info-field-value#infoModalRecipients
+                .info-field
+                    .info-field-label Subject
+                    .info-field-value#infoModalSubject
+                .info-field
+                    .info-field-label Score
+                    .info-field-value#infoModalScore
+                .info-field
+                    .info-field-label Spam Detail
+                    .info-field-value#infoModalDetail
+                .info-field
+                    .info-field-label Date/Time
+                    .info-field-value#infoModalDate
+                .info-field
+                    .info-field-label Reason
+                    .info-field-value#infoModalReason

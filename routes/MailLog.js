@@ -44,7 +44,8 @@ router.get('/', function(req, res) {
                         
                         let ipAddress = lineParts[5];
 
-                        obj = {};                     
+                        obj = {};    
+                        obj.messageId = lineParts[1];                 
                         obj.ipAddress = ipAddress;   
                         obj.dateTime = dateTime;                    
                         let ipLookup = mmdb.lookup(ipAddress);                           
@@ -70,6 +71,30 @@ router.get('/', function(req, res) {
             if (req.query.today)
                 break;
         }
+
+        //Filter by result if query parameter provided
+        if (req.query.result) {
+            let allowedResults = req.query.result.split(',').map(s => s.trim().toLowerCase());
+            logList = logList.filter(function(entry) {
+                return allowedResults.indexOf(entry.spamResult.toLowerCase()) !== -1;
+            });
+        }
+
+        let dateFrom = req.query.dateFrom || null;
+        let dateTo = req.query.dateTo || null;
+
+        if (dateFrom || dateTo) {
+            logList = logList.filter(function(entry) {
+                let t = new Date(entry.dateTime).getTime();
+                if (dateFrom && t < new Date(dateFrom).getTime()) return false;
+                if (dateTo) {
+                    let toEnd = new Date(dateTo);
+                    toEnd.setDate(toEnd.getDate() + 1);
+                    if (t >= toEnd.getTime()) return false;
+                }
+                return true;
+            });
+        }
         
         //Tracking timing.. File Count per file timing 
         let endTime = performance.now()    
@@ -79,7 +104,9 @@ router.get('/', function(req, res) {
         tools.logData(results, "INFO");
         
         let title = "EMail Analyzer";
-        res.render('MailLogGrid', { title, logData: logList, currentTime: now});
+        let currentQuery = '';
+        if (req.query.today) currentQuery = '?today=true';
+        res.render('MailLogGrid', { title, logData: logList, currentTime: now, resultFilter: req.query.result || null, currentQuery, dateFrom, dateTo });
     });  
 }); 
 

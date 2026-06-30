@@ -108,6 +108,27 @@ module.exports = {
         return "Error parsing email message.";
       }
     },
+    // Retrieve X-MPA-SpamReason header from an email by its ID and directory path.
+    // Returns the spam reason string, or null if not found or on error.
+    getSpamReason: async function(emailId, emailPath) {
+        try {
+            const mailFile = path.join(emailPath, emailId + '.MAI');
+            if (!fs.existsSync(mailFile)) {
+                return null;
+            }
+            const mailContents = fs.readFileSync(mailFile);
+            const parsed = await PostalMime.parse(mailContents);
+            for (const h of parsed.headers) {
+                if (h.key === 'x-mpa-spamreason') {
+                    return h.value;
+                }
+            }
+            return null;
+        } catch (err) {
+            this.logError(`Error getting spam reason for ${emailId}: ${err.message}`);
+            return null;
+        }
+    },
     sleep: function(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     },

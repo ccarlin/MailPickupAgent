@@ -266,6 +266,51 @@ app.post('/api/process', async (req, res) => {
   }
 });
 
+// GET Route - Get spam reason for an email from quarantine or deleted directory
+app.get('/api/spam-reason/:type/:id', async (req, res) => {
+    try {
+        const { type, id } = req.params;
+        let emailPath;
+        if (type === 'quarantine') {
+            emailPath = appConfig.QUARANTINE_DIR;
+        } else if (type === 'deleted') {
+            emailPath = appConfig.DELETED_DIR;
+        } else {
+            return res.status(400).json({ error: 'Invalid type. Use "quarantine" or "deleted".' });
+        }
+        const reason = await tools.getSpamReason(id, emailPath);
+        res.json({ emailId: id, type, reason });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET Route - Look up email info by ID, trying quarantine then deleted directories
+app.get('/api/email-lookup/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        let found = false;
+        let type = null;
+        let reason = null;
+
+        reason = await tools.getSpamReason(id, appConfig.QUARANTINE_DIR);
+        if (reason !== null) {
+            found = true;
+            type = 'quarantine';
+        } else {
+            reason = await tools.getSpamReason(id, appConfig.DELETED_DIR);
+            if (reason !== null) {
+                found = true;
+                type = 'deleted';
+            }
+        }
+
+        res.json({ emailId: id, found, type, reason });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // POST Route - Wipe all log files and emails in queue and deleted folders
 app.post('/api/wipeall', (req, res) => {
   try {
@@ -331,6 +376,15 @@ if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
     startServer('http');
   });
 }
+
+// Global uncaught exception and rejection handlers
+process.on('uncaughtException', (err) => {
+  tools.logError(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`);
+});
+
+process.on('unhandledRejection', (reason) => {
+  tools.logError(`UNHANDLED REJECTION: ${reason instanceof Error ? reason.message : reason}\n${reason instanceof Error ? reason.stack : ''}`);
+});
 
 // Listen for the PM2 shutdown signal
 process.on('SIGINT', () => {

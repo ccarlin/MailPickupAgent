@@ -45,9 +45,25 @@ router.get('/', function(req, res) {
             if (req.query.today)
                 break;
         }
+
+        let dateFrom = req.query.dateFrom || null;
+        let dateTo = req.query.dateTo || null;
+
+        if (dateFrom || dateTo) {
+            logList = logList.filter(function(entry) {
+                let t = new Date(entry.dateTime).getTime();
+                if (dateFrom && t < new Date(dateFrom).getTime()) return false;
+                if (dateTo) {
+                    let toEnd = new Date(dateTo);
+                    toEnd.setDate(toEnd.getDate() + 1);
+                    if (t >= toEnd.getTime()) return false;
+                }
+                return true;
+            });
+        }
                     
         let title = "Quarantine Log";
-        res.render('QuarantineLogGrid', { title, logData: logList}); 
+        res.render('QuarantineLogGrid', { title, logData: logList, dateFrom, dateTo}); 
     });
 }); 
 
