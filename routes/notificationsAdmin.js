@@ -18,6 +18,7 @@ router.get('/count', function(req, res) {
     const subscriptions = notifications.getAll();
     res.json({ count: subscriptions.length });
   } catch (err) {
+    tools.logError(`Error get notification count: ${err}`);
     res.json({ count: 0 });
   }
 });

@@ -8,6 +8,7 @@ const metrics = {
 };
 
 function increment(counter) {
+  // eslint-disable-next-line no-prototype-builtins
   if (metrics.hasOwnProperty(counter)) {
     metrics[counter]++;
   }

@@ -47,7 +47,7 @@ db.prepare(`
 // Migration: add ip_address column if it doesn't exist (for databases created before this column was added)
 try {
   db.prepare('ALTER TABLE notification_subscriptions ADD COLUMN ip_address TEXT').run();
-} catch (e) {
+} catch {
   // Column already exists — ignore
 }
 
