@@ -95,6 +95,7 @@ app.use('/status', require('./routes/status'));
 app.use('/sessions', require('./routes/sessions'));
 app.use('/notifications', require('./routes/notifications'));
 app.use('/notificationsAdmin', require('./routes/notificationsAdmin'));
+app.use('/configHistory', require('./routes/configHistory'));
 
 // Configuration loaded at startup
 let config = {
