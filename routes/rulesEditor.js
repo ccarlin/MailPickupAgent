@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const config = require('../config');
+const { purgeOldBackups } = require('../index');
 
 const router = express.Router();
 
@@ -65,6 +66,9 @@ router.post('/api/rules/save', (req, res) => {
   // Backup the original file using timestamp to avoid overwriting previous backups
   const backupFile = `${rulesPath}_${Date.now().toString()}.bak`;
   fs.copyFileSync(rulesPath, backupFile);
+
+  // Enforce backup retention limits
+  purgeOldBackups();
   
   try {
     const parsed = normalizeRules(JSON.parse(rules));

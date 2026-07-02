@@ -104,10 +104,12 @@ block scripts
                     { key: 'THRESHOLD_QUARANTINE', label: 'Quarantine Threshold', type: 'number', hint: 'Score at or above this value quarantines the email' },
                     { key: 'THRESHOLD_DELETE', label: 'Delete Threshold', type: 'number', hint: 'Score at or above this value deletes the email' },
                 ]},
-                { key: 'purge', title: 'Purge / Retention', icon: '&#x1F9F9;', description: 'Automatic cleanup of old deleted emails and log files (run node index.js --purge)', fields: [
+                { key: 'purge', title: 'Purge / Retention', icon: '&#x1F9F9;', description: 'Automatic cleanup of old deleted emails, log files, and configuration backups', fields: [
                     { key: 'PURGE_EMAIL_AFTER_DAYS', label: 'Email Retention (days)', type: 'number', hint: 'Remove deleted emails older than this many days' },
                     { key: 'PURGE_LOG_AFTER_DAYS', label: 'Log Retention (days)', type: 'number', hint: 'Remove log files older than this many days' },
                     { key: 'PURGE_INCLUDE_SMTP_LOGS', label: 'Include SMTP Logs', type: 'checkbox', hint: 'Also purge files in SMTP_LOG_DIR with log retention' },
+                    { key: 'BACKUP_MAX_COUNT', label: 'Backup Max Count', type: 'number', hint: 'Maximum number of config/rules backups to keep' },
+                    { key: 'BACKUP_MAX_DAYS', label: 'Backup Retention (days)', type: 'number', hint: 'Remove config/rules backups older than this many days' },
                 ]},              
                 { key: 'test', title: 'Test Emails', icon: '&#x1F514;', description: 'Configuration for automated test email generation', fields: [
                     { key: 'TEST_EMAIL_SLEEP_SECONDS', label: 'Sleep Between Tests', type: 'number', hint: 'Seconds to wait between test emails' },

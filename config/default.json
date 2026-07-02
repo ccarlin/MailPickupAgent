@@ -36,6 +36,9 @@
   "PURGE_LOG_AFTER_DAYS": 30,
   "PURGE_INCLUDE_SMTP_LOGS": false,
 
+  "BACKUP_MAX_COUNT": 5,
+  "BACKUP_MAX_DAYS": 90,
+
   "TEST_EMAIL_SLEEP_SECONDS": 3,
   "TEST_EMAIL_FROM": "\"MailPickupAgent\" <no-reply@localhost>",
   "TEST_EMAIL_RECIPIENT": "test@localhost",
