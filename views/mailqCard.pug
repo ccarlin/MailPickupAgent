@@ -159,6 +159,25 @@ block css
         .preview-modal-content .preview-close {
             align-self: flex-end; margin-bottom: 10px;
         }
+        .listing-modal-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: #fff; padding: 24px; border-radius: 10px;
+            min-width: 420px; max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-height: 90vh; overflow-y: auto;
+        }
+        @media (max-width: 480px) {
+            .listing-modal-content {
+                min-width: unset;
+                width: 94vw;
+                padding: 16px;
+                max-height: 85vh;
+            }
+            .listing-modal-content #listingAddressList {
+                max-height: 180px;
+            }
+        }
         @media (max-width: 600px) {
             .last-updated {
                 top: 8px;
@@ -206,6 +225,13 @@ block scripts
                     Notifications.toggleSubscription(hsFilterUser);
                 });
             }
+
+            document.querySelectorAll('#listingModal input[name="listTypeChoice"]').forEach(function(el) {
+                el.addEventListener('change', renderListingPreview);
+            });
+            document.getElementById('listingConfirmBtn').addEventListener('click', confirmListing);
+            document.getElementById('listingCancelBtn').addEventListener('click', closeListingModal);
+            document.getElementById('listingModalCloseBtn').addEventListener('click', closeListingModal);
         });
 
         function performAction(action, filepath, el) {
@@ -234,6 +260,10 @@ block scripts
                 $('<input>').attr({ type: 'hidden', name: `clientip`, value: '' }).appendTo(form);
                 $('<input>').attr({ type: 'hidden', name: `datetime`, value: emailData.find('.email-body p:nth-child(4) span').text().trim() }).appendTo(form);
                 $('<input>').attr({ type: 'hidden', name: `dkim`, value: emailData.find('.email-body p:nth-child(6) span').text().trim() }).appendTo(form);
+                if (action === 'whitelist' || action === 'blacklist') {
+                    var listType = document.querySelector('input[name="listTypeChoice"]:checked').value;
+                    $('<input>').attr({ type: 'hidden', name: 'listType', value: listType }).appendTo(form);
+                }
             }
             form.submit();
         }
@@ -326,18 +356,56 @@ block scripts
             });
         }
 
+        var pendingAction = null;
+        var pendingItem = null;
+
+        function renderListingPreview() {
+            var isDomain = document.querySelector('input[name="listTypeChoice"]:checked').value === 'domain';
+            var list = document.getElementById('listingAddressList');
+            list.innerHTML = '';
+            if (!pendingItem) return;
+            var display = isDomain ? extractDomain(pendingItem.sender) : pendingItem.sender;
+            var div = document.createElement('div');
+            div.textContent = display;
+            list.appendChild(div);
+        }
+
+        function extractDomain(email) {
+            var atIndex = email.lastIndexOf('@');
+            if (atIndex !== -1) return '@' + email.slice(atIndex + 1);
+            return email;
+        }
+
+        function confirmListing() {
+            $('#listingModal').hide();
+            if (pendingItem) {
+                performAction(pendingAction, pendingItem.filepath, pendingItem.btn);
+            }
+            pendingAction = null;
+            pendingItem = null;
+        }
+
+        function closeListingModal() {
+            $('#listingModal').hide();
+            pendingAction = null;
+            pendingItem = null;
+        }
+
         function handleListing(btn) {
             var $btn = $(btn);
             var action = $btn.hasClass('btn-blacklist') ? 'blacklist' : 'whitelist';
             var rawKey = $btn.attr('data-mailkey') || '';
             var filepath = rawKey ? decodeURIComponent(rawKey) : '';
 
-            var msg = action === 'blacklist' ? 
-                'Are you sure you want to blacklist the sender of this message? This will add the sender to the blacklist and future messages from this sender will be automatically deleted.' : 
-                'Are you sure you want to whitelist the sender of this message? This will add the sender to the whitelist and future messages from this sender will bypass quarantine.';
-            if (!confirm(msg)) return;
-
-            performAction(action, filepath, btn);
+            pendingAction = action;
+            pendingItem = {
+                filepath: filepath,
+                sender: $btn.closest('.email-card').find('.email-body p:nth-child(2) span').text().replace('From: ', '').trim(),
+                btn: btn
+            };
+            $('#listingModalTitle').text((action === 'whitelist' ? 'Whitelist' : 'Blacklist') + ' Sender');
+            renderListingPreview();
+            $('#listingModal').show();
         }
 
 block content
@@ -401,6 +469,24 @@ block content
         input(type='hidden' name='action')
 
     
+    #listingModal.preview-modal
+        .listing-modal-content
+            div(style="display:flex; justify-content:space-between; align-items:center;")
+                h2#listingModalTitle
+                button#listingModalCloseBtn.myButton(type="button" style="background:transparent;border:none;font-size:1.5rem;cursor:pointer;") &times;
+            div(style="margin:14px 0;")
+                label(style="margin-right:20px;cursor:pointer;")
+                    input#listTypeEmail(type="radio" name="listTypeChoice" value="email" checked)
+                    | &nbsp;Full Email Address
+                label(style="cursor:pointer;")
+                    input#listTypeDomain(type="radio" name="listTypeChoice" value="domain")
+                    | &nbsp;Domain Only
+            div(style="margin:12px 0;font-weight:bold;") The following will be added:
+            div#listingAddressList(style="max-height:260px;overflow-y:auto;border:1px solid #ccc;padding:10px;border-radius:4px;font-family:monospace;font-size:0.9rem;background:#fafafa;")
+            div(style="margin-top:18px;text-align:right;")
+                button#listingConfirmBtn.myButton(type="button" style="margin-right:8px;") Confirm
+                button#listingCancelBtn.myButton(type="button") Cancel
+
     #aiCheckModal(style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:100;")
         div(style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border-radius:10px;")
             h2 AI Check Result
