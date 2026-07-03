@@ -5,216 +5,6 @@ block css
     link(href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet")
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png" sizes="16x16")
     style.
-        .notif-grid-wrapper {
-            font-family: 'Roboto', sans-serif;
-            margin: 0.5rem 0;
-        }
-        .notif-grid-wrapper .gridjs-container {
-            font-family: 'Roboto', sans-serif;
-            color: #1e293b;
-        }
-        .notif-grid-wrapper .gridjs-head {
-            display: none;
-        }
-        .notif-grid-wrapper table {
-            border-collapse: collapse;
-            width: 100%;
-            font-size: 0.8125rem;
-        }
-        .notif-grid-wrapper td {
-            overflow: visible !important;
-            text-overflow: clip !important;
-        }
-        .notif-grid-wrapper th {
-            background: #1976d2;
-            color: #fff;
-            font-weight: 500;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 6px 8px;
-            text-align: left;
-            white-space: nowrap;
-            border: none;
-            user-select: none;
-            vertical-align: middle;
-            line-height: 1.6;
-        }
-        .notif-grid-wrapper th:hover {
-            background: #1565c0;
-        }
-        .notif-grid-wrapper th .gridjs-th-content {
-            float: left;
-            white-space: nowrap;
-            overflow: visible !important;
-            text-overflow: clip !important;
-            width: calc(100% - 16px);
-        }
-        .notif-grid-wrapper th .gridjs-sort {
-            filter: brightness(0) invert(1);
-            opacity: 0.7;
-        }
-        .notif-grid-wrapper th .gridjs-sort:hover {
-            opacity: 1;
-        }
-        .notif-grid-wrapper td {
-            padding: 10px 16px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #334155;
-            word-break: break-word;
-        }
-        .notif-grid-wrapper tbody tr {
-            transition: background-color 0.15s ease;
-        }
-        .notif-grid-wrapper tbody tr:hover {
-            background-color: #e3f2fd;
-        }
-        .notif-grid-wrapper tbody tr:nth-child(even) {
-            background-color: #fafafa;
-        }
-        .notif-grid-wrapper tbody tr:nth-child(even):hover {
-            background-color: #e3f2fd;
-        }
-        .notif-grid-wrapper .gridjs-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 16px;
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-            font-size: 0.8125rem;
-            color: #64748b;
-        }
-        .notif-grid-wrapper .gridjs-pagination {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .notif-grid-wrapper .gridjs-pagination button {
-            min-width: 32px;
-            height: 32px;
-            padding: 0 8px;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            background: #fff;
-            color: #334155;
-            font-family: 'Roboto', sans-serif;
-            font-size: 0.8125rem;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .notif-grid-wrapper .gridjs-pagination button:hover:not(:disabled) {
-            background: #e3f2fd;
-            border-color: #1976d2;
-            color: #1976d2;
-        }
-        .notif-grid-wrapper .gridjs-pagination button:disabled {
-            opacity: 0.4;
-            cursor: default;
-        }
-        .notif-grid-wrapper .gridjs-pagination button.gridjs-currentPage {
-            background: #1976d2;
-            color: #fff;
-            border-color: #1976d2;
-            font-weight: 500;
-        }
-        .notif-grid-wrapper .gridjs-summary {
-            color: #64748b;
-            font-size: 0.8125rem;
-        }
-        .notif-grid-wrapper .gridjs-table-wrap {
-            overflow-x: auto;
-        }
-        .mui-card {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-            overflow: hidden;
-            transition: box-shadow 0.2s ease;
-        }
-        .mui-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
-        }
-        .mui-divider {
-            height: 1px;
-            background: #e2e8f0;
-        }
-        .mui-empty {
-            text-align: center;
-            padding: 48px 16px;
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
-        .mui-empty i {
-            font-size: 2.5rem;
-            display: block;
-            margin-bottom: 12px;
-            color: #cbd5e1;
-        }
-        .mui-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 5px 12px;
-            font-family: 'Roboto', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            background: #fff;
-            color: #475569;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            user-select: none;
-        }
-        .mui-btn:hover {
-            background: #1976d2;
-            border-color: #1976d2;
-            color: #fff;
-            box-shadow: 0 2px 6px rgba(25,118,210,0.25);
-        }
-        .mui-btn:active {
-            background: #1565c0;
-            border-color: #1565c0;
-            transform: translateY(1px);
-        }
-        .mui-btn i {
-            font-size: 0.85rem;
-        }
-        .mui-filters-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 20px;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .mui-filters-row .mui-filters-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .mui-filters-row .mui-filters-right {
-            display: flex;
-            align-items: center;
-        }
-        .mui-filters-row .mui-filters-right input {
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-family: 'Roboto', sans-serif;
-            font-size: 0.8125rem;
-            outline: none;
-            transition: border-color 0.2s;
-            width: 200px;
-        }
-        .mui-filters-row .mui-filters-right input:focus {
-            border-color: #1976d2;
-            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
-        }
         .endpoint-cell {
             font-size: 12px;
             color: #64748b;
@@ -224,32 +14,6 @@ block css
             white-space: nowrap;
             display: inline-block;
             vertical-align: middle;
-        }
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            font-family: 'Roboto', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            border: 1px solid #ef4444;
-            border-radius: 4px;
-            background: #fff;
-            color: #ef4444;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .action-btn:hover {
-            background: #ef4444;
-            color: #fff;
-            box-shadow: 0 2px 6px rgba(239,68,68,0.25);
-        }
-        .action-btn:active {
-            background: #dc2626;
-            transform: translateY(1px);
         }
         .badge-filter {
             display: inline-block;
@@ -271,35 +35,15 @@ block css
         }
 
         @media (max-width: 768px) {
-            .notif-grid-wrapper td {
-                padding: 6px 8px;
-                font-size: 0.75rem;
-            }
-            .notif-grid-wrapper th {
-                padding: 4px 6px;
-                font-size: 0.65rem;
-            }
             .endpoint-cell {
                 max-width: 120px;
                 font-size: 11px;
-            }
-            .action-btn {
-                padding: 2px 6px;
-                font-size: 0.6rem;
             }
         }
         @media (max-width: 480px) {
             .endpoint-cell {
                 max-width: 80px;
                 font-size: 10px;
-            }
-            .notif-grid-wrapper td {
-                padding: 4px 4px;
-                font-size: 0.7rem;
-            }
-            .notif-grid-wrapper th {
-                padding: 3px 4px;
-                font-size: 0.6rem;
             }
             .mui-filters-row {
                 padding: 6px 10px;
@@ -309,10 +53,6 @@ block css
             .mui-filters-row .mui-filters-right input {
                 width: 100%;
                 box-sizing: border-box;
-            }
-            .notif-grid-wrapper .gridjs-footer {
-                flex-direction: column;
-                gap: 6px;
             }
         }
 
