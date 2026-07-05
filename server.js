@@ -44,7 +44,7 @@ if (!sessionSecret || sessionSecret === 'change-this-to-a-random-secret-in-produ
 }
 
 const sessionStore = new SQLiteStore({
-  client: new Database('./config/sessions.sqlite'),
+  client: new Database(path.join(__dirname, 'config', 'sessions.sqlite')),
   expired: {
     clear: true,
     intervalMs: 900000 // 15 minutes
@@ -93,6 +93,9 @@ app.use('/emailPreview', require('./routes/emailPreview'));
 app.use('/deleted', require('./routes/deletedRoute'));
 app.use('/status', require('./routes/status'));
 app.use('/sessions', require('./routes/sessions'));
+app.use('/notifications', require('./routes/notifications'));
+app.use('/notificationsAdmin', require('./routes/notificationsAdmin'));
+app.use('/configHistory', require('./routes/configHistory'));
 
 // Configuration loaded at startup
 let config = {

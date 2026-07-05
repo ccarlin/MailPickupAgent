@@ -10,6 +10,7 @@ const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, 'GeoLite2-Country.mmdb'));
 const config = require('./config');
 const metrics = require('./metrics');
+const notifications = require('./notifications');
 
 const QUARANTINE_DIR = config.QUARANTINE_DIR;
 const DELETED_DIR = config.DELETED_DIR;
@@ -607,6 +608,13 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await quarantineEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+
+      // Send push notifications
+      notifications.notifyQuarantine({
+        from: fromAddr,
+        subject: subjectText,
+        recipientAddresses: recipientAddresses
+      }).catch(err => tools.logError(`Push notification failed: ${err.message}`));
     } 
     // No threshold reached release email
     else {
@@ -750,6 +758,69 @@ function purgeOldFiles() {
   logDirs.forEach(d => purgeDir(d, logCutoff, d.label));
 
   tools.logData(`Purge complete: ${purgedCount} file(s) removed`);
+
+  purgeOldBackups();
+}
+
+function purgeOldBackups() {
+  const maxCount = Number(config.BACKUP_MAX_COUNT) || 5;
+  const maxDays = Number(config.BACKUP_MAX_DAYS) || 90;
+  const cutoff = Date.now() - maxDays * 24 * 60 * 60 * 1000;
+  const configDir = path.join(__dirname, 'config');
+  let purgedCount = 0;
+
+  if (!fs.existsSync(configDir)) return;
+
+  let entries;
+  try {
+    entries = fs.readdirSync(configDir);
+  } catch (err) {
+    tools.logError(`Purge: error reading config directory ${configDir}: ${err.message}`);
+    return;
+  }
+
+  const bakFiles = entries
+    .filter(e => e.endsWith('.bak'))
+    .map(e => {
+      const fullPath = path.join(configDir, e);
+      try {
+        return { name: e, fullPath, mtime: fs.statSync(fullPath).mtimeMs };
+      } catch { return null; }
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.mtime - b.mtime);
+
+  const remaining = [];
+  for (const file of bakFiles) {
+    if (file.mtime < cutoff) {
+      try {
+        fs.unlinkSync(file.fullPath);
+        purgedCount++;
+        tools.logData(`Purge: removed expired backup ${file.fullPath}`);
+      } catch (err) {
+        tools.logError(`Purge: error removing ${file.fullPath}: ${err.message}`);
+      }
+    } else {
+      remaining.push(file);
+    }
+  }
+
+  if (remaining.length > maxCount) {
+    const toRemove = remaining.length - maxCount;
+    for (let i = 0; i < toRemove; i++) {
+      try {
+        fs.unlinkSync(remaining[i].fullPath);
+        purgedCount++;
+        tools.logData(`Purge: removed excess backup ${remaining[i].fullPath}`);
+      } catch (err) {
+        tools.logError(`Purge: error removing ${remaining[i].fullPath}: ${err.message}`);
+      }
+    }
+  }
+
+  if (purgedCount > 0) {
+    tools.logData(`Purge backups complete: ${purgedCount} backup(s) removed (max ${maxCount}, max ${maxDays} days)`);
+  }
 }
 
 //Show usage instructions when no arguments or --help is provided, or when arguments are invalid. Also supports a --test mode to send a test email to verify configuration.
@@ -777,6 +848,7 @@ module.exports = {
   quarantineEmail,
   scoreKeywordFilters,
   purgeOldFiles,
+  purgeOldBackups,
   wipeall,
   recentlyReleased
 };

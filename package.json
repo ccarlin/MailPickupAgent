@@ -1,6 +1,6 @@
 {
   "name": "mail-pickup-agent",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "A Node.js executable that acts as a mail pickup agent for MailEnable, intercepting emails and routing them to quarantine or release.",
   "main": "index.js",
   "bin": {
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node index.js",
     "server": "node server.js",
-    "postinstall": "node -e \"const f=require('fs'),p=f.existsSync('config/rules.json'),s=f.existsSync('config/rules.json.sample');if(!p&&s){f.copyFileSync('config/rules.json.sample','config/rules.json');console.log('Created config/rules.json from sample. Edit it or use the rules editor to configure your rules.');}\"",
+    "postinstall": "node install.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "node index.js --test",
@@ -42,6 +42,7 @@
     "postal-mime": "^2.7.4",
     "pug": "^3.0.4",
     "spamassassin-client": "^1.3.0",
+    "web-push": "^3.6.7",
     "xss": "^1.0.15"
   },
   "devDependencies": {

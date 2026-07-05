@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const config = require('../config');
 const { hashPassword, verifyPassword } = require('../middleware/hash');
+const { purgeOldBackups } = require('../index');
 
 const router = express.Router();
 
@@ -72,6 +73,9 @@ router.post('/api/config/save', (req, res) => {
       const backupFile = `${configPath}_${Date.now().toString()}.bak`;
       fs.copyFileSync(configPath, backupFile);
     }
+
+    // Enforce backup retention limits
+    purgeOldBackups();
 
     // Read existing env config and merge with new values
     let existing = {};

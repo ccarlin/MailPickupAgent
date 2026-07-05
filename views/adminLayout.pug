@@ -4,6 +4,7 @@ html(lang='en')
     meta(charset='UTF-8')
     meta(name='viewport', content='width=device-width, initial-scale=1.0')
     link(rel='stylesheet' href='/css/style.css')
+    link(rel='stylesheet' href='/css/admin.css')
     meta(name='description', content='MailPickupAgent')
     meta(name='keywords', content='MailPickupAgent, CCarlin.com, Mailenable, tools')
     title Mail Pickup Agent
@@ -373,6 +374,7 @@ html(lang='en')
         }
       }
     
+    script(src='/scripts/notifications.js')
     block scripts
     script.
       document.addEventListener('DOMContentLoaded', function() {
@@ -500,6 +502,18 @@ html(lang='en')
                 onclick="window.open('/configEditor', '_blank'); return false;"
               )
               span Configuration
+          li.menu-item
+            a(href='/notificationsAdmin')
+              i.fas.fa-bell(title="Notifications" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px; cursor:pointer;"
+                onclick="window.open('/notificationsAdmin', '_blank'); return false;"
+              )
+              span Notifications
+          li.menu-item
+            a(href='/configHistory')
+              i.fas.fa-history(title="Config History" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px; cursor:pointer;"
+                onclick="window.open('/configHistory', '_blank'); return false;"
+              )
+              span Config History
           li.menu-item
             a(href='/sessions')
               i.fas.fa-users(title="Active Sessions" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:18px; cursor:pointer;"

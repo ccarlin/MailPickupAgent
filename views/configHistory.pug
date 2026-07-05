@@ -1,0 +1,451 @@
+extends adminLayout
+
+block css
+    style.
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { margin-bottom: 8px; }
+        .header-bar h1 { margin: 0; }
+
+        .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+        .tab { padding: 10px 24px; cursor: pointer; font-weight: 600; font-size: 14px; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.2s, border-color 0.2s; }
+        .tab:hover { color: #333; }
+        .tab.active { color: #1a73e8; border-bottom-color: #1a73e8; background: #eff6ff; }
+        .tab .count { font-size: 12px; background: #e2e8f0; padding: 1px 8px; border-radius: 10px; margin-left: 6px; color: #666; }
+        .tab.active .count { background: #e0f2fe; color: #1a73e8; }
+
+        .backup-layout { display: flex; gap: 20px; }
+        .backup-list { width: 320px; flex-shrink: 0; background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; max-height: 70vh; display: flex; flex-direction: column; }
+        .backup-list-header { padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #ddd; font-weight: 600; font-size: 14px; color: #333; flex-shrink: 0; }
+        .backup-list-body { overflow-y: auto; flex: 1; }
+        .backup-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
+        .backup-item:hover { background: #f0f7ff; }
+        .backup-item.selected { background: #e0f2fe; border-left: 3px solid #1a73e8; }
+        .backup-item .backup-date { font-size: 13px; font-weight: 600; color: #1e293b; }
+        .backup-item .backup-info { font-size: 11px; color: #94a3b8; margin-top: 2px; display: flex; gap: 12px; }
+        .backup-item .backup-info span { display: inline-flex; align-items: center; gap: 4px; }
+        .backup-empty { padding: 32px 16px; text-align: center; color: #94a3b8; font-size: 13px; }
+
+        .backup-viewer { flex: 1; min-width: 0; }
+        .viewer-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8fafc; border: 1px solid #ddd; border-radius: 8px 8px 0 0; border-bottom: none; gap: 12px; flex-wrap: wrap; }
+        .viewer-toolbar .info { font-size: 13px; color: #475569; }
+        .viewer-toolbar .info strong { color: #1e293b; }
+        .viewer-toolbar .actions { display: flex; gap: 8px; }
+        .viewer-tabs { display: flex; border: 1px solid #ddd; border-bottom: none; background: #fff; }
+        .viewer-tab { padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; color: #666; border-bottom: 2px solid transparent; }
+        .viewer-tab.active { color: #1a73e8; border-bottom-color: #1a73e8; background: #eff6ff; }
+        .viewer-tab:hover:not(.active) { color: #333; }
+        .viewer-content { border: 1px solid #ddd; border-radius: 0 0 8px 8px; background: #fff; overflow: hidden; }
+        .viewer-content .empty-state { padding: 48px 16px; text-align: center; color: #94a3b8; font-size: 14px; }
+
+        .diff-container { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 60vh; overflow-y: auto; }
+        .diff-line { display: flex; padding: 0 8px; min-height: 20px; }
+        .diff-line .ln { width: 40px; flex-shrink: 0; text-align: right; padding-right: 8px; color: #94a3b8; user-select: none; }
+        .diff-line .ln-old { color: #ef4444; }
+        .diff-line .ln-new { color: #22c55e; }
+        .diff-line .code { flex: 1; white-space: pre-wrap; word-break: break-all; padding-left: 8px; }
+        .diff-line.added { background: #dcfce7; }
+        .diff-line.added .code { color: #166534; }
+        .diff-line.removed { background: #fee2e2; }
+        .diff-line.removed .code { color: #991b1b; }
+        .diff-line.unchanged { background: #fff; }
+        .diff-line.unchanged .code { color: #475569; }
+
+        .raw-viewer { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; padding: 16px; overflow-x: auto; max-height: 60vh; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+        .raw-viewer .line-number { color: #94a3b8; margin-right: 12px; user-select: none; display: inline-block; width: 36px; text-align: right; }
+
+
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .modal { background: #fff; border-radius: 8px; padding: 24px; min-width: 400px; max-width: 500px; }
+        .modal h3 { margin-bottom: 12px; }
+        .modal p { font-size: 14px; color: #475569; margin-bottom: 20px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .modal .btn:focus-visible { outline: 2px solid #1a73e8; outline-offset: 2px; }
+    link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
+
+block scripts
+    script.
+        let backupData = { rules: [], settings: [] };
+        let currentType = 'settings';
+        let selectedBackup = null;
+
+        function showToast(message, type) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2500);
+        }
+
+        function showConfirm(message) {
+            return new Promise(resolve => {
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = '<div class="modal"><h3>Confirm</h3><p>' + escapeHtml(message) + '</p><div class="modal-actions"><button class="btn btn-outline" id="confirmNoBtn">No</button><button class="btn btn-danger" id="confirmYesBtn">Yes</button></div></div>';
+                document.body.appendChild(overlay);
+
+                const noBtn = overlay.querySelector('#confirmNoBtn');
+                const yesBtn = overlay.querySelector('#confirmYesBtn');
+
+                function cleanup(result) {
+                    overlay.remove();
+                    resolve(result);
+                }
+
+                noBtn.addEventListener('click', () => cleanup(false));
+                yesBtn.addEventListener('click', () => cleanup(true));
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) cleanup(false);
+                });
+                noBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') cleanup(false);
+                });
+                yesBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') cleanup(true);
+                });
+
+                noBtn.focus();
+            });
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            return (bytes / 1024).toFixed(1) + ' KB';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function normalizeJson(text) {
+            try {
+                const parsed = JSON.parse(text);
+                return JSON.stringify(parsed, (key, value) => {
+                    if (Array.isArray(value)) return value;
+                    if (typeof value === 'object' && value !== null) {
+                        const sorted = {};
+                        Object.keys(value).sort().forEach(k => { sorted[k] = value[k]; });
+                        return sorted;
+                    }
+                    return value;
+                }, 2);
+            } catch {
+                return text;
+            }
+        }
+
+        function diffLines(oldText, newText) {
+            const oldLines = oldText.split('\n');
+            const newLines = newText.split('\n');
+
+            const m = oldLines.length;
+            const n = newLines.length;
+            const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    if (oldLines[i - 1] === newLines[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    } else {
+                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                    }
+                }
+            }
+
+            const result = [];
+            let i = m, j = n;
+            while (i > 0 || j > 0) {
+                if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+                    result.unshift({ type: 'unchanged', oldLine: i, newLine: j, text: oldLines[i - 1] });
+                    i--; j--;
+                } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+                    result.unshift({ type: 'added', oldLine: null, newLine: j, text: newLines[j - 1] });
+                    j--;
+                } else {
+                    result.unshift({ type: 'removed', oldLine: i, newLine: null, text: oldLines[i - 1] });
+                    i--;
+                }
+            }
+            return result;
+        }
+
+        function renderDiff(diffLines_data) {
+            let html = '<div class="diff-container">';
+            let oldLn = 0, newLn = 0;
+            diffLines_data.forEach(line => {
+                if (line.type === 'unchanged') { oldLn++; newLn++; }
+                else if (line.type === 'added') { newLn++; }
+                else if (line.type === 'removed') { oldLn++; }
+                const cls = line.type;
+                const oldNum = line.oldLine ? line.oldLine : '';
+                const newNum = line.newLine ? line.newLine : '';
+                html += '<div class="diff-line ' + cls + '"><span class="ln ln-old">' + oldNum + '</span><span class="ln ln-new">' + newNum + '</span><span class="code">' + escapeHtml(line.text) + '</span></div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function renderRaw(text) {
+            const normalized = normalizeJson(text);
+            const lines = normalized.split('\n');
+            let html = '<div class="raw-viewer">';
+            lines.forEach((line, idx) => {
+                const num = idx + 1;
+                html += '<div><span class="line-number">' + num + '</span>' + escapeHtml(line) + '</div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function renderBackupList() {
+            const container = document.getElementById('backupListBody');
+            const items = backupData[currentType] || [];
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = '<div class="backup-empty">No backups found. Save ' + (currentType === 'settings' ? 'settings' : 'rules') + ' to create one.</div>';
+                return;
+            }
+
+            items.forEach(backup => {
+                const div = document.createElement('div');
+                div.className = 'backup-item' + (selectedBackup && selectedBackup.filename === backup.filename ? ' selected' : '');
+                div.innerHTML = '<div class="backup-date">' + backup.date + '</div><div class="backup-info"><span>' + backup.readableSize + '</span></div>';
+                if (backup.env) {
+                    const badge = document.createElement('span');
+                    badge.style.cssText = 'font-size:10px;background:#e2e8f0;padding:1px 6px;border-radius:4px;color:#64748b;';
+                    badge.textContent = backup.env;
+                    div.querySelector('.backup-info').appendChild(badge);
+                }
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-danger btn-sm';
+                delBtn.textContent = 'Delete';
+                delBtn.style.marginLeft = 'auto';
+                delBtn.style.padding = '2px 8px';
+                delBtn.style.fontSize = '11px';
+                delBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const confirmed = await showConfirm('Delete backup from ' + backup.date + '? This cannot be undone.');
+                    if (!confirmed) return;
+                    try {
+                        const resp = await fetch('/configHistory/api/backup', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ file: backup.filename })
+                        });
+                        const data = await resp.json();
+                        if (!resp.ok) throw new Error(data.message || 'Delete failed');
+                        if (selectedBackup && selectedBackup.filename === backup.filename) {
+                            selectedBackup = null;
+                            document.getElementById('restoreBtn').disabled = true;
+                            document.getElementById('viewerToolbar').querySelector('.info').textContent = 'Select a backup to view';
+                            document.getElementById('viewerContent').innerHTML = '<div class="empty-state">Select a backup from the list to view changes</div>';
+                            document.getElementById('viewerTabs').style.display = 'none';
+                        }
+                        showToast(data.message, 'success');
+                        loadBackups();
+                    } catch (err) {
+                        showToast('Delete failed: ' + err.message, 'error');
+                    }
+                });
+                div.querySelector('.backup-info').appendChild(delBtn);
+                div.addEventListener('click', () => {
+                    selectedBackup = backup;
+                    renderBackupList();
+                    loadBackupContent(backup);
+                });
+                container.appendChild(div);
+            });
+        }
+
+        async function loadBackupContent(backup) {
+            const viewerContent = document.getElementById('viewerContent');
+            const toolbar = document.getElementById('viewerToolbar');
+
+            toolbar.querySelector('.info').textContent = 'Loading...';
+            document.getElementById('restoreBtn').disabled = true;
+
+            try {
+                const [backupResp, currentResp] = await Promise.all([
+                    fetch('/configHistory/api/backup/content?file=' + encodeURIComponent(backup.filename)),
+                    fetch('/configHistory/api/current?type=' + currentType)
+                ]);
+
+                if (!backupResp.ok) throw new Error('Failed to load backup');
+                if (!currentResp.ok) throw new Error('Failed to load current');
+
+                const backupData_ = await backupResp.json();
+                const currentData = await currentResp.json();
+
+                const oldContent = backupData_.content;
+                const newContent = currentData.content;
+
+                toolbar.querySelector('.info').innerHTML = '<strong>' + backup.date + '</strong> &mdash; ' + backup.readableSize;
+                document.getElementById('restoreBtn').disabled = false;
+
+                showDiffView(oldContent, newContent);
+            } catch (err) {
+                console.error(err);
+                toolbar.querySelector('.info').textContent = 'Error loading backup';
+                viewerContent.innerHTML = '<div class="empty-state">Failed to load backup content</div>';
+            }
+        }
+
+        function showDiffView(oldContent, newContent) {
+            const viewerContent = document.getElementById('viewerContent');
+            const viewerTabs = document.getElementById('viewerTabs');
+            viewerTabs.style.display = 'flex';
+
+            const normOld = normalizeJson(oldContent);
+            const normNew = normalizeJson(newContent);
+            const diffs = diffLines(normOld, normNew);
+            let added = 0, removed = 0;
+            diffs.forEach(d => { if (d.type === 'added') added++; else if (d.type === 'removed') removed++; });
+
+            const tabDiff = viewerTabs.querySelector('.tab-diff');
+            const tabOld = viewerTabs.querySelector('.tab-old');
+            const tabNew = viewerTabs.querySelector('.tab-new');
+
+            tabDiff.textContent = 'Diff (' + added + ' added, ' + removed + ' removed)';
+            tabOld.textContent = 'Old (backup)';
+            tabNew.textContent = 'New (current)';
+
+            function setActiveTab(active) {
+                [tabDiff, tabOld, tabNew].forEach(t => t.classList.remove('active'));
+                active.classList.add('active');
+                if (active === tabDiff) {
+                    viewerContent.innerHTML = renderDiff(diffs);
+                } else if (active === tabOld) {
+                    viewerContent.innerHTML = renderRaw(oldContent);
+                } else {
+                    viewerContent.innerHTML = renderRaw(newContent);
+                }
+            }
+
+            tabDiff.onclick = () => setActiveTab(tabDiff);
+            tabOld.onclick = () => setActiveTab(tabOld);
+            tabNew.onclick = () => setActiveTab(tabNew);
+
+            setActiveTab(tabDiff);
+        }
+
+        function switchTab(type) {
+            currentType = type;
+            selectedBackup = null;
+            document.getElementById('restoreBtn').disabled = true;
+            document.getElementById('viewerToolbar').querySelector('.info').textContent = 'Select a backup to view';
+
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tab-' + type).classList.add('active');
+
+            const viewerContent = document.getElementById('viewerContent');
+            viewerContent.innerHTML = '<div class="empty-state">Select a backup from the list to view changes</div>';
+            document.getElementById('viewerTabs').style.display = 'none';
+
+            renderBackupList();
+        }
+
+        async function restoreBackup() {
+            if (!selectedBackup) return;
+
+            const confirmed = await showConfirm('Restore the backup from ' + selectedBackup.date + '? The current ' + (currentType === 'settings' ? 'settings' : 'rules') + ' will be backed up first.');
+            if (!confirmed) return;
+
+            const restoreBtn = document.getElementById('restoreBtn');
+            restoreBtn.disabled = true;
+            restoreBtn.textContent = 'Restoring...';
+
+            try {
+                const resp = await fetch('/configHistory/api/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: currentType, file: selectedBackup.filename })
+                });
+
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || 'Restore failed');
+
+                showToast(data.message, 'success');
+
+                const viewerContent = document.getElementById('viewerContent');
+                const toolbar = document.getElementById('viewerToolbar');
+                viewerContent.innerHTML = '<div class="empty-state">Backup restored. Refresh the page to see updated backup list.</div>';
+                toolbar.querySelector('.info').textContent = 'Restored successfully';
+                restoreBtn.textContent = 'Restored';
+            } catch (err) {
+                showToast('Restore failed: ' + err.message, 'error');
+                restoreBtn.disabled = false;
+                restoreBtn.textContent = 'Restore This Version';
+            }
+        }
+
+        async function loadBackups() {
+            try {
+                const resp = await fetch('/configHistory/api/backups');
+                if (!resp.ok) throw new Error('Failed to load backups');
+                backupData = await resp.json();
+                const countSettings = document.getElementById('countSettings');
+                const countRules = document.getElementById('countRules');
+                if (countSettings) countSettings.textContent = backupData.settings.length;
+                if (countRules) countRules.textContent = backupData.rules.length;
+                renderBackupList();
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to load backup list', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.type));
+            });
+
+            document.getElementById('restoreBtn').addEventListener('click', restoreBackup);
+
+            const hb = document.querySelector('.header-bar');
+            const scroller = document.querySelector('.right-column');
+            if (hb && scroller) {
+                scroller.addEventListener('scroll', () => hb.classList.toggle('scrolled', scroller.scrollTop > 0));
+            }
+
+            loadBackups();
+        });
+
+block content
+    .container
+        .header-bar
+            div
+                span#lastSaved(style='font-size:13px;color:#888;')
+            div(style='display:flex;align-items:center;gap:12px;')
+                button#restoreBtn.btn.btn-warning(disabled) Restore This Version
+
+        .tabs
+            .tab.tab-settings.active(data-type='settings')
+                | Settings Backups
+                span#countSettings.count 0
+            .tab.tab-rules(data-type='rules')
+                | Rules Backups
+                span#countRules.count 0
+
+        .backup-layout
+            .backup-list
+                .backup-list-header Backup Files
+                .backup-list-body#backupListBody
+                    .backup-empty Loading...
+            .backup-viewer
+                .viewer-toolbar#viewerToolbar
+                    .info Select a backup to view
+                    .actions
+                .viewer-tabs#viewerTabs(style='display:none;')
+                    .viewer-tab.tab-diff.active Diff
+                    .viewer-tab.tab-old Old (backup)
+                    .viewer-tab.tab-new New (current)
+                .viewer-content#viewerContent
+                    .empty-state Select a backup from the list to view changes
