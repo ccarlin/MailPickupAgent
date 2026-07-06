@@ -204,6 +204,7 @@ function getKeywordText(parsed, filter) {
         return '';
       }
     }
+    case '5': return parsed.from?.address || '';
     default: return [subject, body].filter(Boolean).join('\n');
   }
 }
@@ -392,6 +393,8 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
     aiResponse = await queryOllama(aiPrompt);
     // Strip markdown code fences and trim
     aiResponse = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    // LLMs sometimes emit literal newlines inside JSON string values, breaking JSON.parse
+    aiResponse = aiResponse.replace(/[\r\n]+/g, ' ');
     let parsedJson;
     try {
       parsedJson = JSON.parse(aiResponse);

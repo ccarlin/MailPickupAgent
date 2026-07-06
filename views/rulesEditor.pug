@@ -452,7 +452,7 @@ block scripts
         }
 
         function scopeLabel(scope) {
-            const map = { '1': 'Body', '2': 'Subject', '3': 'Full', '4': 'Headers' };
+            const map = { '1': 'Body', '2': 'Subject', '3': 'Full', '4': 'Headers', '5': 'Sender' };
             return map[scope] || scope || 'Unknown';
         }
 
@@ -467,7 +467,7 @@ block scripts
                 { name: 'Recipient', label: 'Recipient', type: 'text', value: '', placeholder: 'admin (empty for all)' },
                 { name: 'Score', label: 'Score', type: 'number', value: '1', placeholder: 'Numeric score' },
                 { name: 'FilterType', label: 'Filter Type', type: 'select', value: '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
-                { name: 'SearchScope', label: 'Search Scope', type: 'select', value: '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }] },
+                { name: 'SearchScope', label: 'Search Scope', type: 'select', value: '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }, { value: '5', label: 'Sender' }] },
                 { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: '0', options: [{ value: '0', label: 'Any match' }, { value: '1', label: 'Starts with' }, { value: '2', label: 'Ends with' }, { value: '3', label: 'Whole word' }] },
                 { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
                 { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: '1', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
@@ -507,7 +507,7 @@ block scripts
                 { name: 'Recipient', label: 'Recipient', type: 'text', value: item.Recipient || '', placeholder: 'admin (empty for all)' },
                 { name: 'Score', label: 'Score', type: 'number', value: item.Score || '1', placeholder: 'Numeric score' },
                 { name: 'FilterType', label: 'Filter Type', type: 'select', value: item.FilterType || '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
-                { name: 'SearchScope', label: 'Search Scope', type: 'select', value: item.SearchScope || '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }] },
+                { name: 'SearchScope', label: 'Search Scope', type: 'select', value: item.SearchScope || '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }, { value: '5', label: 'Sender' }] },
                 { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: item.FilterMatchType || '0', options: [{ value: '0', label: 'Any match' }, { value: '1', label: 'Starts with' }, { value: '2', label: 'Ends with' }, { value: '3', label: 'Whole word' }] },
                 { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: item.FilterCaseSensitive || '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
                 { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: item.FilterExpressionType || '1', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
