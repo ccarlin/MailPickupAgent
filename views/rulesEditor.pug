@@ -426,12 +426,12 @@ block scripts
             const table = document.createElement('table');
             table.className = 'combo-grid';
             const thead = document.createElement('thead');
-            thead.innerHTML = '<tr><th>Name</th><th>Recipient</th><th>Expression</th><th>Score</th><th>Scope</th><th>Comment</th><th></th></tr>';
+            thead.innerHTML = '<tr><th>Name</th><th>Recipient</th><th>Expression</th><th>Score</th><th>Scope</th><th>ExprType</th><th>MatchType</th><th>Case</th><th>Comment</th><th></th></tr>';
             table.appendChild(thead);
             const tbody = document.createElement('tbody');
             arr.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td>' + (item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + (item.Comment || '') + '</td>';
+                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td>' + (item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + expTypeLabel(item.FilterExpressionType) + '</td><td>' + matchTypeLabel(item.FilterMatchType) + '</td><td>' + (String(item.FilterCaseSensitive || '') === '1' ? 'Yes' : 'No') + '</td><td>' + (item.Comment || '') + '</td>';
                 const tdActions = document.createElement('td');
                 tdActions.className = 'cell-actions';
                 const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editKeywordFilter(parent, key, index, item));
@@ -456,8 +456,13 @@ block scripts
             return map[scope] || scope || 'Unknown';
         }
 
-        function filterTypeLabel(t) {
-            return t === '0' ? 'Regex' : t === '1' ? 'Plain' : t || 'Unknown';
+        function expTypeLabel(t) {
+            return t === '1' ? 'Regex' : t === '0' ? 'Text' : t || '?';
+        }
+
+        function matchTypeLabel(t) {
+            const map = { '0': 'Any', '1': 'Starts', '2': 'Ends', '3': 'Word' };
+            return map[t] || t || 'Any';
         }
 
         function addKeywordFilter(parent, key) {
@@ -466,18 +471,16 @@ block scripts
                 { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: '', placeholder: 'Regex or plain text', fullWidth: true },
                 { name: 'Recipient', label: 'Recipient', type: 'text', value: '', placeholder: 'admin (empty for all)' },
                 { name: 'Score', label: 'Score', type: 'number', value: '1', placeholder: 'Numeric score' },
-                { name: 'FilterType', label: 'Filter Type', type: 'select', value: '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
                 { name: 'SearchScope', label: 'Search Scope', type: 'select', value: '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }, { value: '5', label: 'Sender' }] },
+                { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: '1', options: [{ value: '0', label: 'Simple (text match)' }, { value: '1', label: 'Complex (regex)' }] },
                 { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: '0', options: [{ value: '0', label: 'Any match' }, { value: '1', label: 'Starts with' }, { value: '2', label: 'Ends with' }, { value: '3', label: 'Whole word' }] },
                 { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
-                { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: '1', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
                 { name: 'Comment', label: 'Comment', type: 'text', value: '', placeholder: 'Optional comment', fullWidth: true }
             ], (values) => {
                 if (!values.FilterName.trim()) { showToast('Filter name is required', 'error'); return; }
                 if (!values.FilterExpression.trim()) { showToast('Expression is required', 'error'); return; }
                 const filter = {
                 FilterName: values.FilterName.trim(),
-                FilterType: values.FilterType,
                 SearchScope: values.SearchScope,
                 FilterExpression: values.FilterExpression,
                 FilterExpressionType: values.FilterExpressionType,
@@ -506,11 +509,10 @@ block scripts
                 { name: 'FilterExpression', label: 'Expression', type: 'textarea', value: item.FilterExpression || '', placeholder: 'Regex or plain text', fullWidth: true },
                 { name: 'Recipient', label: 'Recipient', type: 'text', value: item.Recipient || '', placeholder: 'admin (empty for all)' },
                 { name: 'Score', label: 'Score', type: 'number', value: item.Score || '1', placeholder: 'Numeric score' },
-                { name: 'FilterType', label: 'Filter Type', type: 'select', value: item.FilterType || '0', options: [{ value: '0', label: 'Regex' }, { value: '1', label: 'Plain' }] },
                 { name: 'SearchScope', label: 'Search Scope', type: 'select', value: item.SearchScope || '1', options: [{ value: '1', label: 'Body' }, { value: '2', label: 'Subject' }, { value: '3', label: 'Full' }, { value: '4', label: 'Headers' }, { value: '5', label: 'Sender' }] },
+                { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: item.FilterExpressionType || '1', options: [{ value: '0', label: 'Simple (text match)' }, { value: '1', label: 'Complex (regex)' }] },
                 { name: 'FilterMatchType', label: 'Match Type', type: 'select', value: item.FilterMatchType || '0', options: [{ value: '0', label: 'Any match' }, { value: '1', label: 'Starts with' }, { value: '2', label: 'Ends with' }, { value: '3', label: 'Whole word' }] },
                 { name: 'FilterCaseSensitive', label: 'Case Sensitive', type: 'select', value: item.FilterCaseSensitive || '0', options: [{ value: '0', label: 'No' }, { value: '1', label: 'Yes' }] },
-                { name: 'FilterExpressionType', label: 'Expression Type', type: 'select', value: item.FilterExpressionType || '1', options: [{ value: '0', label: 'Simple' }, { value: '1', label: 'Complex' }] },
                 { name: 'Comment', label: 'Comment', type: 'text', value: item.Comment || '', placeholder: 'Optional comment', fullWidth: true }
             ], (values) => {
                 if (!values.FilterName.trim()) { showToast('Filter name is required', 'error'); return; }
@@ -518,7 +520,6 @@ block scripts
                 const arr = rulesData[parent][key];
                 arr[index] = {
                 FilterName: values.FilterName.trim(),
-                FilterType: values.FilterType,
                 SearchScope: values.SearchScope,
                 FilterExpression: values.FilterExpression,
                 FilterExpressionType: values.FilterExpressionType,
