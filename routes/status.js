@@ -3,10 +3,10 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const net = require('net');
-const tools = require('../tools');
-const metrics = require('../metrics');
+const tools = require('../app/tools');
+const metrics = require('../app/metrics');
 const config = require('../config');
-const notifications = require('../notifications');
+const notifications = require('../app/notifications');
 const { purgeOldFiles } = require('../index');
 
 function checkTcpPort(host, port, timeout = 3000) {

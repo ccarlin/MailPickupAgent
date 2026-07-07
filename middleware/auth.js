@@ -1,4 +1,4 @@
-const tools = require('../tools');
+const tools = require('../app/tools');
 
 function isLocalhost(req) {
   const ip = req.ip || req.socket.remoteAddress || '';

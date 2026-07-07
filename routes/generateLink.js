@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const tools = require('../tools');
+const tools = require('../app/tools');
 
 router.get('/', function(req, res) {
   res.render('generateLink', { title: 'Generate Access Link', link: null });

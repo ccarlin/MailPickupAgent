@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 const config = require('../config');
-const tools = require('../tools');
+const tools = require('../app/tools');
 const PostalMime = require('postal-mime');
 const { recentlyReleased } = require('../index.js');
 
