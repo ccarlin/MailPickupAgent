@@ -7,7 +7,7 @@ const SQLiteStore = require('better-sqlite3-session-store')(session);
 const Database = require('better-sqlite3');
 const cookieParser = require('cookie-parser');
 const app = express();
-const { buildAllTestEmails, processEmail, wipeall } = require('./index.js');
+const { buildAllTestEmails, processEmail, wipeall, loadRules } = require('./index.js');
 const tools = require('./tools');
 const appConfig = require('./config');
 const { verifyPassword } = require('./middleware/hash');
@@ -186,7 +186,7 @@ app.get('/api/help', (req, res) => {
 // GET Route - Get current configuration
 app.get('/api/config', (req, res) => {
   res.status(200).json({
-    rules: config.rules,
+    rules: loadRules(),
     settings: config.settings
   });
 });
@@ -250,8 +250,8 @@ app.post('/api/process', async (req, res) => {
       return res.status(404).json({ error: 'Message file not found', path: messagePath });
     }
 
-    // Process synchronously
-    await processEmail(controlFilePath, messagePath, config.rules);
+    // Process synchronously — load fresh rules each time so editor saves take effect immediately
+    await processEmail(controlFilePath, messagePath, loadRules());
     
     const result = {
       timestamp: new Date().toISOString(),

@@ -75,10 +75,9 @@
       },
       {
         "FilterName": "LIVE_PORN",
-        "FilterType": "0",
         "SearchScope": "1",
         "FilterExpression": "\\blive .{0,9}(?:fuck(?:ing)?|sex|naked|girls?|virgins?|teens?|porno?)\\b",
-        "FilterExpressionType": "0",
+        "FilterExpressionType": "1",
         "FilterMatchType": "0",
         "FilterCaseSensitive": "0",
         "Score": "2"
@@ -315,10 +314,9 @@
       },
       {
         "FilterName": "EXCUSE_24",
-        "FilterType": "0",
         "SearchScope": "1",
         "FilterExpression": "you(?:'ve|'re| have| are)? receiv(?:e|ed|ing) this (?:advertisement|offer|special|recurring|paid).{0,16}\\b(?:by either|because)",
-        "FilterExpressionType": "0",
+        "FilterExpressionType": "1",
         "FilterMatchType": "0",
         "FilterCaseSensitive": "0",
         "Score": "1"

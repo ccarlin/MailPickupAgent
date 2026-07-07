@@ -102,7 +102,6 @@ router.post('/api/rules/generate-keyword-filter', async (req, res) => {
 - Score: string number 1-10 based on severity
 - Comment: short description of what this detects
 - Recipient: if the rule is to apply only for a name recipient put that name here otherwise leave blank
-
 Output ONLY the JSON object, no markdown or explanation.`;
 
   try {
@@ -136,7 +135,7 @@ Output ONLY the JSON object, no markdown or explanation.`;
     filter.FilterExpression = String(filter.FilterExpression).trim();
     filter.Score = String(filter.Score || '1');
     filter.FilterType = String(filter.FilterType === '1' ? '1' : '0');
-    filter.SearchScope = String(['1', '2', '3', '4'].includes(filter.SearchScope) ? filter.SearchScope : '1');
+    filter.SearchScope = String(['1', '2', '3', '4', '5'].includes(filter.SearchScope) ? filter.SearchScope : '1');
     filter.FilterExpressionType = '1';
     filter.FilterMatchType = '0';
     filter.FilterCaseSensitive = String(filter.FilterCaseSensitive === '1' ? '1' : '0');
