@@ -21,7 +21,7 @@ function checkTcpPort(host, port, timeout = 3000) {
 }
 
 router.get('/', function(req, res) {
-  res.render('status', { title: 'Server Status' });
+  res.render('status-sse', { title: 'Server Status (Live)' });
 });
 
 function countActiveUsers(sessionStore) {
@@ -149,6 +149,7 @@ async function buildStatusData(req) {
       notificationCount: notifications.getAll().length
     };
   } catch (err) {
+    tools.logError(`Error building status data: ${err.message}`);
     return null;
   }
 }

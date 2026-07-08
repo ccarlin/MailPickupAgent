@@ -430,6 +430,7 @@ block scripts
 
     $(document).ready(function() {
       var eventSource = new EventSource('/status/events');
+      var connectTimeout = null;
 
       eventSource.addEventListener('full', function(e) {
         var data = JSON.parse(e.data);
@@ -438,19 +439,39 @@ block scripts
         $('.status-card .count').each(function() {
           $(this).data('prev', $(this).text());
         });
+        clearConnectTimeout();
         setConnectionState('connected');
       });
 
       eventSource.addEventListener('update', function(e) {
         var data = JSON.parse(e.data);
         updateMetricUI(data);
+        clearConnectTimeout();
         setConnectionState('connected');
       });
+
+      function clearConnectTimeout() {
+        if (connectTimeout) {
+          clearTimeout(connectTimeout);
+          connectTimeout = null;
+        }
+      }
+
+      function startConnectTimeout() {
+        if (connectTimeout) return;
+        connectTimeout = setTimeout(function() {
+          setConnectionState('disconnected');
+          $('#server-offline').show();
+          $('#status-content').hide();
+        }, 15000);
+      }
 
       eventSource.onerror = function() {
         if (eventSource.readyState === EventSource.CONNECTING) {
           setConnectionState('connecting');
+          startConnectTimeout();
         } else {
+          clearConnectTimeout();
           setConnectionState('disconnected');
           $('#server-offline').show();
           $('#status-content').hide();
@@ -458,6 +479,7 @@ block scripts
       };
 
       eventSource.onopen = function() {
+        clearConnectTimeout();
         setConnectionState('connected');
         $('#server-offline').hide();
         $('#status-content').show();
