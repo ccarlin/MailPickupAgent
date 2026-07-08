@@ -92,6 +92,9 @@ app.use('/QuarantineLog', require('./routes/QuarantineLog'));
 app.use('/emailPreview', require('./routes/emailPreview'));
 app.use('/deleted', require('./routes/deletedRoute'));
 app.use('/status', require('./routes/status'));
+app.get('/statussse', (req, res) => {
+  res.render('status-sse', { title: 'Server Status (Live)' });
+});
 app.use('/sessions', require('./routes/sessions'));
 app.use('/notifications', require('./routes/notifications'));
 app.use('/notificationsAdmin', require('./routes/notificationsAdmin'));
