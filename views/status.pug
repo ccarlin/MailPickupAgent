@@ -234,6 +234,12 @@ block content
             span.icon-badge#badge-pending 0
         .count#count-pending 0
         .label Mail Queue
+      .status-card.quarantined.clickable#card-quarantined
+        .icon
+          i.fas.fa-shield-alt
+        .count#count-quarantined 0
+        .label Quarantined
+        .sub-label (since last restart)
       .status-card.whitelisted.clickable#card-whitelisted
         .icon
           i.fas.fa-check-circle
@@ -245,12 +251,6 @@ block content
           i.fas.fa-ban
         .count#count-blacklisted 0
         .label Blacklisted
-        .sub-label (since last restart)
-      .status-card.quarantined.clickable#card-quarantined
-        .icon
-          i.fas.fa-shield-alt
-        .count#count-quarantined 0
-        .label Quarantined
         .sub-label (since last restart)
       .status-card.released.clickable#card-released
         .icon
