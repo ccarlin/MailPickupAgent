@@ -316,6 +316,7 @@ block scripts
         $('#badge-pending').text(data.pending).toggleClass('show', data.pending > 0);
         $('#count-pending').text(data.pending);
         $('#card-pending').toggleClass('alert', data.pending > 0);
+        changeIcon(data.pending);
       }
       if (data.uptimeFormatted !== undefined) $('#count-uptime').text(data.uptimeFormatted);
       $('#last-update-time').text(new Date().toLocaleTimeString());
@@ -517,6 +518,9 @@ block scripts
       });
       $('#card-pending').on('click', function() {
         window.open('/mailq?user=all', '_blank');
+      });
+      $('#card-deleted').on('click', function() {
+        window.open('/deleted', '_blank');
       });
       $('#card-purge').on('click', togglePurge);
       if (localStorage.getItem('autoPurge') === 'true') {
