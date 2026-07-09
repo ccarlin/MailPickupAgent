@@ -215,12 +215,6 @@ block content
         i.fas.fa-undo-alt
         | Reset Stats
     .status-grid
-      .status-card.uptime
-        .icon
-          i.fas.fa-clock
-        .count#count-uptime 0
-        .label Uptime
-        .sub-label (since last restart)
       .status-card.total.clickable#card-total
         .icon
           i.fas.fa-envelope
@@ -296,6 +290,12 @@ block content
         .count#count-sa-time N/A
         .label Avg SA Check
         .sub-label#sub-sa-time (0 checks)
+      .status-card.uptime
+        .icon
+          i.fas.fa-clock
+        .count#count-uptime 0
+        .label Uptime
+        .sub-label (since last restart)
       .status-card.users.clickable#card-users
         .icon
           i.fas.fa-users
