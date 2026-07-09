@@ -21,7 +21,7 @@ function checkTcpPort(host, port, timeout = 3000) {
 }
 
 router.get('/', function(req, res) {
-  res.render('status-sse', { title: 'Server Status (Live)' });
+  res.render('status', { title: 'Server Status (Live)' });
 });
 
 function countActiveUsers(sessionStore) {
@@ -74,43 +74,6 @@ function countActiveUsers(sessionStore) {
     }
   });
 }
-
-router.get('/api', async function(req, res) {
-  const data = metrics.getMetrics();
-  let pendingCount = 0;
-  try {
-    const files = fs.readdirSync(config.QUARANTINE_DIR);
-    pendingCount = files.filter(f => path.extname(f).toLowerCase() === '.h00').length;
-  } catch (err) {
-    tools.logError(`Error reading quarantine directory: ${config.QUARANTINE_DIR} - ${err.message}`);
-  }
-
-  const aiEnabled = !!(config.AI_CHECK_ENABLED && config.AI_CHECK_ENABLED !== 'false');
-  const saEnabled = !!(config.SPAMASSASSIN_ENABLED && config.SPAMASSASSIN_ENABLED !== 'false');
-
-  const [aiRunning, saRunning] = await Promise.all([
-    aiEnabled ? checkTcpPort(config.OLLAMA_HOST || 'localhost', Number(config.OLLAMA_PORT) || 11434) : false,
-    saEnabled ? checkTcpPort(config.SPAMASSASSIN_HOST || 'localhost', Number(config.SPAMASSASSIN_PORT) || 783) : false,
-  ]);
-
-  res.json({
-    totalProcessed: data.totalProcessed,
-    whitelisted: data.whitelisted,
-    blacklisted: data.blacklisted,
-    quarantined: data.quarantined,
-    released: data.released,
-    pending: pendingCount,
-    uptime: data.uptime,
-    uptimeFormatted: metrics.formatUptime(data.uptime),
-    serverStartTime: data.serverStartTime,
-    aiEnabled,
-    aiRunning,
-    saEnabled,
-    saRunning,
-    loggedInUsers: await countActiveUsers(req.sessionStore),
-    notificationCount: notifications.getAll().length
-  });
-});
 
 async function buildStatusData(req) {
   try {
