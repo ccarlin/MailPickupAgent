@@ -317,6 +317,11 @@ block content
 block scripts
   script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
   script.
+    function formatMs(ms) {
+      if (ms === null) return 'N/A';
+      return ms >= 1000 ? (ms / 1000).toFixed(1) + 's' : ms + 'ms';
+    }
+
     function updateUI(data) {
       $('#count-total').text(data.totalProcessed);
       $('#count-whitelisted').text(data.whitelisted);
@@ -351,15 +356,15 @@ block scripts
       }
       $('#count-notifications').text(data.notificationCount);
       if (data.aiAvgTime !== undefined) {
-        $('#count-ai-time').text(data.aiAvgTime !== null ? data.aiAvgTime + 'ms' : 'N/A');
+        $('#count-ai-time').text(formatMs(data.aiAvgTime));
         $('#sub-ai-time').text('(' + data.aiCheckCount + ' checks)');
       }
       if (data.saAvgTime !== undefined) {
-        $('#count-sa-time').text(data.saAvgTime !== null ? data.saAvgTime + 'ms' : 'N/A');
+        $('#count-sa-time').text(formatMs(data.saAvgTime));
         $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
       }
       if (data.avgProcessTime !== undefined) {
-        $('#count-process-time').text(data.avgProcessTime !== null ? data.avgProcessTime + 'ms' : 'N/A');
+        $('#count-process-time').text(formatMs(data.avgProcessTime));
         $('#sub-process-time').text('(' + data.processCount + ' emails)');
       }
       $('#last-update-time').text(new Date().toLocaleTimeString());
@@ -383,11 +388,11 @@ block scripts
       }
       if (data.uptimeFormatted !== undefined) $('#count-uptime').text(data.uptimeFormatted);
       if (data.aiAvgTime !== undefined) {
-        $('#count-ai-time').text(data.aiAvgTime !== null ? data.aiAvgTime + 'ms' : 'N/A');
+        $('#count-ai-time').text(formatMs(data.aiAvgTime));
         $('#sub-ai-time').text('(' + data.aiCheckCount + ' checks)');
       }
       if (data.saAvgTime !== undefined) {
-        $('#count-sa-time').text(data.saAvgTime !== null ? data.saAvgTime + 'ms' : 'N/A');
+        $('#count-sa-time').text(formatMs(data.saAvgTime));
         $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
       }
       if (data.avgProcessTime !== undefined) {
