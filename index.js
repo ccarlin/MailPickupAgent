@@ -231,7 +231,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 3.1 Quarantine check - SpamAssassin
     if (SPAMASSASSIN_ENABLED) {
+      const saStart = performance.now();
       const saResult = await checkSpamAssassin(message);
+      metrics.addTiming('sa', performance.now() - saStart);
       if (saResult) {
         tools.logData(`SpamAssassin score: ${saResult.score}/${saResult.threshold}, isSpam: ${saResult.isSpam}`);
         spamScore += saResult.score;
@@ -246,7 +248,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 3.2 Quarantine check - AI spam check
     if (AI_CHECK_ENABLED) {
+      const aiStart = performance.now();
       const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
+      metrics.addTiming('ai', performance.now() - aiStart);
       spamScore += aiScore;    
       spamInfoParts.push(`AI Check(${aiScore})`);
       if (aiSpamResult) {      
@@ -282,6 +286,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Released', spamDetailInfo, spamScore);
       tools.logData(`Releasing email with score ${spamScore}.`);
     }
+    metrics.addTiming('process', performance.now() - processStartTime);
   } catch (error) {
     tools.logError(`Error processing ${controlFilePath} and ${messagePath}: ${error}`);
   }

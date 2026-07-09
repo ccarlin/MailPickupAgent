@@ -5,10 +5,9 @@ block css
   style.
     .status-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 1rem;
       margin-bottom: 1.5rem;
-      max-width: calc(180px * 6 + 1rem * 5);
       margin: 0 auto;
     }
     .status-card {
@@ -48,6 +47,9 @@ block css
     .status-card.pending .icon { color: #f97316; }
     .status-card.users .icon { color: #06b6d4; }
     .status-card.notifications .icon { color: #a855f7; }
+    .status-card.ai-time .icon { color: #8b5cf6; }
+    .status-card.sa-time .icon { color: #f97316; }
+    .status-card.process-time .icon { color: #0ea5e9; }
 
     .status-card .icon-wrap {
       position: relative;
@@ -133,6 +135,11 @@ block css
       margin-bottom: 1rem;
       min-height: 2rem;
     }
+    #status-header .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
     .last-update {
       font-size: 0.8rem;
       color: #94a3b8;
@@ -172,6 +179,25 @@ block css
       100% { background: #fff; }
     }
 
+    .reset-stats-btn {
+      background: none;
+      border: 1px solid #e2e8f0;
+      color: #ef4444;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .reset-stats-btn:hover {
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+
 block content
   #server-offline
     h1 &#9888; Server Offline
@@ -179,18 +205,41 @@ block content
 
   #status-content
     #status-header
-      .last-update
-        | Last updated: <span id="last-update-time">--</span>
-      .connection-status
-        span.dot#connection-dot.connecting
-        span#connection-text Connecting...
+      .header-left
+        .connection-status
+          span.dot#connection-dot.connecting
+          span#connection-text Connecting...
+        .last-update
+          | Last updated: <span id="last-update-time">--</span>
+      button.reset-stats-btn#btn-reset-stats(title="Reset all metrics to zero")
+        i.fas.fa-undo-alt
+        | Reset Stats
     .status-grid
+      .status-card.uptime
+        .icon
+          i.fas.fa-clock
+        .count#count-uptime 0
+        .label Uptime
+        .sub-label (since last restart)
       .status-card.total.clickable#card-total
         .icon
           i.fas.fa-envelope
         .count#count-total 0
         .label Total Processed
         .sub-label (since last restart)
+      .status-card.process-time#card-process-time
+        .icon
+          i.fas.fa-tachometer-alt
+        .count#count-process-time 0ms
+        .label Avg Process Time
+        .sub-label#sub-process-time (0 checks)
+      .status-card.pending.clickable#card-pending
+        .icon
+          .icon-wrap
+            i.fas.fa-inbox
+            span.icon-badge#badge-pending 0
+        .count#count-pending 0
+        .label Mail Queue
       .status-card.whitelisted.clickable#card-whitelisted
         .icon
           i.fas.fa-check-circle
@@ -221,19 +270,6 @@ block content
         .count#count-deleted 0
         .label Deleted
         .sub-label (since last restart)
-      .status-card.uptime
-        .icon
-          i.fas.fa-clock
-        .count#count-uptime 0
-        .label Uptime
-        .sub-label (since last restart)
-      .status-card.pending.clickable#card-pending
-        .icon
-          .icon-wrap
-            i.fas.fa-inbox
-            span.icon-badge#badge-pending 0
-        .count#count-pending 0
-        .label Mail Queue
       .status-card.service-down.hidden#card-ai
         .icon
           i.fas.fa-brain
@@ -241,6 +277,12 @@ block content
           i.fas.fa-times-circle
           |  Offline
         .label AI Check (Ollama)
+      .status-card.ai-time.hidden#card-ai-time
+        .icon
+          i.fas.fa-brain
+        .count#count-ai-time 0ms
+        .label Avg AI Check
+        .sub-label#sub-ai-time (0 checks)
       .status-card.service-down.hidden#card-sa
         .icon
           i.fas.fa-shield-halved
@@ -248,6 +290,12 @@ block content
           i.fas.fa-times-circle
           |  Offline
         .label SpamAssassin
+      .status-card.sa-time.hidden#card-sa-time
+        .icon
+          i.fas.fa-shield-halved
+        .count#count-sa-time 0ms
+        .label Avg SA Check
+        .sub-label#sub-sa-time (0 checks)
       .status-card.users.clickable#card-users
         .icon
           i.fas.fa-users
@@ -258,7 +306,6 @@ block content
           i.fas.fa-bell
         .count#count-notifications 0
         .label Notifications
-
       .status-card.purge-off.clickable#card-purge
         .icon
           i.fas.fa-broom
@@ -287,18 +334,34 @@ block scripts
         $('#count-ai').html(data.aiRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
           : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
+        $('#card-ai-time').removeClass('hidden');
       } else {
         $('#card-ai').addClass('hidden');
+        $('#card-ai-time').addClass('hidden');
       }
       if (data.saEnabled) {
         $('#card-sa').removeClass('hidden').toggleClass('service-up service-down', data.saRunning);
         $('#count-sa').html(data.saRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
           : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
+        $('#card-sa-time').removeClass('hidden');
       } else {
         $('#card-sa').addClass('hidden');
+        $('#card-sa-time').addClass('hidden');
       }
       $('#count-notifications').text(data.notificationCount);
+      if (data.aiAvgTime !== undefined) {
+        $('#count-ai-time').text(data.aiAvgTime + 'ms');
+        $('#sub-ai-time').text('(' + data.aiCheckCount + ' checks)');
+      }
+      if (data.saAvgTime !== undefined) {
+        $('#count-sa-time').text(data.saAvgTime + 'ms');
+        $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
+      }
+      if (data.avgProcessTime !== undefined) {
+        $('#count-process-time').text(data.avgProcessTime + 'ms');
+        $('#sub-process-time').text('(' + data.processCount + ' emails)');
+      }
       $('#last-update-time').text(new Date().toLocaleTimeString());
       $('#server-offline').hide();
       $('#status-content').show();
@@ -319,6 +382,18 @@ block scripts
         changeIcon(data.pending);
       }
       if (data.uptimeFormatted !== undefined) $('#count-uptime').text(data.uptimeFormatted);
+      if (data.aiAvgTime !== undefined) {
+        $('#count-ai-time').text(data.aiAvgTime + 'ms');
+        $('#sub-ai-time').text('(' + data.aiCheckCount + ' checks)');
+      }
+      if (data.saAvgTime !== undefined) {
+        $('#count-sa-time').text(data.saAvgTime + 'ms');
+        $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
+      }
+      if (data.avgProcessTime !== undefined) {
+        $('#count-process-time').text(data.avgProcessTime + 'ms');
+        $('#sub-process-time').text('(' + data.processCount + ' emails)');
+      }
       $('#last-update-time').text(new Date().toLocaleTimeString());
 
       // Highlight the changed cards
@@ -523,6 +598,16 @@ block scripts
         window.open('/deleted', '_blank');
       });
       $('#card-purge').on('click', togglePurge);
+      $('#btn-reset-stats').on('click', function() {
+        if (confirm('Reset all metrics to zero? This cannot be undone.')) {
+          $.post('/status/api/reset-stats').done(function() {
+            // Force a full refresh from the server
+            location.reload();
+          }).fail(function() {
+            alert('Failed to reset stats.');
+          });
+        }
+      });
       if (localStorage.getItem('autoPurge') === 'true') {
         updatePurgeCard(true);
         runPurge();

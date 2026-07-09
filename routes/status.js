@@ -107,8 +107,14 @@ async function buildStatusData(req) {
       serverStartTime: data.serverStartTime,
       aiEnabled,
       aiRunning,
+      aiAvgTime: data.aiAvgTime,
+      aiCheckCount: data.aiCheckCount,
       saEnabled,
       saRunning,
+      saAvgTime: data.saAvgTime,
+      saCheckCount: data.saCheckCount,
+      avgProcessTime: data.avgProcessTime,
+      processCount: data.processCount,
       loggedInUsers: await countActiveUsers(req.sessionStore),
       notificationCount: notifications.getAll().length
     };
@@ -159,7 +165,13 @@ router.get('/events', function(req, res) {
       deleted: data.deleted,
       pending: pendingCount,
       uptime: data.uptime,
-      uptimeFormatted: metrics.formatUptime(data.uptime)
+      uptimeFormatted: metrics.formatUptime(data.uptime),
+      aiAvgTime: data.aiAvgTime,
+      aiCheckCount: data.aiCheckCount,
+      saAvgTime: data.saAvgTime,
+      saCheckCount: data.saCheckCount,
+      avgProcessTime: data.avgProcessTime,
+      processCount: data.processCount
     });
   };
 
@@ -187,6 +199,17 @@ router.post('/api/purge', function(req, res) {
     res.json({ success: true, message: 'Purge completed' });
   } catch (err) {
     tools.logError(`Auto-purge failed: ${err.message}`);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.post('/api/reset-stats', function(req, res) {
+  try {
+    metrics.resetMetrics();
+    tools.logData('Stats reset from status page');
+    res.json({ success: true, message: 'Stats reset to zero' });
+  } catch (err) {
+    tools.logError(`Stats reset failed: ${err.message}`);
     res.status(500).json({ success: false, message: err.message });
   }
 });
