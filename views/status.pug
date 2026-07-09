@@ -230,7 +230,7 @@ block content
       .status-card.process-time#card-process-time
         .icon
           i.fas.fa-tachometer-alt
-        .count#count-process-time 0ms
+        .count#count-process-time N/A
         .label Avg Process Time
         .sub-label#sub-process-time (0 checks)
       .status-card.pending.clickable#card-pending
@@ -359,7 +359,7 @@ block scripts
         $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
       }
       if (data.avgProcessTime !== undefined) {
-        $('#count-process-time').text(data.avgProcessTime + 'ms');
+        $('#count-process-time').text(data.avgProcessTime !== null ? data.avgProcessTime + 'ms' : 'N/A');
         $('#sub-process-time').text('(' + data.processCount + ' emails)');
       }
       $('#last-update-time').text(new Date().toLocaleTimeString());

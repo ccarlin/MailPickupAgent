@@ -45,7 +45,7 @@ function getMetrics() {
   const m = { ...metrics, uptime: Date.now() - metrics.serverStartTime };
   m.aiAvgTime = m.aiCheckCount > 0 ? Math.round(m.aiCheckTimeTotal / m.aiCheckCount) : null;
   m.saAvgTime = m.saCheckCount > 0 ? Math.round(m.saCheckTimeTotal / m.saCheckCount) : null;
-  m.avgProcessTime = m.processCount > 0 ? Math.round(m.processTimeTotal / m.processCount) : 0;
+  m.avgProcessTime = m.processCount > 0 ? Math.round(m.processTimeTotal / m.processCount) : null;
   return m;
 }
 
