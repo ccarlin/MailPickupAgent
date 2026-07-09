@@ -127,7 +127,7 @@ block css
 
     #status-header {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
       margin-bottom: 1rem;
       min-height: 2rem;
@@ -137,6 +137,22 @@ block css
       color: #94a3b8;
     }
 
+    .connection-status {
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .connection-status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .connection-status .dot.connected { background: #22c55e; }
+    .connection-status .dot.disconnected { background: #ef4444; }
+    .connection-status .dot.connecting { background: #f59e0b; }
+
     .status-card.purge-on .icon { color: #22c55e; }
     .status-card.purge-off .icon { color: #94a3b8; }
     .status-card.purge-on .count { color: #16a34a; font-size: 0.9rem; }
@@ -145,7 +161,15 @@ block css
       font-size: 0.7rem;
       color: #94a3b8;
       margin-top: 0.15rem;
-    }    
+    }
+
+    .highlight-flash {
+      animation: highlight-flash 1s ease-out;
+    }
+    @keyframes highlight-flash {
+      0% { background: #dbeafe; }
+      100% { background: #fff; }
+    }
 
 block content
   #server-offline
@@ -156,6 +180,9 @@ block content
     #status-header
       .last-update
         | Last updated: <span id="last-update-time">--</span>
+      .connection-status
+        span.dot#connection-dot.connecting
+        span#connection-text Connecting...
     .status-grid
       .status-card.total.clickable#card-total
         .icon
@@ -236,49 +263,62 @@ block content
 block scripts
   script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
   script.
-    function fetchStatus() {
-      $.get('/status/api')
-        .done(function(data) {
-          $('#count-total').text(data.totalProcessed);
-          $('#count-whitelisted').text(data.whitelisted);
-          $('#count-blacklisted').text(data.blacklisted);
-          $('#count-quarantined').text(data.quarantined);
-          $('#badge-pending').text(data.pending).toggleClass('show', data.pending > 0);
-          $('#count-released').text(data.released);
-          $('#count-uptime').text(data.uptimeFormatted);
-          $('#count-users').text(data.loggedInUsers);
-          $('#count-pending').text(data.pending);
-          $('#card-pending').toggleClass('alert', data.pending > 0);
-          if (data.aiEnabled) {
-            $('#card-ai').removeClass('hidden').toggleClass('service-up service-down', data.aiRunning);
-            $('#count-ai').html(data.aiRunning
-              ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
-              : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
-          } else {
-            $('#card-ai').addClass('hidden');
-          }
-          if (data.saEnabled) {
-            $('#card-sa').removeClass('hidden').toggleClass('service-up service-down', data.saRunning);
-            $('#count-sa').html(data.saRunning
-              ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
-              : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
-          } else {
-            $('#card-sa').addClass('hidden');
-          }
-          $('#count-notifications').text(data.notificationCount);
-          $('#last-update-time').text(new Date().toLocaleTimeString());
-          $('#server-offline').hide();
-          $('#status-content').show();
-          changeIcon(data.pending);
-        })
-        .fail(function(jqXHR) {
-          if (jqXHR.status === 401) {
-            window.location.href = '/login';
-            return;
-          }
-          $('#server-offline').show();
-          $('#status-content').hide();
-        });
+    function updateUI(data) {
+      $('#count-total').text(data.totalProcessed);
+      $('#count-whitelisted').text(data.whitelisted);
+      $('#count-blacklisted').text(data.blacklisted);
+      $('#count-quarantined').text(data.quarantined);
+      $('#badge-pending').text(data.pending).toggleClass('show', data.pending > 0);
+      $('#count-released').text(data.released);
+      $('#count-uptime').text(data.uptimeFormatted);
+      $('#count-users').text(data.loggedInUsers);
+      $('#count-pending').text(data.pending);
+      $('#card-pending').toggleClass('alert', data.pending > 0);
+      if (data.aiEnabled) {
+        $('#card-ai').removeClass('hidden').toggleClass('service-up service-down', data.aiRunning);
+        $('#count-ai').html(data.aiRunning
+          ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
+          : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
+      } else {
+        $('#card-ai').addClass('hidden');
+      }
+      if (data.saEnabled) {
+        $('#card-sa').removeClass('hidden').toggleClass('service-up service-down', data.saRunning);
+        $('#count-sa').html(data.saRunning
+          ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
+          : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
+      } else {
+        $('#card-sa').addClass('hidden');
+      }
+      $('#count-notifications').text(data.notificationCount);
+      $('#last-update-time').text(new Date().toLocaleTimeString());
+      $('#server-offline').hide();
+      $('#status-content').show();
+      changeIcon(data.pending);
+    }
+
+    function updateMetricUI(data) {
+      if (data.totalProcessed !== undefined) $('#count-total').text(data.totalProcessed);
+      if (data.whitelisted !== undefined) $('#count-whitelisted').text(data.whitelisted);
+      if (data.blacklisted !== undefined) $('#count-blacklisted').text(data.blacklisted);
+      if (data.quarantined !== undefined) $('#count-quarantined').text(data.quarantined);
+      if (data.released !== undefined) $('#count-released').text(data.released);
+      if (data.pending !== undefined) {
+        $('#badge-pending').text(data.pending).toggleClass('show', data.pending > 0);
+        $('#count-pending').text(data.pending);
+        $('#card-pending').toggleClass('alert', data.pending > 0);
+      }
+      if (data.uptimeFormatted !== undefined) $('#count-uptime').text(data.uptimeFormatted);
+      $('#last-update-time').text(new Date().toLocaleTimeString());
+
+      // Highlight the changed cards
+      $('.status-card .count').filter(function() {
+        return $(this).text() !== $(this).data('prev');
+      }).each(function() {
+        $(this).data('prev', $(this).text());
+        $(this).closest('.status-card').addClass('highlight-flash');
+        setTimeout(() => $(this).closest('.status-card').removeClass('highlight-flash'), 1000);
+      });
     }
 
     let autoPurgeTimer = null;
@@ -302,7 +342,6 @@ block scripts
         const now = new Date().toLocaleString();
         localStorage.setItem('purgeLastRun', now);
         updatePurgeCard(true);
-        fetchStatus();
       });
     }
 
@@ -373,9 +412,79 @@ block scripts
       img.src = '/img/MailPickupAgent.png';
     }
 
+    function setConnectionState(state) {
+      var dot = $('#connection-dot');
+      var text = $('#connection-text');
+      dot.removeClass('connected disconnected connecting');
+      if (state === 'connected') {
+        dot.addClass('connected');
+        text.text('Connected');
+      } else if (state === 'disconnected') {
+        dot.addClass('disconnected');
+        text.text('Disconnected');
+      } else {
+        dot.addClass('connecting');
+        text.text('Connecting...');
+      }
+    }
+
     $(document).ready(function() {
-      fetchStatus();
-      setInterval(fetchStatus, 60000);
+      var eventSource = new EventSource('/status/events');
+      var connectTimeout = null;
+
+      eventSource.addEventListener('full', function(e) {
+        var data = JSON.parse(e.data);
+        updateUI(data);
+        // Store current values for change detection
+        $('.status-card .count').each(function() {
+          $(this).data('prev', $(this).text());
+        });
+        clearConnectTimeout();
+        setConnectionState('connected');
+      });
+
+      eventSource.addEventListener('update', function(e) {
+        var data = JSON.parse(e.data);
+        updateMetricUI(data);
+        clearConnectTimeout();
+        setConnectionState('connected');
+      });
+
+      function clearConnectTimeout() {
+        if (connectTimeout) {
+          clearTimeout(connectTimeout);
+          connectTimeout = null;
+        }
+      }
+
+      function startConnectTimeout() {
+        if (connectTimeout) return;
+        connectTimeout = setTimeout(function() {
+          setConnectionState('disconnected');
+          $('#server-offline').show();
+          $('#status-content').hide();
+        }, 15000);
+      }
+
+      eventSource.onerror = function() {
+        if (eventSource.readyState === EventSource.CONNECTING) {
+          setConnectionState('connecting');
+          startConnectTimeout();
+        } else {
+          clearConnectTimeout();
+          setConnectionState('disconnected');
+          $('#server-offline').show();
+          $('#status-content').hide();
+        }
+      };
+
+      eventSource.onopen = function() {
+        clearConnectTimeout();
+        setConnectionState('connected');
+        $('#server-offline').hide();
+        $('#status-content').show();
+      };
+
       $('#card-total').on('click', function() {
         window.open('/MailLog?today=true', '_blank');
       });

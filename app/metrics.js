@@ -1,3 +1,5 @@
+const EventEmitter = require('events');
+
 const metrics = {
   totalProcessed: 0,
   whitelisted: 0,
@@ -7,12 +9,15 @@ const metrics = {
   serverStartTime: Date.now()
 };
 
+const eventBus = new EventEmitter();
+
 function increment(counter) {
   // eslint-disable-next-line no-prototype-builtins
   if (metrics.hasOwnProperty(counter)) {
     metrics[counter]++;
   }
   metrics.totalProcessed++;
+  eventBus.emit('metricUpdate', counter);
 }
 
 function getMetrics() {
@@ -42,4 +47,4 @@ function formatUptime(ms) {
   return parts.join(' ');
 }
 
-module.exports = { increment, getMetrics, resetMetrics, formatUptime };
+module.exports = { increment, getMetrics, resetMetrics, formatUptime, eventBus };

@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const PostalMime = require('postal-mime');
-const config = require('./config');
+const config = require('../config');
 
 module.exports = {
     getSortedFiles: function(imageDir, fileType, sortType, callback) {        

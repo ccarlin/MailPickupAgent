@@ -4,7 +4,7 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const tools = require('./tools');
 
-const keysFile = path.join(__dirname, 'config', '.vapid-keys.json');
+const keysFile = path.join(__dirname, '..', 'config', '.vapid-keys.json');
 let vapidKeys;
 
 if (fs.existsSync(keysFile)) {
@@ -30,7 +30,7 @@ webpush.setVapidDetails(
   vapidKeys.privateKey
 );
 
-const dbPath = path.join(__dirname, 'config', 'sessions.sqlite');
+const dbPath = path.join(__dirname, '..', 'config', 'sessions.sqlite');
 const db = new Database(dbPath);
 
 // Initialize the notifications table

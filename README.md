@@ -256,7 +256,6 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 | `POST` | `/api/wipeall` | Delete all logs, quarantined, and deleted emails |
 | `GET` | `/api/spam-reason/:type/:id` | Get spam reason for a quarantined/deleted email |
 | `GET` | `/api/email-lookup/:id` | Look up email by ID across quarantine and deleted directories |
-| `GET` | `/status/api` | Get live server metrics, service health, and status |
 | `POST` | `/status/api/purge` | Trigger manual purge |
 | `GET` | `/notifications/public-key` | Get VAPID public key for push subscriptions |
 | `POST` | `/notifications/subscribe` | Subscribe to quarantine push notifications |

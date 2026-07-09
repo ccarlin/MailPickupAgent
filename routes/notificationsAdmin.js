@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const notifications = require('../notifications');
-const tools = require('../tools');
+const notifications = require('../app/notifications');
+const tools = require('../app/tools');
 
 router.get('/', function(req, res) {
   try {
