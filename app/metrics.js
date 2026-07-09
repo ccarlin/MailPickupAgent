@@ -43,8 +43,8 @@ function addTiming(type, ms) {
 
 function getMetrics() {
   const m = { ...metrics, uptime: Date.now() - metrics.serverStartTime };
-  m.aiAvgTime = m.aiCheckCount > 0 ? Math.round(m.aiCheckTimeTotal / m.aiCheckCount) : 0;
-  m.saAvgTime = m.saCheckCount > 0 ? Math.round(m.saCheckTimeTotal / m.saCheckCount) : 0;
+  m.aiAvgTime = m.aiCheckCount > 0 ? Math.round(m.aiCheckTimeTotal / m.aiCheckCount) : null;
+  m.saAvgTime = m.saCheckCount > 0 ? Math.round(m.saCheckTimeTotal / m.saCheckCount) : null;
   m.avgProcessTime = m.processCount > 0 ? Math.round(m.processTimeTotal / m.processCount) : 0;
   return m;
 }

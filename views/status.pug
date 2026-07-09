@@ -280,7 +280,7 @@ block content
       .status-card.ai-time.hidden#card-ai-time
         .icon
           i.fas.fa-brain
-        .count#count-ai-time 0ms
+        .count#count-ai-time N/A
         .label Avg AI Check
         .sub-label#sub-ai-time (0 checks)
       .status-card.service-down.hidden#card-sa
@@ -293,7 +293,7 @@ block content
       .status-card.sa-time.hidden#card-sa-time
         .icon
           i.fas.fa-shield-halved
-        .count#count-sa-time 0ms
+        .count#count-sa-time N/A
         .label Avg SA Check
         .sub-label#sub-sa-time (0 checks)
       .status-card.users.clickable#card-users
@@ -351,11 +351,11 @@ block scripts
       }
       $('#count-notifications').text(data.notificationCount);
       if (data.aiAvgTime !== undefined) {
-        $('#count-ai-time').text(data.aiAvgTime + 'ms');
+        $('#count-ai-time').text(data.aiAvgTime !== null ? data.aiAvgTime + 'ms' : 'N/A');
         $('#sub-ai-time').text('(' + data.aiCheckCount + ' checks)');
       }
       if (data.saAvgTime !== undefined) {
-        $('#count-sa-time').text(data.saAvgTime + 'ms');
+        $('#count-sa-time').text(data.saAvgTime !== null ? data.saAvgTime + 'ms' : 'N/A');
         $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
       }
       if (data.avgProcessTime !== undefined) {
@@ -383,11 +383,11 @@ block scripts
       }
       if (data.uptimeFormatted !== undefined) $('#count-uptime').text(data.uptimeFormatted);
       if (data.aiAvgTime !== undefined) {
-        $('#count-ai-time').text(data.aiAvgTime + 'ms');
+        $('#count-ai-time').text(data.aiAvgTime !== null ? data.aiAvgTime + 'ms' : 'N/A');
         $('#sub-ai-time').text('(' + data.aiCheckCount + ' checks)');
       }
       if (data.saAvgTime !== undefined) {
-        $('#count-sa-time').text(data.saAvgTime + 'ms');
+        $('#count-sa-time').text(data.saAvgTime !== null ? data.saAvgTime + 'ms' : 'N/A');
         $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
       }
       if (data.avgProcessTime !== undefined) {
