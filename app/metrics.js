@@ -6,6 +6,7 @@ const metrics = {
   blacklisted: 0,
   quarantined: 0,
   released: 0,
+  deleted: 0,
   serverStartTime: Date.now()
 };
 
@@ -30,6 +31,7 @@ function resetMetrics() {
   metrics.blacklisted = 0;
   metrics.quarantined = 0;
   metrics.released = 0;
+  metrics.deleted = 0;
   metrics.serverStartTime = Date.now();
 }
 

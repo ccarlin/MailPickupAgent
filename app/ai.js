@@ -35,7 +35,7 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
   let aiScore = 0;
   let aiResponse;
   try {
-    const promptPath = path.join(__dirname, '..', 'config', 'aiSpamCheckPrompt.md');
+    const promptPath = path.resolve(__dirname, '..', config.AI_SPAM_CHECK_PROMPT_PATH || 'config/aiSpamCheckPrompt.md');
     let promptTemplate = fs.readFileSync(promptPath, 'utf8');
     const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
     const aiPrompt = promptTemplate + emailContent;

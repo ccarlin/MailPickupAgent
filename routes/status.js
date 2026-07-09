@@ -100,6 +100,7 @@ async function buildStatusData(req) {
       blacklisted: data.blacklisted,
       quarantined: data.quarantined,
       released: data.released,
+      deleted: data.deleted,
       pending: pendingCount,
       uptime: data.uptime,
       uptimeFormatted: metrics.formatUptime(data.uptime),
@@ -155,6 +156,7 @@ router.get('/events', function(req, res) {
       blacklisted: data.blacklisted,
       quarantined: data.quarantined,
       released: data.released,
+      deleted: data.deleted,
       pending: pendingCount,
       uptime: data.uptime,
       uptimeFormatted: metrics.formatUptime(data.uptime)

@@ -43,6 +43,7 @@ block css
     .status-card.blacklisted .icon { color: #ef4444; }
     .status-card.quarantined .icon { color: #f59e0b; }
     .status-card.released .icon { color: #10b981; }
+    .status-card.deleted .icon { color: #64748b; }
     .status-card.uptime .icon { color: #8b5cf6; }
     .status-card.pending .icon { color: #f97316; }
     .status-card.users .icon { color: #06b6d4; }
@@ -214,6 +215,12 @@ block content
         .count#count-released 0
         .label Released
         .sub-label (since last restart)
+      .status-card.deleted.clickable#card-deleted
+        .icon
+          i.fas.fa-trash-alt
+        .count#count-deleted 0
+        .label Deleted
+        .sub-label (since last restart)
       .status-card.uptime
         .icon
           i.fas.fa-clock
@@ -270,6 +277,7 @@ block scripts
       $('#count-quarantined').text(data.quarantined);
       $('#badge-pending').text(data.pending).toggleClass('show', data.pending > 0);
       $('#count-released').text(data.released);
+      $('#count-deleted').text(data.deleted);
       $('#count-uptime').text(data.uptimeFormatted);
       $('#count-users').text(data.loggedInUsers);
       $('#count-pending').text(data.pending);
@@ -303,6 +311,7 @@ block scripts
       if (data.blacklisted !== undefined) $('#count-blacklisted').text(data.blacklisted);
       if (data.quarantined !== undefined) $('#count-quarantined').text(data.quarantined);
       if (data.released !== undefined) $('#count-released').text(data.released);
+      if (data.deleted !== undefined) $('#count-deleted').text(data.deleted);
       if (data.pending !== undefined) {
         $('#badge-pending').text(data.pending).toggleClass('show', data.pending > 0);
         $('#count-pending').text(data.pending);
