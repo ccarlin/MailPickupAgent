@@ -152,6 +152,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', wlResult.reason, 0);
       tools.logData(`Sender ${fromAddr} is whitelisted, releasing`);
+      metrics.addTiming('process', performance.now() - processStartTime);
       return;
     }
 
@@ -167,6 +168,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted TLD(99) - ${blResult.detail}`], 99, countryResult.country, 'Blacklisted TLD(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+      metrics.addTiming('process', performance.now() - processStartTime);
       return;
     }
 
@@ -178,6 +180,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted Sender(99) - ${blResult.detail}`], 99, countryResult.country, 'Blacklisted Sender(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+      metrics.addTiming('process', performance.now() - processStartTime);
       return;
     }
 
@@ -189,6 +192,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted IP(99) - ${blResult.detail}`], 99, countryResult.country, 'Blacklisted IP(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+      metrics.addTiming('process', performance.now() - processStartTime);
       return;
     }
 
@@ -200,6 +204,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
       await updateEmailHeaders(messagePath, destMessageName, [`Blacklisted Country(99) - Country ${countryResult.country}`], 99, countryResult.country, 'Blacklisted Country(99)');
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+      metrics.addTiming('process', performance.now() - processStartTime);
       return;
     }
 
@@ -213,6 +218,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
         await updateEmailHeaders(messagePath, destMessageName, [`Combo Matched(99) - Rule Matched `], 99, countryResult.country, 'Combo Matched(99)');
         await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+        metrics.addTiming('process', performance.now() - processStartTime);
         return;
       }
     }
@@ -231,7 +237,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 3.1 Quarantine check - SpamAssassin
     if (SPAMASSASSIN_ENABLED) {
+      const saStart = performance.now();
       const saResult = await checkSpamAssassin(message);
+      metrics.addTiming('sa', performance.now() - saStart);
       if (saResult) {
         tools.logData(`SpamAssassin score: ${saResult.score}/${saResult.threshold}, isSpam: ${saResult.isSpam}`);
         spamScore += saResult.score;
@@ -246,7 +254,9 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 3.2 Quarantine check - AI spam check
     if (AI_CHECK_ENABLED) {
+      const aiStart = performance.now();
       const { aiSpamResult, aiScore, aiReasons } = await checkAiSpam(fromAddr, subjectText, parsed);
+      metrics.addTiming('ai', performance.now() - aiStart);
       spamScore += aiScore;    
       spamInfoParts.push(`AI Check(${aiScore})`);
       if (aiSpamResult) {      
@@ -282,6 +292,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Released', spamDetailInfo, spamScore);
       tools.logData(`Releasing email with score ${spamScore}.`);
     }
+    metrics.addTiming('process', performance.now() - processStartTime);
   } catch (error) {
     tools.logError(`Error processing ${controlFilePath} and ${messagePath}: ${error}`);
   }

@@ -15,6 +15,7 @@
   "SMTP_PASS": "",
 
   "AI_CHECK_ENABLED": false,
+  "AI_SPAM_CHECK_PROMPT_PATH": "config/aiSpamCheckPrompt.md",
   "OLLAMA_SERVER": "localhost",
   "OLLAMA_PORT": 11434,
   "OLLAMA_MODEL": "llama3.2",

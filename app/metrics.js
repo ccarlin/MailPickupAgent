@@ -6,7 +6,14 @@ const metrics = {
   blacklisted: 0,
   quarantined: 0,
   released: 0,
-  serverStartTime: Date.now()
+  deleted: 0,
+  serverStartTime: Date.now(),
+  aiCheckTimeTotal: 0,
+  aiCheckCount: 0,
+  saCheckTimeTotal: 0,
+  saCheckCount: 0,
+  processTimeTotal: 0,
+  processCount: 0
 };
 
 const eventBus = new EventEmitter();
@@ -20,8 +27,26 @@ function increment(counter) {
   eventBus.emit('metricUpdate', counter);
 }
 
+function addTiming(type, ms) {
+  if (type === 'ai') {
+    metrics.aiCheckTimeTotal += ms;
+    metrics.aiCheckCount++;
+  } else if (type === 'sa') {
+    metrics.saCheckTimeTotal += ms;
+    metrics.saCheckCount++;
+  } else if (type === 'process') {
+    metrics.processTimeTotal += ms;
+    metrics.processCount++;
+  }
+  eventBus.emit('metricUpdate', type + 'Timing');
+}
+
 function getMetrics() {
-  return { ...metrics, uptime: Date.now() - metrics.serverStartTime };
+  const m = { ...metrics, uptime: Date.now() - metrics.serverStartTime };
+  m.aiAvgTime = m.aiCheckCount > 0 ? Math.round(m.aiCheckTimeTotal / m.aiCheckCount) : null;
+  m.saAvgTime = m.saCheckCount > 0 ? Math.round(m.saCheckTimeTotal / m.saCheckCount) : null;
+  m.avgProcessTime = m.processCount > 0 ? Math.round(m.processTimeTotal / m.processCount) : null;
+  return m;
 }
 
 function resetMetrics() {
@@ -30,7 +55,14 @@ function resetMetrics() {
   metrics.blacklisted = 0;
   metrics.quarantined = 0;
   metrics.released = 0;
+  metrics.deleted = 0;
   metrics.serverStartTime = Date.now();
+  metrics.aiCheckTimeTotal = 0;
+  metrics.aiCheckCount = 0;
+  metrics.saCheckTimeTotal = 0;
+  metrics.saCheckCount = 0;
+  metrics.processTimeTotal = 0;
+  metrics.processCount = 0;
 }
 
 function formatUptime(ms) {
@@ -47,4 +79,4 @@ function formatUptime(ms) {
   return parts.join(' ');
 }
 
-module.exports = { increment, getMetrics, resetMetrics, formatUptime, eventBus };
+module.exports = { increment, addTiming, getMetrics, resetMetrics, formatUptime, eventBus };

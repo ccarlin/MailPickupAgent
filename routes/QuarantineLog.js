@@ -63,7 +63,10 @@ router.get('/', function(req, res) {
         }
                     
         let title = "Quarantine Log";
-        res.render('QuarantineLogGrid', { title, logData: logList, dateFrom, dateTo}); 
+        let todayViewAllParams = new URLSearchParams(req.query);
+        todayViewAllParams.delete('today');
+        let todayViewAllUrl = req.baseUrl + req.path + (todayViewAllParams.toString() ? '?' + todayViewAllParams.toString() : '');
+        res.render('QuarantineLogGrid', { title, logData: logList, dateFrom, dateTo, today: !!req.query.today, todayViewAllUrl }); 
     });
 }); 
 

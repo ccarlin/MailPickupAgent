@@ -106,7 +106,10 @@ router.get('/', function(req, res) {
         let title = "EMail Analyzer";
         let currentQuery = '';
         if (req.query.today) currentQuery = '?today=true';
-        res.render('MailLogGrid', { title, logData: logList, currentTime: now, resultFilter: req.query.result || null, currentQuery, dateFrom, dateTo });
+        let todayViewAllParams = new URLSearchParams(req.query);
+        todayViewAllParams.delete('today');
+        let todayViewAllUrl = req.baseUrl + req.path + (todayViewAllParams.toString() ? '?' + todayViewAllParams.toString() : '');
+        res.render('MailLogGrid', { title, logData: logList, currentTime: now, resultFilter: req.query.result || null, currentQuery, dateFrom, dateTo, today: !!req.query.today, todayViewAllUrl });
     });  
 }); 
 

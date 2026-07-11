@@ -24,6 +24,15 @@ block css
         .field input[type="checkbox"] { width: auto; margin-top: 6px; }
         .field .hint { font-size: 11px; color: #999; margin-top: 2px; }
 
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: #fff; border-radius: 8px; max-width: 700px; width: 90%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .modal-header { padding: 14px 18px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 15px; }
+        .modal-header button { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; }
+        .modal-body { padding: 18px; overflow-y: auto; white-space: pre-wrap; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; line-height: 1.5; }
+        .btn-outline-secondary { background: #fff; border: 1px solid #aaa; color: #555; cursor: pointer; border-radius: 4px; padding: 4px 10px; font-size: 12px; }
+        .btn-outline-secondary:hover { background: #f0f0f0; }
+
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 block scripts
     script.
@@ -84,6 +93,7 @@ block scripts
                     { key: 'OLLAMA_TIMEOUT', label: 'Ollama Timeout', type: 'number', min: 1, max: 120, hint: 'Request timeout in seconds (1-120, default 5)' },
                     { key: 'AI_SPAM_POINTS', label: 'AI Spam Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points added to score when AI classifies as SPAM (0.0 - 10.0)' },
                     { key: 'AI_HAM_POINTS', label: 'AI Ham Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points removed from score when AI classifies as HAM (0.0 - 10.0)' },
+                    { key: 'AI_SPAM_CHECK_PROMPT_PATH', label: 'AI Prompt Path', hint: 'Path to the spam check prompt markdown file', hasViewBtn: true },
                 ]},
                 { key: 'spamassassin', title: 'SpamAssassin', icon: '&#x1F6E1;', description: 'Spam filtering via SpamAssassin daemon 0-15 score range', fields: [
                     { key: 'SPAMASSASSIN_ENABLED', label: 'SpamAssassin Enabled', type: 'checkbox', hint: 'Enable SpamAssassin spam checks' },
@@ -171,6 +181,16 @@ block scripts
                         fieldDiv.appendChild(hint);
                     }
 
+                    if (field.hasViewBtn) {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'btn btn-sm btn-outline-secondary';
+                        btn.style.marginTop = '6px';
+                        btn.textContent = 'View Prompt';
+                        btn.addEventListener('click', () => openPromptModal());
+                        fieldDiv.appendChild(btn);
+                    }
+
                     row.appendChild(fieldDiv);
                     body.appendChild(row);
                 });
@@ -251,6 +271,27 @@ block scripts
             }
         }
 
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) closePromptModal();
+        });
+
+        function openPromptModal() {
+            document.getElementById('promptContent').textContent = 'Loading...';
+            document.getElementById('promptModal').classList.add('show');
+            fetch('/configEditor/api/config/ai-prompt')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('promptContent').textContent = data.content || 'No content';
+                })
+                .catch(err => {
+                    document.getElementById('promptContent').textContent = 'Error loading prompt: ' + err.message;
+                });
+        }
+
+        function closePromptModal() {
+            document.getElementById('promptModal').classList.remove('show');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('saveButton').addEventListener('click', saveConfig);
             fetchConfig();
@@ -270,3 +311,10 @@ block content
                 span.env-badge(class= envClass || 'development')= envLabel || 'development'
                 button#saveButton.btn.btn-primary Save Changes
         #configContainer
+
+        #promptModal.modal-overlay
+            .modal-box
+                .modal-header
+                    span AI Spam Check Prompt
+                    button(onclick='closePromptModal()') &times;
+                .modal-body#promptContent Loading...

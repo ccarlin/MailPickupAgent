@@ -320,5 +320,13 @@ block content
                         input.mui-date-input#dateTo(type="date" value=dateTo || '')
                         button.mui-btn#btn-date-go(type="button") Go
                     input#custom-search(type="search" placeholder="Search...")
+            if today
+                .mui-filter-banner
+                    i.fas.fa-calendar-day
+                    |  Showing today's data only
+                    .mui-filter-banner-clear
+                        a(href=todayViewAllUrl)
+                            i.fas.fa-times
+                            |  View all
             .mui-divider
             #quarantine-grid

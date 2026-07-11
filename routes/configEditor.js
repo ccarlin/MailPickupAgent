@@ -96,4 +96,21 @@ router.post('/api/config/save', (req, res) => {
   }
 });
 
+// GET - return contents of AI spam check prompt file
+router.get('/api/config/ai-prompt', (req, res) => {
+  try {
+    const promptPath = config.AI_SPAM_CHECK_PROMPT_PATH
+      ? path.resolve(__dirname, '..', config.AI_SPAM_CHECK_PROMPT_PATH)
+      : path.resolve(__dirname, '..', 'config', 'aiSpamCheckPrompt.md');
+    if (!fs.existsSync(promptPath)) {
+      return res.status(404).json({ message: 'Prompt file not found' });
+    }
+    const content = fs.readFileSync(promptPath, 'utf8');
+    res.json({ content });
+  } catch (error) {
+    console.error('Error reading AI prompt file:', error);
+    res.status(500).json({ message: 'Failed to read prompt file' });
+  }
+});
+
 module.exports = router;
