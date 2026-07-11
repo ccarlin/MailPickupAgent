@@ -415,6 +415,14 @@ block content
                         a(href='/MailLog' + currentQuery)
                             i.fas.fa-times
                             |  Clear filter
+            if today
+                .mui-filter-banner
+                    i.fas.fa-calendar-day
+                    |  Showing today's data only
+                    .mui-filter-banner-clear
+                        a(href=todayViewAllUrl)
+                            i.fas.fa-times
+                            |  View all
             .mui-divider
             #mail-grid
 

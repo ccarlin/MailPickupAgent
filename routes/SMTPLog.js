@@ -211,7 +211,10 @@ router.get('/', function(req, res) {
         tools.logData(results, "INFO");
         
         let title = "SMTPLog Analyzer";
-        res.render('SMTPLogGrid', { title, logData: logList});
+        let todayViewAllParams = new URLSearchParams(req.query);
+        todayViewAllParams.delete('today');
+        let todayViewAllUrl = req.baseUrl + req.path + (todayViewAllParams.toString() ? '?' + todayViewAllParams.toString() : '');
+        res.render('SMTPLogGrid', { title, logData: logList, today: !!req.query.today, todayViewAllUrl });
     });  
 }); 
 

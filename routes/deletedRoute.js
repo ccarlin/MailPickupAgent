@@ -34,7 +34,10 @@ router.get('/', function(req, res) {
             });
         }
 
-        res.render('DeletedGrid', { title, emails, currentTime: new Date().toLocaleString(), formatTime, dateFrom, dateTo });
+        let todayViewAllParams = new URLSearchParams(req.query);
+        todayViewAllParams.delete('today');
+        let todayViewAllUrl = req.baseUrl + req.path + (todayViewAllParams.toString() ? '?' + todayViewAllParams.toString() : '');
+        res.render('DeletedGrid', { title, emails, currentTime: new Date().toLocaleString(), formatTime, dateFrom, dateTo, today: !!req.query.today, todayViewAllUrl });
     });
 });
 

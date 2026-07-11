@@ -429,6 +429,14 @@ block content
                     button.mui-filter-clear#btn-clear-filters Clear
                 .mui-filters-right
                     input#custom-search(type="search" placeholder="Search...")
+            if today
+                .mui-filter-banner
+                    i.fas.fa-calendar-day
+                    |  Showing today's data only
+                    .mui-filter-banner-clear
+                        a(href=todayViewAllUrl)
+                            i.fas.fa-times
+                            |  View all
             .mui-divider
             #smtp-grid
             .smtp-totals-row
