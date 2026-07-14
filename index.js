@@ -281,6 +281,18 @@ async function processEmail(controlFilePath, messagePath, rules) {
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await quarantineEmail(controlFilePath, messagePath, destMessageName, fromAddr);
 
+      metrics.emitQuarantine({
+        filepath: destMessageName.replace('.MAI', ''),
+        from: fromAddr,
+        subject: subjectText,
+        recipients: recipients.join(', '),
+        recipientAddresses: recipientAddresses,
+        spamScore: spamScore,
+        antiSpam: spamDetailInfo,
+        date: new Date().toLocaleString(),
+        reason: quarantineReasons.join('; ')
+      });
+
       notifications.notifyQuarantine({
         from: fromAddr,
         subject: subjectText,

@@ -79,4 +79,8 @@ function formatUptime(ms) {
   return parts.join(' ');
 }
 
-module.exports = { increment, addTiming, getMetrics, resetMetrics, formatUptime, eventBus };
+function emitQuarantine(emailInfo) {
+  eventBus.emit('quarantine', emailInfo);
+}
+
+module.exports = { increment, addTiming, getMetrics, resetMetrics, formatUptime, eventBus, emitQuarantine };
