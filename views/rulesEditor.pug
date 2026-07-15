@@ -21,6 +21,7 @@ block css
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 13px; font-family: 'Consolas', 'Courier New', monospace; }
         .list-item:last-child { border-bottom: none; }
         .list-item .value { flex: 1; word-break: break-all; padding-right: 12px; }
+        .hit-count { color: #666; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; margin-right: 12px; white-space: nowrap; }
         .list-item .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
         .list-item:hover { background: #f8f9fa; }
         .combo-grid { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -53,6 +54,7 @@ block scripts
     script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")    
     script.
         let rulesData = null;
+        let ruleHits = {};
         let collapsedSections = { whitelist: true, blacklist: true, allowedTLDs: true, scoredRules: true };
         let collapsedSubsections = { 'whitelist.senders': true, 'whitelist.ipRanges': true, 'blacklist.senders': true, 'blacklist.ipRanges': true, 'blacklist.countries': true, 'blacklist.combos': true, 'scoredRules.keywordFilters': true, 'allowedTLDs.allowedTLDs': true };
 
@@ -77,6 +79,14 @@ block scripts
 
         function confirmDelete(name) {
             return confirm('Delete "' + name + '"?');
+        }
+
+        function ruleKey(parent, key, rule) {
+            return (parent ? parent + '.' : '') + key + ':' + (typeof rule === 'string' ? rule : JSON.stringify(rule));
+        }
+
+        function hitCount(parent, key, rule) {
+            return ruleHits[ruleKey(parent, key, rule)] || 0;
         }
 
         // --- Modal helpers ---
@@ -306,6 +316,11 @@ block scripts
                 valSpan.textContent = item;
                 li.appendChild(valSpan);
 
+                const hits = document.createElement('span');
+                hits.className = 'hit-count';
+                hits.textContent = hitCount(parent, key, item) + ' hits';
+                li.appendChild(hits);
+
                 const actions = document.createElement('div');
                 actions.className = 'item-actions';
 
@@ -360,12 +375,12 @@ block scripts
             const table = document.createElement('table');
             table.className = 'combo-grid';
             const thead = document.createElement('thead');
-            thead.innerHTML = '<tr><th>Recipient</th><th>Sender</th><th>IP Address</th><th></th></tr>';
+            thead.innerHTML = '<tr><th>Recipient</th><th>Sender</th><th>IP Address</th><th>Hits</th><th></th></tr>';
             table.appendChild(thead);
             const tbody = document.createElement('tbody');
             arr.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (item.recipient || '') + '</td><td>' + (item.sender || '') + '</td><td>' + (item.ipAddress || '') + '</td>';
+                tr.innerHTML = '<td>' + (item.recipient || '') + '</td><td>' + (item.sender || '') + '</td><td>' + (item.ipAddress || '') + '</td><td>' + hitCount(parent, key, item) + '</td>';
                 const tdActions = document.createElement('td');
                 tdActions.className = 'cell-actions';
                 const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editComboItem(parent, key, index, item));
@@ -426,12 +441,12 @@ block scripts
             const table = document.createElement('table');
             table.className = 'combo-grid';
             const thead = document.createElement('thead');
-            thead.innerHTML = '<tr><th>Name</th><th>Recipient</th><th>Expression</th><th>Score</th><th>Scope</th><th>ExprType</th><th>MatchType</th><th>Case</th><th>Comment</th><th></th></tr>';
+            thead.innerHTML = '<tr><th>Name</th><th>Recipient</th><th>Expression</th><th>Score</th><th>Scope</th><th>ExprType</th><th>MatchType</th><th>Case</th><th>Comment</th><th>Hits</th><th></th></tr>';
             table.appendChild(thead);
             const tbody = document.createElement('tbody');
             arr.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td>' + (item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + expTypeLabel(item.FilterExpressionType) + '</td><td>' + matchTypeLabel(item.FilterMatchType) + '</td><td>' + (String(item.FilterCaseSensitive || '') === '1' ? 'Yes' : 'No') + '</td><td>' + (item.Comment || '') + '</td>';
+                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td>' + (item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + expTypeLabel(item.FilterExpressionType) + '</td><td>' + matchTypeLabel(item.FilterMatchType) + '</td><td>' + (String(item.FilterCaseSensitive || '') === '1' ? 'Yes' : 'No') + '</td><td>' + (item.Comment || '') + '</td><td>' + hitCount(parent, key, item) + '</td>';
                 const tdActions = document.createElement('td');
                 tdActions.className = 'cell-actions';
                 const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editKeywordFilter(parent, key, index, item));
@@ -559,6 +574,9 @@ block scripts
                 const response = await fetch('/rulesEditor/api/rules');
                 if (!response.ok) throw new Error('Failed to fetch rules');
                 rulesData = await response.json();
+                const hitsResponse = await fetch('/rulesEditor/api/rule-hits');
+                if (!hitsResponse.ok) throw new Error('Failed to fetch rule hits');
+                ruleHits = await hitsResponse.json();
                 renderAllSections();
                 document.getElementById('lastSaved').textContent = 'Loaded';
             } catch (error) {

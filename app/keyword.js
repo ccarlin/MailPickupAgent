@@ -88,19 +88,20 @@ function matchKeywordFilter(parsed, filter, recipients) {
 }
 
 function scoreKeywordFilters(parsed, filters, recipients) {
-  if (!filters || !filters.length) return { score: 0, matches: [] };
+  if (!filters || !filters.length) return { score: 0, matches: [], matchedFilters: [] };
   return filters.reduce((acc, filter) => {
     if (matchKeywordFilter(parsed, filter, recipients)) {
       const score = Number(filter.Score) || 0;
       const filterName = filter.FilterName || 'Keyword';
       tools.logData(`Keyword filter matched: "${filterName}", score: ${score}`);
+      acc.matchedFilters.push(filter);
       if (score > 0) {
         acc.score += score;
         acc.matches.push({ name: filterName, score: score });
       }
     }
     return acc;
-  }, { score: 0, matches: [] });
+  }, { score: 0, matches: [], matchedFilters: [] });
 }
 
 module.exports = { getKeywordText, matchKeywordFilter, scoreKeywordFilters };

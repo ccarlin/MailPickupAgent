@@ -1,7 +1,7 @@
 const path = require('path');
 const MMDBReader = require('mmdb-reader');
 const tools = require('./tools');
-const { matchSender, ipInRange, extractTLD, checkCombos } = require('./shared');
+const { findMatchingSender, findMatchingIpRange, extractTLD, checkCombos } = require('./shared');
 
 const mmdb = new MMDBReader(path.join(__dirname, '..', 'GeoLite2-Country.mmdb'));
 
@@ -39,13 +39,15 @@ function checkBlacklist(fromAddr, originatingIp, recipients, blacklistRules, all
   }
 
   // Blacklisted sender
-  if (matchSender(fromAddr, blacklistRules.senders)) {
-    return { matched: true, type: 'sender', score: 99, detail: `Sender ${fromAddr}` };
+  const sender = findMatchingSender(fromAddr, blacklistRules.senders);
+  if (sender !== null) {
+    return { matched: true, type: 'sender', score: 99, detail: `Sender ${fromAddr}`, ruleType: 'blacklist.senders', rule: sender };
   }
 
   // Blacklisted IP
-  if (ipInRange(originatingIp, blacklistRules.ipRanges)) {
-    return { matched: true, type: 'ip', score: 99, detail: `IP ${originatingIp}` };
+  const ipRange = findMatchingIpRange(originatingIp, blacklistRules.ipRanges);
+  if (ipRange !== null) {
+    return { matched: true, type: 'ip', score: 99, detail: `IP ${originatingIp}`, ruleType: 'blacklist.ipRanges', rule: ipRange };
   }
 
   return { matched: false, type: null };
