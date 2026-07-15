@@ -669,4 +669,44 @@ async function addSenderBlacklist(emails, listType) {
     }
 }
 
+// SSE endpoint for real-time quarantine notifications
+router.get('/events', function(req, res) {
+    const filterUser = req.query.user ? String(req.query.user).toLowerCase() : null;
+
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+    });
+
+    const sendEvent = (eventType, data) => {
+        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+
+    // Send initial connection confirmation
+    sendEvent('connected', { filterUser });
+
+    const onQuarantine = (emailInfo) => {
+        // If a user filter is set, only notify if this mailbox is a recipient
+        if (filterUser) {
+            const recipients = (emailInfo.recipients || '').toLowerCase();
+            if (!recipients.includes(filterUser)) return;
+        }
+        sendEvent('quarantine', emailInfo);
+    };
+
+    metrics.eventBus.on('quarantine', onQuarantine);
+
+    // Heartbeat to keep connection alive
+    const heartbeat = setInterval(() => {
+        res.write(': heartbeat\n\n');
+    }, 30000);
+
+    req.on('close', () => {
+        metrics.eventBus.off('quarantine', onQuarantine);
+        clearInterval(heartbeat);
+    });
+});
+
 module.exports = router;

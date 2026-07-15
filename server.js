@@ -11,12 +11,14 @@ const { buildAllTestEmails, processEmail, wipeall, loadRules } = require('./inde
 const tools = require('./app/tools');
 const appConfig = require('./config');
 const { verifyPassword } = require('./middleware/hash');
+const { version } = require('./package.json');
 const PORT = appConfig.PORT || 6245;
 let server;
 
 // View engine setup
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
+app.locals.version = version;
 
 // Middleware to parse incoming request bodies
 app.use(express.static(__dirname + '/public'));

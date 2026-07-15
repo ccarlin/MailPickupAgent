@@ -1,6 +1,6 @@
 {
   "name": "mail-pickup-agent",
-  "version": "1.9.0",
+  "version": "2.0.0",
   "description": "A Node.js executable that acts as a mail pickup agent for MailEnable, intercepting emails and routing them to quarantine or release.",
   "main": "index.js",
   "bin": {

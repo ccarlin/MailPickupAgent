@@ -4,6 +4,7 @@ const path = require('path');
 const axios = require('axios');
 const config = require('../config');
 const { purgeOldBackups } = require('../index');
+const { getAllHits } = require('../app/ruleHits');
 
 const router = express.Router();
 
@@ -21,6 +22,10 @@ router.get('/api/rules', (req, res) => {
     console.error('Error reading rules file:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
+});
+
+router.get('/api/rule-hits', (req, res) => {
+  res.json(getAllHits());
 });
 
 function normalizeRules(rulesObj) {

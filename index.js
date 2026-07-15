@@ -13,6 +13,7 @@ const { scoreKeywordFilters } = require('./app/keyword');
 const { checkAiSpam } = require('./app/ai');
 const { checkSpamAssassin } = require('./app/spamassassin');
 const { extractOriginatingIp } = require('./app/shared');
+const { recordHit } = require('./app/ruleHits');
 
 const QUARANTINE_DIR = config.QUARANTINE_DIR;
 const DELETED_DIR = config.DELETED_DIR;
@@ -148,6 +149,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const wl = rules.whitelist || {};
     const wlResult = checkWhitelist(fromAddr, originatingIp, recipients, wl);
     if (wlResult.whitelisted) {
+      recordHit(wlResult.ruleType, wlResult.rule);
       metrics.increment('whitelisted');
       const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', wlResult.reason, 0);
@@ -174,6 +176,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 2.1 Blacklist check — Blacklisted sender
     if (blResult.matched && blResult.type === 'sender') {
+      recordHit(blResult.ruleType, blResult.rule);
       metrics.increment('blacklisted');
       tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (performance.now() - processStartTime) / 1000;
@@ -186,6 +189,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 2.2 Blacklist check - Blacklisted IP
     if (blResult.matched && blResult.type === 'ip') {
+      recordHit(blResult.ruleType, blResult.rule);
       metrics.increment('blacklisted');
       tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
       const elapsed = (performance.now() - processStartTime) / 1000;
@@ -198,6 +202,8 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 2.3 Blacklist check - Blacklisted country
     if (countryResult.matched) {
+      const countryRule = (bl.countries || []).find(country => String(country).toUpperCase() === countryResult.country);
+      recordHit('blacklist.countries', countryRule);
       metrics.increment('blacklisted');
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
       const elapsed = (performance.now() - processStartTime) / 1000;
@@ -210,8 +216,10 @@ async function processEmail(controlFilePath, messagePath, rules) {
 
     // 2.4 Blacklist check - Combo rules
     if (bl.combos && bl.combos.length) {
-      const { checkCombos } = require('./app/shared');
-      if (checkCombos(parsed, bl.combos, recipients, originatingIp)) {
+      const { findMatchingCombo } = require('./app/shared');
+      const matchedCombo = findMatchingCombo(parsed, bl.combos, recipients, originatingIp);
+      if (matchedCombo) {
+        recordHit('blacklist.combos', matchedCombo);
         metrics.increment('blacklisted');
         tools.logData(`Combo rule matched, deleting`);
         const elapsed = (performance.now() - processStartTime) / 1000;
@@ -228,6 +236,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     let spamInfoParts = [];
     let spamScore = 0;
     const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters, recipients);
+    keywordResult.matchedFilters.forEach(filter => recordHit('blacklist.keywordFilters', filter));
     if (keywordResult.score > 0) {
       const keyWordInfo = `Keywords(${keywordResult.score})`; 
       spamInfoParts.push(keyWordInfo);
@@ -280,6 +289,18 @@ async function processEmail(controlFilePath, messagePath, rules) {
       tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await quarantineEmail(controlFilePath, messagePath, destMessageName, fromAddr);
+
+      metrics.emitQuarantine({
+        filepath: destMessageName.replace('.MAI', ''),
+        from: fromAddr,
+        subject: subjectText,
+        recipients: recipients.join(', '),
+        recipientAddresses: recipientAddresses,
+        spamScore: spamScore,
+        antiSpam: spamDetailInfo,
+        date: new Date().toLocaleString(),
+        reason: quarantineReasons.join('; ')
+      });
 
       notifications.notifyQuarantine({
         from: fromAddr,

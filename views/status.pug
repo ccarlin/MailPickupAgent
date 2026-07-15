@@ -396,7 +396,7 @@ block scripts
         $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
       }
       if (data.avgProcessTime !== undefined) {
-        $('#count-process-time').text(data.avgProcessTime + 'ms');
+        $('#count-process-time').text(formatMs(data.avgProcessTime));
         $('#sub-process-time').text('(' + data.processCount + ' emails)');
       }
       $('#last-update-time').text(new Date().toLocaleTimeString());

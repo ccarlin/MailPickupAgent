@@ -130,7 +130,31 @@ block content
             var customSearchInput = document.getElementById('custom-search');
             document.getElementById('last-update').textContent = '#{currentTime}';
 
-            setTimeout(function() { location.reload(true); }, 600000);
+            // SSE for real-time quarantine notifications
+            var sseUrl = '/mailq/events' + (hsFilterUser ? '?user=' + encodeURIComponent(hsFilterUser) : '');
+            var eventSource = new EventSource(sseUrl);
+            var notificationBanner = document.getElementById('sse-notification-banner');
+            var notificationText = document.getElementById('sse-notification-text');
+
+            eventSource.addEventListener('quarantine', function(e) {
+                var data = JSON.parse(e.data);
+                var msg = 'New email quarantined: ' + (data.subject || 'No subject') + ' from ' + (data.from || 'Unknown');
+                if (notificationText) notificationText.textContent = msg;
+                if (notificationBanner) {
+                    notificationBanner.style.display = 'flex';
+                    setTimeout(function() { notificationBanner.style.display = 'none'; }, 10000);
+                }
+                // Auto-reload after a short delay to show the new email
+                setTimeout(function() { location.reload(); }, 2000);
+            });
+
+            eventSource.addEventListener('connected', function(e) {
+                console.log('SSE connected:', JSON.parse(e.data));
+            });
+
+            eventSource.onerror = function() {
+                console.log('SSE connection error, will reconnect...');
+            };
 
             function selectAll(checked) {
                 document.querySelectorAll('.mailq-chk').forEach(function(cb) { cb.checked = checked; });
@@ -627,6 +651,12 @@ block content
             renderGrid();
             setupReasonObserver();
         });
+
+    // SSE notification banner
+    .sse-notification-banner#sse-notification-banner(style="display:none; position:fixed; top:60px; right:20px; z-index:999; background:#10b981; color:white; padding:12px 20px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.2); max-width:400px; align-items:center; gap:10px;")
+        i.fas.fa-bell(style="font-size:1.2rem;")
+        span#sse-notification-text
+        button(onclick="document.getElementById('sse-notification-banner').style.display='none';" style="background:transparent; border:none; color:white; cursor:pointer; font-size:1.2rem; margin-left:auto;") &times;
 
     .mailq-grid-wrapper
         .mui-card
