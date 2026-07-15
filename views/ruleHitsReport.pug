@@ -102,6 +102,15 @@ block css
             font-size: 0.8rem;
             text-align: center;
         }
+        .mui-last-update-inline {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+        .mui-filter-group {
+            display: inline-flex;
+            align-items: center;
+        }
 
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
@@ -150,15 +159,15 @@ block content
                 typeSummary = {};
 
                 allData.forEach(function(row) {
-                    totalHits += row.hit_count;
-                    var isWl = row.rule_type.indexOf('whitelist') === 0;
-                    if (isWl) wlHits += row.hit_count;
-                    else if (row.rule_type.indexOf('keywordFilters') !== -1) scoredHits += row.hit_count;
-                    else blHits += row.hit_count;
+                    totalHits += row[3];
+                    var isWl = row[0].indexOf('whitelist') === 0;
+                    if (isWl) wlHits += row[3];
+                    else if (row[0].indexOf('keywordFilters') !== -1) scoredHits += row[3];
+                    else blHits += row[3];
 
-                    var key = row.rule_type;
+                    var key = row[0];
                     if (!typeSummary[key]) typeSummary[key] = 0;
-                    typeSummary[key] += row.hit_count;
+                    typeSummary[key] += row[3];
                 });
 
                 document.getElementById('sc-total-hits').textContent = totalHits.toLocaleString();
@@ -167,12 +176,12 @@ block content
                 document.getElementById('sc-scored-hits').textContent = scoredHits.toLocaleString();
                 document.getElementById('sc-rules-count').textContent = allData.length.toLocaleString();
                 var maxHit = 0;
-                allData.forEach(function(r) { if (r.hit_count > maxHit) maxHit = r.hit_count; });
+                allData.forEach(function(r) { if (r[3] > maxHit) maxHit = r[3]; });
                 document.getElementById('sc-peak-hits').textContent = maxHit.toLocaleString();
             }
 
             var filterConfig = [
-                { idx: 1, label: 'Type', key: 'type' }
+                { idx: 0, label: 'Type', key: 'type' }
             ];
 
             function getDistinct(colIdx) {
@@ -259,7 +268,7 @@ block content
                 var q = (document.getElementById('custom-search').value || '').toLowerCase();
 
                 filteredData = allData.filter(function(row) {
-                    if (typeSel.length > 0 && typeSel.indexOf(row[1]) === -1) return false;
+                    if (typeSel.length > 0 && typeSel.indexOf(row[0]) === -1) return false;
                     if (q) {
                         for (var ci = 0; ci < row.length; ci++) {
                             if (String(row[ci]).toLowerCase().indexOf(q) !== -1) return true;
@@ -322,7 +331,7 @@ block content
                                     var barW = 0;
                                     if (cell > 0) {
                                         var maxHit = 0;
-                                        allData.forEach(function(r) { if (r.hit_count > maxHit) maxHit = r.hit_count; });
+                                        allData.forEach(function(r) { if (r[3] > maxHit) maxHit = r[3]; });
                                         barW = maxHit > 0 ? Math.max(4, Math.round((cell / maxHit) * 80)) : 0;
                                     }
                                     var barHtml = barW > 0 ? '<span class="hit-bar" style="width:' + barW + 'px;"></span>' : '';
@@ -364,7 +373,7 @@ block content
                 var header = ['Type','Rule','Score/Tag','Hits','Last Updated'];
                 var csv = header.join(',') + '\\n';
                 rows.forEach(function(r) {
-                    var esc = [getTypeLabel(r[0]), r[1], r[2], r[4], r[5]].map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
+                    var esc = [getTypeLabel(r[0]), r[1], r[2], r[3], r[4]].map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
                     csv += esc.join(',') + '\\n';
                 });
                 var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -383,7 +392,7 @@ block content
                     return arr.map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
                 }
                 var text = fmtRow(header) + '\\n' + '-'.repeat(fmtRow(header).length) + '\\n';
-                text += rows.map(function(r) { return fmtRow([getTypeLabel(r[0]), r[1], r[2], r[4], r[5]]); }).join('\\n');
+                text += rows.map(function(r) { return fmtRow([getTypeLabel(r[0]), r[1], r[2], r[3], r[4]]); }).join('\\n');
                 navigator.clipboard.writeText(text).then(function() {
                     var btn = document.getElementById('btn-copy');
                     var orig = btn.innerHTML;
@@ -397,10 +406,6 @@ block content
             document.getElementById('btn-clear-filters').addEventListener('click', clearFilters);
             document.getElementById('custom-search').addEventListener('input', applyFilters);
 
-            filterConfig.forEach(function(fc) {
-                buildMultiSelect('ms-' + fc.key, fc);
-            });
-
             fetch('/ruleHits/api/rule-hits')
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
@@ -409,13 +414,16 @@ block content
                             row.rule_type,
                             row.display_label,
                             row.score,
-                            row.rule_value,
                             row.hit_count,
                             row.updated_at,
                             row.rule_type
                         ];
                     });
                     filteredData = allData.slice();
+
+                    filterConfig.forEach(function(fc) {
+                        buildMultiSelect('ms-' + fc.key, fc);
+                    });
 
                     buildSummaryCards();
                     document.getElementById('last-update').textContent = new Date().toLocaleString();
@@ -449,9 +457,10 @@ block content
                 .sc-value#sc-peak-hits 0
 
         .mui-card
-            .mui-last-update Last updated: <span id="last-update"></span>
             .mui-filters-row
                 .mui-filters-left
+                    .mui-last-update-inline Updated: <span id="last-update"></span>
+                    .mui-btn-separator
                     .mui-btn#btn-csv
                         i.fas.fa-file-csv
                         | CSV
