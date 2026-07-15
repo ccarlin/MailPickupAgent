@@ -21,6 +21,7 @@ const incrementHit = db.prepare(`
     updated_at = CURRENT_TIMESTAMP
 `);
 const getHits = db.prepare('SELECT rule_type, rule_value, hit_count FROM rule_hits');
+const getHitsDetailed = db.prepare('SELECT rule_type, rule_value, hit_count, updated_at FROM rule_hits ORDER BY hit_count DESC');
 
 function ruleValue(rule) {
   return typeof rule === 'string' ? rule : JSON.stringify(rule);
@@ -38,4 +39,8 @@ function getAllHits() {
   }, {});
 }
 
-module.exports = { recordHit, getAllHits, ruleValue };
+function getAllHitsArray() {
+  return getHitsDetailed.all();
+}
+
+module.exports = { recordHit, getAllHits, getAllHitsArray, ruleValue };

@@ -85,6 +85,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/rulesEditor', require('./routes/rulesEditor'));
+app.use('/ruleHits', require('./routes/ruleHitsReport'));
 app.use('/configEditor', require('./routes/configEditor'));
 app.use('/mailq', require('./routes/mailqRoute'));
 app.use('/generateLink', require('./routes/generateLink'));
