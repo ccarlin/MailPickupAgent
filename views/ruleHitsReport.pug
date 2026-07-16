@@ -111,6 +111,37 @@ block css
             display: inline-flex;
             align-items: center;
         }
+        .btn-delete-row {
+            background: none;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 2px 6px;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            transition: all 0.15s;
+        }
+        .btn-delete-row:hover {
+            color: #c62828;
+            border-color: #c62828;
+            background: #ffebee;
+        }
+        .mui-btn-clear-all {
+            background: #fff;
+            border: 1px solid #c62828;
+            color: #c62828;
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .mui-btn-clear-all:hover {
+            background: #c62828;
+            color: #fff;
+        }
 
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
@@ -348,7 +379,23 @@ block content
                                     return gridjs.html('<span class="updated-cell">' + s + '</span>');
                                 }
                             },
-                            { name: '_raw_type', hidden: true }
+                            {
+                                name: 'Actions',
+                                width: '70px',
+                                sort: false,
+                                formatter: function(cell, row) {
+                                    var ruleType = row.cells[5].data || row.cells[0].data;
+                                    var ruleValue = row.cells[6].data || '';
+                                    return gridjs.html(
+                                        '<button class="btn-delete-row" onclick="deleteEntry(\'' +
+                                        encodeURIComponent(ruleType) + '\',\'' +
+                                        encodeURIComponent(ruleValue) + '\')" title="Delete entry">' +
+                                        '<i class="fas fa-trash-alt"></i></button>'
+                                    );
+                                }
+                            },
+                            { name: '_raw_type', hidden: true },
+                            { name: '_raw_value', hidden: true }
                         ],
                         data: filteredData,
                         pagination: { limit: 15, summary: true },
@@ -405,6 +452,51 @@ block content
             document.getElementById('btn-copy').addEventListener('click', toCopyText);
             document.getElementById('btn-clear-filters').addEventListener('click', clearFilters);
             document.getElementById('custom-search').addEventListener('input', applyFilters);
+            document.getElementById('btn-clear-all').addEventListener('click', function() {
+                if (!confirm('Are you sure you want to clear ALL rule hit data? This cannot be undone.')) return;
+                fetch('/ruleHits/api/rule-hits/clear', { method: 'DELETE' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res.success) {
+                            allData = [];
+                            filteredData = [];
+                            buildSummaryCards();
+                            if (grid) grid.updateConfig({ data: [] }).forceRender();
+                            document.getElementById('btn-clear-all').innerHTML = '<i class="fas fa-check"></i> Cleared!';
+                            setTimeout(function() {
+                                document.getElementById('btn-clear-all').innerHTML = '<i class="fas fa-trash-alt"></i>  Clear All';
+                            }, 2000);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Failed to clear rule hits:', err);
+                        alert('Failed to clear rule hits.');
+                    });
+            });
+
+            window.deleteEntry = function(encodedType, encodedValue) {
+                var ruleType = decodeURIComponent(encodedType);
+                var ruleValue = decodeURIComponent(encodedValue);
+                if (!confirm('Delete this rule hit entry?\n\n' + ruleType + '\n' + ruleValue)) return;
+                fetch('/ruleHits/api/rule-hits/' + encodedType + '/' + encodedValue, { method: 'DELETE' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (res.success) {
+                            allData = allData.filter(function(row) {
+                                return !(row[0] === ruleType && row[6] === ruleValue);
+                            });
+                            filteredData = filteredData.filter(function(row) {
+                                return !(row[0] === ruleType && row[6] === ruleValue);
+                            });
+                            buildSummaryCards();
+                            if (grid) grid.updateConfig({ data: filteredData }).forceRender();
+                        }
+                    })
+                    .catch(function(err) {
+                        console.error('Failed to delete rule hit:', err);
+                        alert('Failed to delete rule hit.');
+                    });
+            };
 
             fetch('/ruleHits/api/rule-hits')
                 .then(function(r) { return r.json(); })
@@ -416,7 +508,8 @@ block content
                             row.score,
                             row.hit_count,
                             row.updated_at,
-                            row.rule_type
+                            row.rule_type,
+                            row.rule_value
                         ];
                     });
                     filteredData = allData.slice();
@@ -467,6 +560,9 @@ block content
                     .mui-btn#btn-copy
                         i.fas.fa-copy
                         | Copy
+                    .mui-btn-clear-all#btn-clear-all
+                        i.fas.fa-trash-alt
+                        |  Clear All
                     .mui-btn-separator
                     .mui-filter-group
                         label Type

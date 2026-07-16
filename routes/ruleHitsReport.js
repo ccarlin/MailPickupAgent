@@ -1,5 +1,5 @@
 const express = require('express');
-const { getAllHitsArray } = require('../app/ruleHits');
+const { getAllHitsArray, deleteHit, clearAllHits } = require('../app/ruleHits');
 
 const router = express.Router();
 
@@ -78,6 +78,18 @@ router.get('/api/rule-hits', (req, res) => {
   });
 
   res.json(enriched);
+});
+
+router.delete('/api/rule-hits/clear', (req, res) => {
+  const removed = clearAllHits();
+  res.json({ success: true, removed });
+});
+
+router.delete('/api/rule-hits/:ruleType/:ruleValue', (req, res) => {
+  const ruleType = decodeURIComponent(req.params.ruleType);
+  const ruleValue = decodeURIComponent(req.params.ruleValue);
+  const removed = deleteHit(ruleType, ruleValue);
+  res.json({ success: removed > 0, removed });
 });
 
 module.exports = router;

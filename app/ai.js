@@ -8,6 +8,9 @@ const OLLAMA_HOST = config.OLLAMA_SERVER;
 const OLLAMA_PORT = config.OLLAMA_PORT;
 const OLLAMA_MODEL = config.OLLAMA_MODEL;
 const OLLAMA_TIMEOUT = (config.OLLAMA_TIMEOUT || 5) * 1000;
+const LLAMACPP_SERVER = config.LLAMACPP_SERVER;
+const LLAMACPP_PORT = config.LLAMACPP_PORT;
+const LLAMACPP_MODEL = config.LLAMACPP_MODEL;
 const aiSpamPoints = Number(config.AI_SPAM_POINTS || 5) || 5;
 const aiHamPoints = Number((config.AI_HAM_POINTS || 2.5) * -1) || -2.5;
 
@@ -29,6 +32,36 @@ async function queryOllama(prompt) {
   return '';
 }
 
+function getLlamaCppUrl() {
+  const server = String(LLAMACPP_SERVER || 'localhost').replace(/\/$/, '');
+  const baseUrl = /^https?:\/\//i.test(server) ? server : `http://${server}`;
+  const hasPort = /:\d+(?:\/|$)/.test(baseUrl);
+  const host = hasPort ? baseUrl : `${baseUrl}:${LLAMACPP_PORT || 8120}`;
+  return `${host}/v1/chat/completions`;
+}
+
+async function queryLlamaCpp(prompt) {
+  const payload = {
+    model: LLAMACPP_MODEL,
+    messages: [{ role: 'user', content: prompt }],
+    stream: false,
+  };
+  const resp = await axios.post(getLlamaCppUrl(), payload, {
+    headers: { 'Content-Type': 'application/json' },
+    timeout: OLLAMA_TIMEOUT,
+  });
+  const response = resp?.data?.choices?.[0]?.message?.content || '';
+  tools.logData(`llama.cpp response: ${response}`);
+  return response;
+}
+
+async function queryAi(prompt) {
+  const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
+  if (aiSystem === 'LLAMACPP') return queryLlamaCpp(prompt);
+  if (aiSystem === 'OLLAMA') return queryOllama(prompt);
+  throw new Error(`Unsupported AI_SYSTEM: ${config.AI_SYSTEM}`);
+}
+
 async function checkAiSpam(fromAddr, subjectText, parsed) {
   let aiSpamResult = false;
   let aiReasons = '';
@@ -39,7 +72,7 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
     let promptTemplate = fs.readFileSync(promptPath, 'utf8');
     const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
     const aiPrompt = promptTemplate + emailContent;
-    aiResponse = await queryOllama(aiPrompt);
+    aiResponse = await queryAi(aiPrompt);
     aiResponse = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     aiResponse = aiResponse.replace(/[\r\n]+/g, ' ');
     let parsedJson;
@@ -71,12 +104,13 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
       aiSpamResult = false;
     }
   } catch (err) {
+    const aiSystem = String(config.AI_SYSTEM || 'OLLAMA');
     if (err.code === 'ECONNABORTED') {
-      tools.logWarn(`Ollama request timed out after ${OLLAMA_TIMEOUT / 1000}s, not assigning score for AI check`);
+      tools.logWarn(`${aiSystem} request timed out after ${OLLAMA_TIMEOUT / 1000}s, not assigning score for AI check`);
     } else if (aiResponse) {
-      tools.logError(`Ollama query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
+      tools.logError(`${aiSystem} query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
     } else {
-      tools.logError(`Ollama query failed, not assigning score for AI check: ${err.message}`);
+      tools.logError(`${aiSystem} query failed, not assigning score for AI check: ${err.message}`);
     }
   }
 
