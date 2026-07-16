@@ -37,6 +37,7 @@ block css
 block scripts
     script.
         let configData = null;
+        const modelLists = {};
         let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, thresholds: true, purge: true, test: true };
 
         function showToast(message, type, duration) {
@@ -85,12 +86,16 @@ block scripts
                     { key: 'SMTP_USER', label: 'SMTP Username', hint: 'Authentication user (if required)' },
                     { key: 'SMTP_PASS', label: 'SMTP Password', type: 'password', hint: 'Authentication password' },                   
                 ]},
-                { key: 'ai', title: 'AI / Ollama', icon: '&#x1F916;', description: 'AI-powered spam classification via Ollama', fields: [
-                    { key: 'AI_CHECK_ENABLED', label: 'AI Check Enabled', type: 'checkbox', hint: 'Enable Ollama AI spam classification' },
+                { key: 'ai', title: 'AI Classification', icon: '&#x1F916;', description: 'AI-powered spam classification via Ollama or llama.cpp', fields: [
+                    { key: 'AI_CHECK_ENABLED', label: 'AI Check Enabled', type: 'checkbox', hint: 'Enable AI spam classification' },
+                    { key: 'AI_SYSTEM', label: 'AI System', type: 'select', options: ['OLLAMA', 'LLAMACPP'], hint: 'Select the AI server used for spam classification' },
                     { key: 'OLLAMA_SERVER', label: 'Ollama Server', hint: 'Hostname or IP of Ollama server' },
                     { key: 'OLLAMA_PORT', label: 'Ollama Port', type: 'number', hint: 'Default 11434' },
-                    { key: 'OLLAMA_MODEL', label: 'Ollama Model', hint: 'Model name like llama3.2, mistral, etc.' },
+                    { key: 'OLLAMA_MODEL', label: 'Ollama Model', hint: 'Select an available model; manual entry is available if the list cannot be retrieved', modelSystem: 'OLLAMA' },
                     { key: 'OLLAMA_TIMEOUT', label: 'Ollama Timeout', type: 'number', min: 1, max: 120, hint: 'Request timeout in seconds (1-120, default 5)' },
+                    { key: 'LLAMACPP_SERVER', label: 'llama.cpp Server', hint: 'Hostname, IP, or URL of the llama.cpp server' },
+                    { key: 'LLAMACPP_PORT', label: 'llama.cpp Port', type: 'number', hint: 'Default 8120; ignored when the server value includes a port' },
+                    { key: 'LLAMACPP_MODEL', label: 'llama.cpp Model', hint: 'Select an available model; manual entry is available if the list cannot be retrieved', modelSystem: 'LLAMACPP' },
                     { key: 'AI_SPAM_POINTS', label: 'AI Spam Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points added to score when AI classifies as SPAM (0.0 - 10.0)' },
                     { key: 'AI_HAM_POINTS', label: 'AI Ham Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points removed from score when AI classifies as HAM (0.0 - 10.0)' },
                     { key: 'AI_SPAM_CHECK_PROMPT_PATH', label: 'AI Prompt Path', hint: 'Path to the spam check prompt markdown file', hasViewBtn: true },
@@ -159,6 +164,18 @@ block scripts
                         cb.checked = value === true || value === 'true';
                         cb.dataset.key = field.key;
                         fieldDiv.appendChild(cb);
+                    } else if (field.type === 'select') {
+                        const select = document.createElement('select');
+                        select.id = 'cfg-' + field.key;
+                        select.dataset.key = field.key;
+                        (field.options || []).forEach(optionValue => {
+                            const option = document.createElement('option');
+                            option.value = optionValue;
+                            option.textContent = optionValue;
+                            option.selected = String(value || '').toUpperCase() === optionValue;
+                            select.appendChild(option);
+                        });
+                        fieldDiv.appendChild(select);
                     } else {
                         const input = document.createElement('input');
                         input.type = field.type || 'text';
@@ -171,6 +188,9 @@ block scripts
                         if (field.step) input.step = field.step;
                         if (field.min !== undefined) input.min = field.min;
                         if (field.max !== undefined) input.max = field.max;
+                        if (field.modelSystem) {
+                            input.dataset.modelSystem = field.modelSystem;
+                        }
                         fieldDiv.appendChild(input);
                     }
 
@@ -179,6 +199,13 @@ block scripts
                         hint.className = 'hint';
                         hint.textContent = field.hint;
                         fieldDiv.appendChild(hint);
+                    }
+
+                    if (field.modelSystem) {
+                        const status = document.createElement('div');
+                        status.className = 'hint model-list-status';
+                        status.dataset.modelSystem = field.modelSystem;
+                        fieldDiv.appendChild(status);
                     }
 
                     if (field.hasViewBtn) {
@@ -213,11 +240,13 @@ block scripts
                     }
                 });
             }
+
+            refreshModelLists();
         }
 
         function collectValues() {
             const values = {};
-            document.querySelectorAll('#configContainer input').forEach(input => {
+            document.querySelectorAll('#configContainer input, #configContainer select').forEach(input => {
                 const key = input.dataset.key;
                 if (!key) return;
                 if (input.type === 'checkbox') {
@@ -227,6 +256,85 @@ block scripts
                 }
             });
             return values;
+        }
+
+        function updateModelList(system, models, message) {
+            const modelKey = system + '_MODEL';
+            const control = document.getElementById('cfg-' + modelKey);
+            const currentValue = control ? control.value : (configData[modelKey] || '');
+
+            if (models.length && control) {
+                const selector = document.createElement('select');
+                selector.id = control.id;
+                selector.dataset.key = modelKey;
+                selector.dataset.modelSystem = system;
+                if (!currentValue) {
+                    const placeholder = document.createElement('option');
+                    placeholder.value = '';
+                    placeholder.textContent = 'Select an available model...';
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    selector.appendChild(placeholder);
+                }
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    selector.appendChild(option);
+                });
+                if (currentValue && !models.includes(currentValue)) {
+                    const currentOption = document.createElement('option');
+                    currentOption.value = currentValue;
+                    currentOption.textContent = currentValue;
+                    selector.appendChild(currentOption);
+                }
+                selector.value = currentValue;
+                control.replaceWith(selector);
+            } else if (!models.length && control && control.tagName === 'SELECT') {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = control.id;
+                input.value = currentValue;
+                input.dataset.key = modelKey;
+                input.dataset.modelSystem = system;
+                control.replaceWith(input);
+            }
+            document.querySelectorAll('.model-list-status[data-model-system="' + system + '"]').forEach(status => {
+                status.textContent = message || '';
+            });
+        }
+
+        async function refreshModelList(system) {
+            const server = document.getElementById('cfg-' + system + '_SERVER')?.value.trim();
+            const port = document.getElementById('cfg-' + system + '_PORT')?.value.trim();
+            if (!server || !port) {
+                updateModelList(system, [], 'Configure the server and port to load available models. You can still enter a model manually.');
+                return;
+            }
+
+            const cacheKey = system + '|' + server + '|' + port;
+            if (modelLists[cacheKey]) {
+                updateModelList(system, modelLists[cacheKey]);
+                return;
+            }
+
+            updateModelList(system, [], 'Loading available models...');
+            try {
+                const params = new URLSearchParams({ system, server, port });
+                const response = await fetch('/configEditor/api/config/ai-models?' + params.toString());
+                if (!response.ok) throw new Error('Model list unavailable');
+                const data = await response.json();
+                const models = Array.isArray(data.models) ? data.models : [];
+                modelLists[cacheKey] = models;
+                updateModelList(system, models, models.length ? '' : 'No models were returned. Enter a model manually.');
+            } catch (error) {
+                updateModelList(system, [], 'Could not retrieve models. Enter a model manually.');
+            }
+        }
+
+        function refreshModelLists() {
+            refreshModelList('OLLAMA');
+            refreshModelList('LLAMACPP');
         }
 
         async function fetchConfig() {
@@ -294,6 +402,11 @@ block scripts
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('saveButton').addEventListener('click', saveConfig);
+            document.getElementById('configContainer').addEventListener('change', (event) => {
+                const key = event.target.dataset.key;
+                if (key === 'OLLAMA_SERVER' || key === 'OLLAMA_PORT') refreshModelList('OLLAMA');
+                if (key === 'LLAMACPP_SERVER' || key === 'LLAMACPP_PORT') refreshModelList('LLAMACPP');
+            });
             fetchConfig();
             const hb = document.querySelector('.header-bar');
             const scroller = document.querySelector('.right-column');

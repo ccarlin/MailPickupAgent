@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 const config = require('../config');
 const { hashPassword, verifyPassword } = require('../middleware/hash');
 const { purgeOldBackups } = require('../index');
@@ -8,6 +9,16 @@ const { purgeOldBackups } = require('../index');
 const router = express.Router();
 
 const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW'];
+
+function getAiServerUrl(server, port) {
+  const configuredServer = String(server || '').trim();
+  if (!configuredServer) throw new Error('Server is required');
+
+  const url = new URL(/^https?:\/\//i.test(configuredServer) ? configuredServer : `http://${configuredServer}`);
+  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Server must use HTTP or HTTPS');
+  if (!url.port && port) url.port = String(port);
+  return url.toString().replace(/\/$/, '');
+}
 
 // GET - render the editor page
 router.get('/', (req, res) => {
@@ -21,6 +32,31 @@ router.get('/api/config', (req, res) => {
     if (displayConfig[k]) displayConfig[k] = '********';
   });
   res.json(displayConfig);
+});
+
+// GET - retrieve models available from the configured AI server
+router.get('/api/config/ai-models', async (req, res) => {
+  try {
+    const system = String(req.query.system || '').toUpperCase();
+    const server = req.query.server;
+    const port = req.query.port;
+    const baseUrl = getAiServerUrl(server, port);
+
+    let models;
+    if (system === 'OLLAMA') {
+      const response = await axios.get(`${baseUrl}/api/tags`, { timeout: 5000 });
+      models = (response.data.models || []).map(model => model.name).filter(Boolean);
+    } else if (system === 'LLAMACPP') {
+      const response = await axios.get(`${baseUrl}/v1/models`, { timeout: 5000 });
+      models = (response.data.data || []).map(model => model.id).filter(Boolean);
+    } else {
+      return res.status(400).json({ message: 'Unsupported AI system' });
+    }
+
+    res.json({ models: [...new Set(models)].sort() });
+  } catch (error) {
+    res.status(502).json({ message: `Could not retrieve models: ${error.message}` });
+  }
 });
 
 // POST - save config and reload
