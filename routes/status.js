@@ -93,7 +93,7 @@ async function buildStatusData(req) {
       ? (config.LLAMACPP_SERVER || 'localhost')
       : (config.OLLAMA_SERVER || 'localhost');
     const aiPort = aiSystem === 'LLAMACPP'
-      ? (Number(config.LLAMACPP_PORT) || 8120)
+      ? (Number(config.LLAMACPP_PORT) || 8080)
       : (Number(config.OLLAMA_PORT) || 11434);
 
     const [aiRunning, saRunning] = await Promise.all([

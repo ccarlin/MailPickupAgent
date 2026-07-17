@@ -36,7 +36,7 @@ function getLlamaCppUrl() {
   const server = String(LLAMACPP_SERVER || 'localhost').replace(/\/$/, '');
   const baseUrl = /^https?:\/\//i.test(server) ? server : `http://${server}`;
   const hasPort = /:\d+(?:\/|$)/.test(baseUrl);
-  const host = hasPort ? baseUrl : `${baseUrl}:${LLAMACPP_PORT || 8120}`;
+  const host = hasPort ? baseUrl : `${baseUrl}:${LLAMACPP_PORT || 8080}`;
   return `${host}/v1/chat/completions`;
 }
 

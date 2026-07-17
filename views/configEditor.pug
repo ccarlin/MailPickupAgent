@@ -94,7 +94,7 @@ block scripts
                     { key: 'OLLAMA_MODEL', label: 'Ollama Model', hint: 'Select an available model; manual entry is available if the list cannot be retrieved', modelSystem: 'OLLAMA' },
                     { key: 'OLLAMA_TIMEOUT', label: 'Ollama Timeout', type: 'number', min: 1, max: 120, hint: 'Request timeout in seconds (1-120, default 5)' },
                     { key: 'LLAMACPP_SERVER', label: 'llama.cpp Server', hint: 'Hostname, IP, or URL of the llama.cpp server' },
-                    { key: 'LLAMACPP_PORT', label: 'llama.cpp Port', type: 'number', hint: 'Default 8120; ignored when the server value includes a port' },
+                    { key: 'LLAMACPP_PORT', label: 'llama.cpp Port', type: 'number', hint: 'Default 8080; ignored when the server value includes a port' },
                     { key: 'LLAMACPP_MODEL', label: 'llama.cpp Model', hint: 'Select an available model; manual entry is available if the list cannot be retrieved', modelSystem: 'LLAMACPP' },
                     { key: 'AI_SPAM_POINTS', label: 'AI Spam Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points added to score when AI classifies as SPAM (0.0 - 10.0)' },
                     { key: 'AI_HAM_POINTS', label: 'AI Ham Points', type: 'number', step: '0.1', min: 0, max: 10, hint: 'Points removed from score when AI classifies as HAM (0.0 - 10.0)' },

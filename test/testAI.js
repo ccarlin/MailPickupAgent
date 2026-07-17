@@ -21,7 +21,7 @@ const TEST_EMAILS = [
 function getAiEndpoint() {
   const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
   if (aiSystem === 'LLAMACPP') {
-    return `${config.LLAMACPP_SERVER || 'localhost'}:${config.LLAMACPP_PORT || 8120}`;
+    return `${config.LLAMACPP_SERVER || 'localhost'}:${config.LLAMACPP_PORT || 8080}`;
   }
   return `${config.OLLAMA_SERVER || 'localhost'}:${config.OLLAMA_PORT || 11434}`;
 }
