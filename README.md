@@ -170,6 +170,8 @@ Make sure to exclude logging directories and quarantine/deleted directories from
 | `npm run purge` | Remove old deleted emails, log files, and config backups |
 | `npm run wipeall` | Delete all quarantined and deleted emails and ALL log files |
 | `npm run spamTest` | Test SpamAssassin to see if it is running and working |
+| `npm run aiTest` | Test the configured AI spam classifier with spam and ham emails |
+| `npm run aiTest:dev` | Test the AI classifier using `config/development.json` (Windows) |
 | `npm run lint` | Run ESLint on all source files |
 | `npm run lint:fix` | Run ESLint with auto-fix |
 
@@ -193,6 +195,22 @@ Send test spam email to verify SpamAssassin is installed and configured properly
 
 ```bash
 npm run spamTest
+```
+
+### Test AI Check
+
+Test the configured Ollama or llama.cpp AI spam classifier with representative spam and legitimate email samples:
+
+```bash
+npm run aiTest
+```
+
+The configured AI server must be running. This command does not require `AI_CHECK_ENABLED` to be set because it calls the AI checker directly.
+
+Configuration is selected from the `NODE_ENV` environment variable; the `NODE_ENV` property inside `development.json` does not select that file. On Windows, use the development configuration with:
+
+```bash
+npm run aiTest:dev
 ```
 
 ### Purging Old Files

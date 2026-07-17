@@ -47,7 +47,8 @@ async function queryLlamaCpp(prompt) {
     stream: false,
   };
   const resp = await axios.post(getLlamaCppUrl(), payload, {
-    headers: { 'Content-Type': 'application/json' },
+    // Some llama.cpp proxy versions reset reused HTTP connections after a completion.
+    headers: { 'Content-Type': 'application/json', Connection: 'close' },
     timeout: OLLAMA_TIMEOUT,
   });
   const response = resp?.data?.choices?.[0]?.message?.content || '';
@@ -66,6 +67,8 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
   let aiSpamResult = false;
   let aiReasons = '';
   let aiScore = 0;
+  let aiClassification = 'UNKNOWN';
+  let aiCheckSucceeded = false;
   let aiResponse;
   try {
     const promptPath = path.resolve(__dirname, '..', config.AI_SPAM_CHECK_PROMPT_PATH || 'config/aiSpamCheckPrompt.md');
@@ -95,6 +98,8 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
     const classification = (parsedJson.classification || '').toUpperCase();
     const confidence = parseFloat(parsedJson.confidence_score) || 0;
     const reasons = parsedJson.reasons || [];
+    aiClassification = classification || 'UNKNOWN';
+    aiCheckSucceeded = true;
     if (classification === 'SPAM') {
       aiScore = Math.round(aiSpamPoints * confidence * 10) / 10;
       aiReasons = `AI Check(${aiScore}) - ${reasons.join('; ')}`;
@@ -105,16 +110,17 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
     }
   } catch (err) {
     const aiSystem = String(config.AI_SYSTEM || 'OLLAMA');
+    const errorMessage = err.response?.data?.error?.message || err.message;
     if (err.code === 'ECONNABORTED') {
       tools.logWarn(`${aiSystem} request timed out after ${OLLAMA_TIMEOUT / 1000}s, not assigning score for AI check`);
     } else if (aiResponse) {
-      tools.logError(`${aiSystem} query failed, response returned: ${aiResponse}, not assigning score for AI check: ${err.message}`);
+      tools.logError(`${aiSystem} query failed, response returned: ${aiResponse}, not assigning score for AI check: ${errorMessage}`);
     } else {
-      tools.logError(`${aiSystem} query failed, not assigning score for AI check: ${err.message}`);
+      tools.logError(`${aiSystem} query failed, not assigning score for AI check: ${errorMessage}`);
     }
   }
 
-  return { aiSpamResult, aiScore, aiReasons };
+  return { aiSpamResult, aiScore, aiReasons, aiClassification, aiCheckSucceeded };
 }
 
 module.exports = { checkAiSpam };

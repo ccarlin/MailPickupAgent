@@ -15,7 +15,9 @@
     "test": "node index.js --test",
     "wipeall": "node index.js --wipeall",
     "purge": "node index.js --purge",
-    "spamTest": "node test/testSpamAssassin.js"
+    "spamTest": "node test/testSpamAssassin.js",
+    "aiTest": "node test/testAI.js",
+    "aiTest:dev": "set NODE_ENV=development&& node test/testAI.js"
   },
   "keywords": [
     "mail",
