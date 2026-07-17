@@ -8,8 +8,8 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - **Admin Web Server** — UI for configuration, log viewing, quarantine/deleted email management, session management, notification subscriptions, and config history
 - **Multi-Layer Filtering** — whitelist/blacklist by sender, subject, IP, country, combo rules, keyword filters (regex/plain text), and allowed TLDs
 - **SpamAssassin Integration** — optional spamd scoring with configurable enable/disable
-- **AI Classification** — Ollama-powered spam classification with configurable model, server, timeout, and scoring points
-- **AI Keyword Filter Generation** — generate keyword filter rules from a natural-language description via Ollama
+- **AI Classification** — Ollama- or llama.cpp-powered spam classification with configurable backend, model, server, timeout, and scoring points
+- **AI Keyword Filter Generation** — generate keyword filter rules from a natural-language description via Ollama or llama.cpp
 - **Geolocation Filtering** — GeoIP country lookup for origin-based rules (private IPs are skipped)
 - **Quarantine & Recovery** — suspicious emails held for review, deleted emails recoverable via web UI
 - **Automatic Purge** — configurable retention-based cleanup of old deleted emails, log files, SMTP logs, and configuration backups
@@ -83,11 +83,15 @@ Configuration changes are automatically backed up to timestamped `.bak` files in
 | `SPAMASSASSIN_ENABLED` | `false` | Enable SpamAssassin spam checks |
 | `SPAMASSASSIN_HOST` | `localhost` | SpamAssassin server hostname |
 | `SPAMASSASSIN_PORT` | `783` | SpamAssassin server port |
-| `AI_CHECK_ENABLED` | `false` | Enable Ollama AI spam classification |
+| `AI_CHECK_ENABLED` | `false` | Enable AI spam classification |
+| `AI_SYSTEM` | `OLLAMA` | AI backend to use: `OLLAMA` or `LLAMACPP` |
 | `OLLAMA_SERVER` | `localhost` | Ollama server hostname |
 | `OLLAMA_PORT` | `11434` | Ollama server port |
 | `OLLAMA_MODEL` | `llama3.2` | Ollama model name |
 | `OLLAMA_TIMEOUT` | `5` | Ollama request timeout in seconds |
+| `LLAMACPP_SERVER` | `localhost` | llama.cpp server hostname, IP, or URL |
+| `LLAMACPP_PORT` | `8080` | llama.cpp server port (ignored when server includes a port) |
+| `LLAMACPP_MODEL` | `llama3.2` | llama.cpp model name |
 | `AI_SPAM_POINTS` | `5` | Points added when AI classifies as spam (× confidence) |
 | `AI_HAM_POINTS` | `2.5` | Points subtracted when AI classifies as ham (× confidence) |
 | `PURGE_EMAIL_AFTER_DAYS` | `30` | Retention for deleted emails (`npm run purge`) |
@@ -205,7 +209,7 @@ Test the configured Ollama or llama.cpp AI spam classifier with representative s
 npm run aiTest
 ```
 
-The configured AI server must be running. This command does not require `AI_CHECK_ENABLED` to be set because it calls the AI checker directly.
+The configured AI server must be running. This command does not require `AI_CHECK_ENABLED` to be set because it calls the AI checker directly. Set the `AI_SYSTEM` configuration value to `OLLAMA` (default) or `LLAMACPP` to choose which backend to test.
 
 Configuration is selected from the `NODE_ENV` environment variable; the `NODE_ENV` property inside `development.json` does not select that file. On Windows, use the development configuration with:
 
@@ -285,7 +289,7 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 | `GET` | `/configHistory/api/current` | View current rules or settings |
 | `POST` | `/configHistory/api/restore` | Restore configuration from a backup |
 | `DELETE` | `/configHistory/api/backup` | Delete a configuration backup |
-| `POST` | `/api/rules/generate-keyword-filter` | Generate a keyword filter via Ollama AI |
+| `POST` | `/api/rules/generate-keyword-filter` | Generate a keyword filter via AI (Ollama or llama.cpp) |
 
 ## GeoIP Database
 
@@ -297,7 +301,7 @@ Replace the existing `GeoLite2-Country.mmdb` file in the project root with the d
 
 ## Dependencies
 
-- **axios** — HTTP client for Ollama API
+- **axios** — HTTP client for Ollama and llama.cpp APIs
 - **better-sqlite3** — SQLite database for sessions and notification subscriptions
 - **better-sqlite3-session-store** — Express session store backed by SQLite
 - **collections** — Data structure utilities (maps, sets, heaps)
