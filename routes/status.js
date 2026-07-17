@@ -88,9 +88,16 @@ async function buildStatusData(req) {
 
     const aiEnabled = !!(config.AI_CHECK_ENABLED && config.AI_CHECK_ENABLED !== 'false');
     const saEnabled = !!(config.SPAMASSASSIN_ENABLED && config.SPAMASSASSIN_ENABLED !== 'false');
+    const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
+    const aiHost = aiSystem === 'LLAMACPP'
+      ? (config.LLAMACPP_SERVER || 'localhost')
+      : (config.OLLAMA_SERVER || 'localhost');
+    const aiPort = aiSystem === 'LLAMACPP'
+      ? (Number(config.LLAMACPP_PORT) || 8120)
+      : (Number(config.OLLAMA_PORT) || 11434);
 
     const [aiRunning, saRunning] = await Promise.all([
-      aiEnabled ? checkTcpPort(config.OLLAMA_HOST || 'localhost', Number(config.OLLAMA_PORT) || 11434) : false,
+      aiEnabled ? checkTcpPort(aiHost, aiPort) : false,
       saEnabled ? checkTcpPort(config.SPAMASSASSIN_HOST || 'localhost', Number(config.SPAMASSASSIN_PORT) || 783) : false,
     ]);
 
@@ -107,6 +114,7 @@ async function buildStatusData(req) {
       serverStartTime: data.serverStartTime,
       aiEnabled,
       aiRunning,
+      aiSystem,
       aiAvgTime: data.aiAvgTime,
       aiCheckCount: data.aiCheckCount,
       saEnabled,

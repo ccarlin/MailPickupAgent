@@ -270,7 +270,7 @@ block content
         .count#count-ai
           i.fas.fa-times-circle
           |  Offline
-        .label AI Check (Ollama)
+        .label#label-ai AI Check
       .status-card.ai-time.hidden#card-ai-time
         .icon
           i.fas.fa-brain
@@ -335,6 +335,7 @@ block scripts
       $('#count-pending').text(data.pending);
       $('#card-pending').toggleClass('alert', data.pending > 0);
       if (data.aiEnabled) {
+        $('#label-ai').text('AI Check (' + data.aiSystem + ')');
         $('#card-ai').removeClass('hidden').toggleClass('service-up service-down', data.aiRunning);
         $('#count-ai').html(data.aiRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
