@@ -1,5 +1,5 @@
 const { SpamAssassinClient } = require('spamassassin-client');
-const config = require('./config');
+const config = require('../config');
 
 const HOST = config.SPAMASSASSIN_HOST || '127.0.0.1';
 const PORT = Number(config.SPAMASSASSIN_PORT) || 783;
@@ -82,4 +82,8 @@ async function testSpamAssassin() {
   }
 }
 
-testSpamAssassin();
+if (require.main === module) {
+  testSpamAssassin();
+}
+
+module.exports = { testSpamAssassin };

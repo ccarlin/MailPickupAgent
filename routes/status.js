@@ -8,6 +8,8 @@ const metrics = require('../app/metrics');
 const config = require('../config');
 const notifications = require('../app/notifications');
 const { purgeOldFiles } = require('../index');
+const { testAiCheck } = require('../test/testAI');
+const { testSpamAssassin } = require('../test/testSpamAssassin');
 
 function checkTcpPort(host, port, timeout = 3000) {
   return new Promise((resolve) => {
@@ -219,6 +221,45 @@ router.post('/api/reset-stats', function(req, res) {
   } catch (err) {
     tools.logError(`Stats reset failed: ${err.message}`);
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.post('/api/ai-test', async function(req, res) {
+  const output = [];
+  const origLog = console.log;
+  const origError = console.error;
+  console.log = function(...args) { output.push(args.map(String).join(' ')); };
+  console.error = function(...args) { output.push(args.map(String).join(' ')); };
+  try {
+    await testAiCheck();
+    res.json({ success: true, output: output.join('\n') });
+  } catch (err) {
+    output.push('AI test failed: ' + err.message);
+    res.json({ success: false, output: output.join('\n') });
+  } finally {
+    console.log = origLog;
+    console.error = origError;
+  }
+});
+
+router.post('/api/sa-test', async function(req, res) {
+  const output = [];
+  const origLog = console.log;
+  const origError = console.error;
+  const origExit = process.exit;
+  console.log = function(...args) { output.push(args.map(String).join(' ')); };
+  console.error = function(...args) { output.push(args.map(String).join(' ')); };
+  process.exit = function() {};
+  try {
+    await testSpamAssassin();
+    res.json({ success: true, output: output.join('\n') });
+  } catch (err) {
+    output.push('SpamAssassin test failed: ' + err.message);
+    res.json({ success: false, output: output.join('\n') });
+  } finally {
+    console.log = origLog;
+    console.error = origError;
+    process.exit = origExit;
   }
 });
 

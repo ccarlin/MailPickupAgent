@@ -16,6 +16,7 @@
     "wipeall": "node index.js --wipeall",
     "purge": "node index.js --purge",
     "spamTest": "node test/testSpamAssassin.js",
+    "spamTest:dev": "set NODE_ENV=development&& node test/testSpamAssassin.js",
     "aiTest": "node test/testAI.js",
     "aiTest:dev": "set NODE_ENV=development&& node test/testAI.js"
   },

@@ -198,6 +198,74 @@ block css
       border-color: #fca5a5;
     }
 
+    #ai-test-modal,
+    #sa-test-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    #ai-test-modal.show,
+    #sa-test-modal.show { display: flex; }
+    #ai-test-modal .modal-box,
+    #sa-test-modal .modal-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    #ai-test-modal .modal-box h2,
+    #sa-test-modal .modal-box h2 {
+      margin: 0 0 1rem 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #ai-test-modal .modal-box pre,
+    #sa-test-modal .modal-box pre {
+      flex: 1;
+      overflow: auto;
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 200px;
+      margin: 0;
+    }
+    #ai-test-modal .modal-box .modal-footer,
+    #sa-test-modal .modal-box .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+    #ai-test-modal .modal-box .modal-footer button,
+    #sa-test-modal .modal-box .modal-footer button {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    #ai-test-modal .modal-box .modal-footer button:hover,
+    #sa-test-modal .modal-box .modal-footer button:hover {
+      background: #2563eb;
+    }
+
 block content
   #server-offline
     h1 &#9888; Server Offline
@@ -264,7 +332,7 @@ block content
         .count#count-deleted 0
         .label Deleted
         .sub-label (since last restart)
-      .status-card.service-down.hidden#card-ai
+      .status-card.service-down.hidden.clickable#card-ai
         .icon
           i.fas.fa-brain
         .count#count-ai
@@ -277,7 +345,7 @@ block content
         .count#count-ai-time N/A
         .label Avg AI Check
         .sub-label#sub-ai-time (0 checks)
-      .status-card.service-down.hidden#card-sa
+      .status-card.service-down.hidden.clickable#card-sa
         .icon
           i.fas.fa-shield-halved
         .count#count-sa
@@ -313,6 +381,24 @@ block content
         .label Auto Purge 
         .sub-label#purge-on-message (runs while page is open)
         .sub-label#purge-last-run
+
+  #ai-test-modal
+    .modal-box
+      h2
+        i.fas.fa-brain
+        | AI Check Test
+      pre#ai-test-output Running AI test...
+      .modal-footer
+        button(onclick="$('#ai-test-modal').removeClass('show')") Close
+
+  #sa-test-modal
+    .modal-box
+      h2
+        i.fas.fa-shield-halved
+        | SpamAssassin Test
+      pre#sa-test-output Running SpamAssassin test...
+      .modal-footer
+        button(onclick="$('#sa-test-modal').removeClass('show')") Close
 
 block scripts
   script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
@@ -604,6 +690,24 @@ block scripts
         window.open('/deleted', '_blank');
       });
       $('#card-purge').on('click', togglePurge);
+      $('#card-ai').on('click', function() {
+        $('#ai-test-modal').addClass('show');
+        $('#ai-test-output').text('Running AI test...');
+        $.post('/status/api/ai-test').done(function(data) {
+          $('#ai-test-output').text(data.output || 'No output returned.');
+        }).fail(function() {
+          $('#ai-test-output').text('Failed to run AI test. Is the server reachable?');
+        });
+      });
+      $('#card-sa').on('click', function() {
+        $('#sa-test-modal').addClass('show');
+        $('#sa-test-output').text('Running SpamAssassin test...');
+        $.post('/status/api/sa-test').done(function(data) {
+          $('#sa-test-output').text(data.output || 'No output returned.');
+        }).fail(function() {
+          $('#sa-test-output').text('Failed to run SpamAssassin test. Is spamd reachable?');
+        });
+      });
       $('#btn-reset-stats').on('click', function() {
         if (confirm('Reset all metrics to zero? This cannot be undone.')) {
           $.post('/status/api/reset-stats').done(function() {
