@@ -8,7 +8,7 @@ const { purgeOldBackups } = require('../index');
 
 const router = express.Router();
 
-const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW'];
+const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW', 'ABUSEIPDB_KEY'];
 
 function getAiServerUrl(server, port) {
   const configuredServer = String(server || '').trim();

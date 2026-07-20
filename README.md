@@ -9,6 +9,7 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - **Multi-Layer Filtering** — whitelist/blacklist by sender, subject, IP, country, combo rules, keyword filters (regex/plain text), and allowed TLDs
 - **SpamAssassin Integration** — optional spamd scoring with configurable enable/disable
 - **AI Classification** — Ollama- or llama.cpp-powered spam classification with configurable backend, model, server, timeout, and scoring points
+- **AbuseIPDB Integration** — optional IP reputation checking via AbuseIPDB API with configurable base/max scoring (runs automatically when API key is set)
 - **AI Keyword Filter Generation** — generate keyword filter rules from a natural-language description via Ollama or llama.cpp
 - **Geolocation Filtering** — GeoIP country lookup for origin-based rules (private IPs are skipped)
 - **Quarantine & Recovery** — suspicious emails held for review, deleted emails recoverable via web UI
@@ -16,7 +17,7 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - **Browser Push Notifications** — subscribe to real-time notifications when emails are quarantined (Web Push / Service Worker)
 - **Configuration History** — automatic backups on save with a viewer/diff/restore interface and retention limits
 - **Session Management** — view and terminate active admin sessions with login metadata (IP, user agent, identifier)
-- **Status Dashboard** — live server metrics (processed, whitelisted, blacklisted, quarantined, released, pending queue), service health (SpamAssassin, AI), uptime, logged-in users, notification count, and auto-purge toggle
+- **Status Dashboard** — live server metrics (processed, whitelisted, blacklisted, quarantined, released, pending queue), service health (SpamAssassin, AI, AbuseIPDB), uptime, logged-in users, notification count, and auto-purge toggle
 - **Date Range Filtering** — filter log and deleted-mail pages by date range
 - **Outbound Email Skipping** — emails submitted by internal MailEnable users are automatically skipped
 - **X-MPA Headers** — emails are tagged with X-MPA-Scan, X-MPA-Msgid, X-MPA-SpamReason, X-MPA-SpamScore, X-MPA-SpamDetail, and X-MPA-Country headers
@@ -94,6 +95,10 @@ Configuration changes are automatically backed up to timestamped `.bak` files in
 | `LLAMACPP_MODEL` | `llama3.2` | llama.cpp model name |
 | `AI_SPAM_POINTS` | `5` | Points added when AI classifies as spam (× confidence) |
 | `AI_HAM_POINTS` | `2.5` | Points subtracted when AI classifies as ham (× confidence) |
+| `ABUSEIPDB_KEY` | *(empty)* | AbuseIPDB API key (check runs when set) |
+| `ABUSEIPDB_TIMEOUT` | `5` | AbuseIPDB request timeout in seconds |
+| `ABUSEIPDB_BASE_SCORE` | `5` | Minimum score assigned when IP has abuse reports |
+| `ABUSEIPDB_MAX_SCORE` | `15` | Maximum score at 100% abuse confidence |
 | `PURGE_EMAIL_AFTER_DAYS` | `30` | Retention for deleted emails (`npm run purge`) |
 | `PURGE_LOG_AFTER_DAYS` | `30` | Retention for log files |
 | `PURGE_INCLUDE_SMTP_LOGS` | `false` | Also purge MailEnable SMTP log files |
@@ -133,7 +138,7 @@ node server.js
 
 Then open `http://localhost:6245` in a browser. The web UI provides:
 
-- **Status Dashboard** (`/status` or `/`) — server dashboard showing total processed, whitelisted, blacklisted, quarantined, released, pending queue count, service health (SpamAssassin, AI), uptime, logged-in users, notification subscriptions, and auto-purge controls. This is the default landing page. Clickable cards navigate to related pages.
+- **Status Dashboard** (`/status` or `/`) — server dashboard showing total processed, whitelisted, blacklisted, quarantined, released, pending queue count, service health (SpamAssassin, AI, AbuseIPDB), uptime, logged-in users, notification subscriptions, and auto-purge controls. This is the default landing page. Clickable cards navigate to related pages.
 - **Configuration Editor** (`/configEditor`) — view and edit all settings with auto-backup on save
 - **Configuration History** (`/configHistory`) — browse, diff, restore, and delete automatic configuration backups
 - **Quarantine Manager** (`/mailq`) — review, release, or delete quarantined emails
@@ -176,6 +181,8 @@ Make sure to exclude logging directories and quarantine/deleted directories from
 | `npm run spamTest` | Test SpamAssassin to see if it is running and working |
 | `npm run aiTest` | Test the configured AI spam classifier with spam and ham emails |
 | `npm run aiTest:dev` | Test the AI classifier using `config/development.json` (Windows) |
+| `npm run abuseipdbTest` | Test AbuseIPDB API connection and IP reputation checking |
+| `npm run abuseipdbTest:dev` | Test AbuseIPDB using `config/development.json` (Windows) |
 | `npm run lint` | Run ESLint on all source files |
 | `npm run lint:fix` | Run ESLint with auto-fix |
 
@@ -215,6 +222,22 @@ Configuration is selected from the `NODE_ENV` environment variable; the `NODE_EN
 
 ```bash
 npm run aiTest:dev
+```
+
+### Test AbuseIPDB
+
+Test the AbuseIPDB API connection by checking a clean IP (Google DNS) and a known malicious IP:
+
+```bash
+npm run abuseipdbTest
+```
+
+Requires `ABUSEIPDB_KEY` to be set in your configuration. The test verifies the API key is valid and that IP reputation lookups return expected results.
+
+On Windows, use the development configuration with:
+
+```bash
+npm run abuseipdbTest:dev
 ```
 
 ### Purging Old Files

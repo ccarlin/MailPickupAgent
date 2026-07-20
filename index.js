@@ -12,6 +12,7 @@ const { checkBlacklist, matchCountry } = require('./app/blacklist');
 const { scoreKeywordFilters } = require('./app/keyword');
 const { checkAiSpam } = require('./app/ai');
 const { checkSpamAssassin } = require('./app/spamassassin');
+const { check: checkAbuseIpdb } = require('./app/abuseipdb');
 const { extractOriginatingIp } = require('./app/shared');
 const { recordHit } = require('./app/ruleHits');
 
@@ -270,6 +271,22 @@ async function processEmail(controlFilePath, messagePath, rules) {
       spamInfoParts.push(`AI Check(${aiScore})`);
       if (aiSpamResult) {      
         quarantineReasons.push(aiReasons);
+      }
+    }
+
+    // 3.3 Quarantine check - AbuseIPDB
+    if (config.ABUSEIPDB_KEY) {
+      const abuseStart = performance.now();
+      const abuseResult = await checkAbuseIpdb(originatingIp);
+      metrics.addTiming('abuseipdb', performance.now() - abuseStart);
+      if (abuseResult && abuseResult.abuseConfidenceScore > 0) {
+        const abuseBase = Number(config.ABUSEIPDB_BASE_SCORE || 5);
+        const abuseMax = Number(config.ABUSEIPDB_MAX_SCORE || 15);
+        const abuseScore = Math.round((abuseBase + (abuseMax - abuseBase) * (abuseResult.abuseConfidenceScore / 100)) * 10) / 10;
+        spamScore += abuseScore;
+        const abuseInfo = `AbuseIPDB(${abuseScore})`;
+        spamInfoParts.push(abuseInfo);
+        quarantineReasons.push(`${abuseInfo} - confidence: ${abuseResult.abuseConfidenceScore}, reports: ${abuseResult.totalReports}, country: ${abuseResult.countryCode}, isp: ${abuseResult.isp}`);
       }
     }
 

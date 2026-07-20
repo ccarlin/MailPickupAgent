@@ -10,6 +10,7 @@ const notifications = require('../app/notifications');
 const { purgeOldFiles } = require('../index');
 const { testAiCheck } = require('../test/testAI');
 const { testSpamAssassin } = require('../test/testSpamAssassin');
+const { testAbuseIPDB } = require('../test/testAbuseIPDB');
 
 function checkTcpPort(host, port, timeout = 3000) {
   return new Promise((resolve) => {
@@ -90,6 +91,7 @@ async function buildStatusData(req) {
 
     const aiEnabled = !!(config.AI_CHECK_ENABLED && config.AI_CHECK_ENABLED !== 'false');
     const saEnabled = !!(config.SPAMASSASSIN_ENABLED && config.SPAMASSASSIN_ENABLED !== 'false');
+    const abuseipdbEnabled = !!(config.ABUSEIPDB_KEY && config.ABUSEIPDB_KEY !== '');
     const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
     const aiHost = aiSystem === 'LLAMACPP'
       ? (config.LLAMACPP_SERVER || 'localhost')
@@ -123,6 +125,9 @@ async function buildStatusData(req) {
       saRunning,
       saAvgTime: data.saAvgTime,
       saCheckCount: data.saCheckCount,
+      abuseipdbEnabled,
+      abuseipdbAvgTime: data.abuseipdbAvgTime,
+      abuseipdbCheckCount: data.abuseipdbCheckCount,
       avgProcessTime: data.avgProcessTime,
       processCount: data.processCount,
       loggedInUsers: await countActiveUsers(req.sessionStore),
@@ -180,6 +185,8 @@ router.get('/events', function(req, res) {
       aiCheckCount: data.aiCheckCount,
       saAvgTime: data.saAvgTime,
       saCheckCount: data.saCheckCount,
+      abuseipdbAvgTime: data.abuseipdbAvgTime,
+      abuseipdbCheckCount: data.abuseipdbCheckCount,
       avgProcessTime: data.avgProcessTime,
       processCount: data.processCount
     });
@@ -260,6 +267,24 @@ router.post('/api/sa-test', async function(req, res) {
     console.log = origLog;
     console.error = origError;
     process.exit = origExit;
+  }
+});
+
+router.post('/api/abuseipdb-test', async function(req, res) {
+  const output = [];
+  const origLog = console.log;
+  const origError = console.error;
+  console.log = function(...args) { output.push(args.map(String).join(' ')); };
+  console.error = function(...args) { output.push(args.map(String).join(' ')); };
+  try {
+    await testAbuseIPDB();
+    res.json({ success: true, output: output.join('\n') });
+  } catch (err) {
+    output.push('AbuseIPDB test failed: ' + err.message);
+    res.json({ success: false, output: output.join('\n') });
+  } finally {
+    console.log = origLog;
+    console.error = origError;
   }
 });
 

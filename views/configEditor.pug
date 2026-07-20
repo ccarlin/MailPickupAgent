@@ -38,7 +38,7 @@ block scripts
     script.
         let configData = null;
         const modelLists = {};
-        let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, thresholds: true, purge: true, test: true };
+        let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, abuseipdb: true, thresholds: true, purge: true, test: true };
 
         function showToast(message, type, duration) {
             if (duration === undefined) duration = 2500;
@@ -104,6 +104,12 @@ block scripts
                     { key: 'SPAMASSASSIN_ENABLED', label: 'SpamAssassin Enabled', type: 'checkbox', hint: 'Enable SpamAssassin spam checks' },
                     { key: 'SPAMASSASSIN_HOST', label: 'SpamAssassin Host', hint: 'Hostname or IP of spamd' },
                     { key: 'SPAMASSASSIN_PORT', label: 'SpamAssassin Port', type: 'number', hint: 'Default 783' },
+                ]},
+                { key: 'abuseipdb', title: 'AbuseIPDB', icon: '&#x1F6E1;', description: 'IP reputation checking via <a href="https://www.abuseipdb.com/" target="_blank">AbuseIPDB</a> API. Check runs when an API key is set.', fields: [
+                    { key: 'ABUSEIPDB_KEY', label: 'API Key', type: 'password', hint: 'AbuseIPDB API key (get one at abuseipdb.com)' },
+                    { key: 'ABUSEIPDB_TIMEOUT', label: 'Timeout', type: 'number', min: 1, max: 30, hint: 'Request timeout in seconds (1-30, default 5)' },
+                    { key: 'ABUSEIPDB_BASE_SCORE', label: 'Base Score', type: 'number', step: '0.1', min: 0, max: 50, hint: 'Minimum score assigned when IP has abuse reports (default 5)' },
+                    { key: 'ABUSEIPDB_MAX_SCORE', label: 'Max Score', type: 'number', step: '0.1', min: 0, max: 50, hint: 'Maximum score at 100% abuse confidence (default 15)' },
                 ]},
                 { key: 'thresholds', title: 'Spam Thresholds', icon: '&#x2699;', description: 'Score boundaries for quarantine and delete actions', fields: [
                     { key: 'THRESHOLD_QUARANTINE', label: 'Quarantine Threshold', type: 'number', hint: 'Score at or above this value quarantines the email' },
