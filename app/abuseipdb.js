@@ -2,12 +2,13 @@ const axios = require('axios');
 const tools = require('./tools');
 const config = require('../config');
 
-const ABUSEIPDB_KEY = config.ABUSEIPDB_KEY;
 const ABUSEIPDB_API_URL = 'https://api.abuseipdb.com/api/v2/check';
-const ABUSEIPDB_TIMEOUT = (config.ABUSEIPDB_TIMEOUT || 5) * 1000;
 
 async function check(ip) {
-  if (!ABUSEIPDB_KEY || !ip) {
+  const key = config.ABUSEIPDB_KEY;
+  const timeout = (config.ABUSEIPDB_TIMEOUT || 5) * 1000;
+
+  if (!key || !ip) {
     return null;
   }
 
@@ -20,10 +21,10 @@ async function check(ip) {
     const response = await axios.get(ABUSEIPDB_API_URL, {
       params: { ipAddress: ip },
       headers: {
-        'Key': ABUSEIPDB_KEY,
+        'Key': key,
         'Accept': 'application/json',
       },
-      timeout: ABUSEIPDB_TIMEOUT,
+      timeout: timeout,
     });
 
     const data = response?.data?.data;
@@ -41,7 +42,7 @@ async function check(ip) {
     return { abuseConfidenceScore, totalReports, countryCode, isp };
   } catch (err) {
     if (err.code === 'ECONNABORTED') {
-      tools.logWarn(`AbuseIPDB request timed out after ${ABUSEIPDB_TIMEOUT / 1000}s for IP ${ip}`);
+      tools.logWarn(`AbuseIPDB request timed out after ${timeout / 1000}s for IP ${ip}`);
     } else {
       const errorMessage = err.response?.data?.errors?.[0]?.detail || err.message;
       tools.logError(`AbuseIPDB check failed for IP ${ip}: ${errorMessage}`);
