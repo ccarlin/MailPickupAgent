@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const config = require('../config');
+const tools = require('../app/tools');
 const { hashPassword, verifyPassword } = require('../middleware/hash');
 const { purgeOldBackups } = require('../index');
 
@@ -127,7 +128,7 @@ router.post('/api/config/save', (req, res) => {
 
     res.status(200).json({ message: 'Configuration saved and reloaded successfully' });
   } catch (error) {
-    console.error('Error saving config:', error);
+    tools.logError('Error saving config: ' + error.message);
     res.status(500).json({ message: 'Failed to save configuration' });
   }
 });
@@ -144,7 +145,7 @@ router.get('/api/config/ai-prompt', (req, res) => {
     const content = fs.readFileSync(promptPath, 'utf8');
     res.json({ content });
   } catch (error) {
-    console.error('Error reading AI prompt file:', error);
+    tools.logError('Error reading AI prompt file: ' + error.message);
     res.status(500).json({ message: 'Failed to read prompt file' });
   }
 });

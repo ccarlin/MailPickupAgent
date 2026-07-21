@@ -394,17 +394,17 @@ process.on('unhandledRejection', (reason) => {
 
 // Listen for the PM2 shutdown signal
 process.on('SIGINT', () => {
-  console.log('SIGINT signal received: closing HTTP server');
+  tools.logData('SIGINT signal received: closing HTTP server');
   
   server.close(() => {
-    console.log('HTTP server closed');
+    tools.logData('HTTP server closed');
     // Close database connections or other persistent resources here
     process.exit(0); 
   });
 
   // Force close after 10 seconds if it's taking too long
   setTimeout(() => {
-    console.error('Forcing shutdown...');
+    tools.logError('Forcing shutdown...');
     process.exit(1);
   }, 10000);
 });

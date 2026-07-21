@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const tools = require('../app/tools');
 const appConfig = require('../config');
 const { verifyPassword, hashPassword } = require('../middleware/hash');
 
@@ -9,8 +10,8 @@ function getPasswordHash() {
   }
   if (appConfig.AUTH_PASSWORD) {
     const hash = hashPassword(appConfig.AUTH_PASSWORD);
-    console.warn('WARNING: AUTH_PASSWORD is stored in plaintext. Replace it with AUTH_PASSWORD_HASH in your config file.');
-    console.warn(`  Generated hash: "${hash}"`);
+    tools.logWarn('WARNING: AUTH_PASSWORD is stored in plaintext. Replace it with AUTH_PASSWORD_HASH in your config file.');
+    tools.logWarn(`  Generated hash: "${hash}"`);
     return hash;
   }
   return hashPassword('admin');

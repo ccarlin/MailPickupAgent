@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const config = require('../config');
+const tools = require('../app/tools');
 const { purgeOldBackups } = require('../index');
 const { getAllHits } = require('../app/ruleHits');
 
@@ -19,7 +20,7 @@ router.get('/api/rules', (req, res) => {
     const rulesContent = fs.readFileSync(rulesPath, 'utf8');
     res.json(JSON.parse(rulesContent));
   } catch (error) {
-    console.error('Error reading rules file:', error);
+    tools.logError('Error reading rules file: ' + error.message);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
@@ -80,7 +81,7 @@ router.post('/api/rules/save', (req, res) => {
     fs.writeFileSync(rulesPath, JSON.stringify(parsed, null, 2), 'utf8');
     res.status(200).json({ message: 'Rules saved successfully!' });
   } catch (error) {
-    console.error('Error saving rules file:', error);
+    tools.logError('Error saving rules file: ' + error.message);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
@@ -153,7 +154,7 @@ Output ONLY the JSON object, no markdown or explanation.`;
 
     res.json(filter);
   } catch (error) {
-    console.error('Error generating filter with AI:', error);
+    tools.logError('Error generating filter with AI: ' + error.message);
     res.status(500).json({ message: 'AI generation failed: ' + (error.message || 'Unknown error') });
   }
 });
