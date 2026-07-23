@@ -24,14 +24,14 @@ block css
     .status-card .icon {
       font-size: 2rem;
       margin-bottom: 0.5rem;
-      min-height: 4rem;
+      min-height: 3rem;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .status-card .icon img {
       max-width: 10rem;
-      max-height: 3.7rem;
+      max-height: 3rem;
       object-fit: contain;
     }
     .status-card .count {
@@ -476,7 +476,7 @@ block scripts
       if (data.aiEnabled) {
         $('#label-ai').text('AI Check (' + data.aiSystem + ')');
         $('#card-ai .icon img').attr('src', data.aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/ollama-logo.svg');
-        $('#card-ai').removeClass('hidden').toggleClass('service-up service-down', data.aiRunning);
+        $('#card-ai').removeClass('hidden service-up service-down').addClass(data.aiRunning ? 'service-up' : 'service-down');
         $('#count-ai').html(data.aiRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
           : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
@@ -487,7 +487,7 @@ block scripts
         $('#card-ai').addClass('hidden');
       }
       if (data.saEnabled) {
-        $('#card-sa').removeClass('hidden').toggleClass('service-up service-down', data.saRunning);
+        $('#card-sa').removeClass('hidden service-up service-down').addClass(data.saRunning ? 'service-up' : 'service-down');
         $('#count-sa').html(data.saRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
           : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
