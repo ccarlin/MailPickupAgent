@@ -25,6 +25,11 @@ block css
       font-size: 2rem;
       margin-bottom: 0.5rem;
     }
+    .status-card .icon img {
+      height: 2rem;
+      max-width: 5rem;
+      object-fit: contain;
+    }
     .status-card .count {
       font-size: 2.2rem;
       font-weight: 700;
@@ -33,7 +38,6 @@ block css
     .status-card .label {
       font-size: 0.85rem;
       color: #64748b;
-      text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-top: 0.25rem;
     }
@@ -93,6 +97,23 @@ block css
     @keyframes pulse-alert {
       0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
       50% { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
+    }
+
+    .status-card .test-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      letter-spacing: 0.04em;
+    }
+    .status-card .test-badge i {
+      font-size: 0.55rem;
     }
 
     .status-card.service-up .icon { color: #22c55e; }
@@ -345,28 +366,38 @@ block content
         .sub-label (since last restart)
       .status-card.service-down.hidden.clickable#card-ai
         .icon
-          i.fas.fa-brain
+          - var aiLogo = aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/ollama-logo.svg'
+          img(src=aiLogo, alt="AI Check")
         .count#count-ai
           i.fas.fa-times-circle
           |  Offline
         .label#label-ai AI Check
         .sub-label#sub-ai-time
+        .test-badge
+          i.fas.fa-play
+          |  Clicking card runs test
       .status-card.service-down.hidden.clickable#card-sa
         .icon
-          i.fas.fa-shield-halved
+          img(src="/img/spamassassin.svg" alt="SpamAssassin")
         .count#count-sa
           i.fas.fa-times-circle
           |  Offline
         .label SpamAssassin
         .sub-label#sub-sa-time
+        .test-badge
+          i.fas.fa-play
+          |  Clicking card runs test
       .status-card.abuseipdb.not-configured.hidden.clickable#card-abuseipdb
         .icon
-          i.fas.fa-globe
+          img(src="/img/abuseipdb-logo.svg" alt="AbuseIPDB")
         .count#count-abuseipdb
           i.fas.fa-times-circle
           |  Not Configured
         .label AbuseIPDB
         .sub-label#sub-abuseipdb-time
+        .test-badge
+          i.fas.fa-play
+          |  Clicking card runs test
       .status-card.uptime
         .icon
           i.fas.fa-clock
@@ -440,6 +471,7 @@ block scripts
       $('#card-pending').toggleClass('alert', data.pending > 0);
       if (data.aiEnabled) {
         $('#label-ai').text('AI Check (' + data.aiSystem + ')');
+        $('#card-ai .icon img').attr('src', data.aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/ollama-logo.svg');
         $('#card-ai').removeClass('hidden').toggleClass('service-up service-down', data.aiRunning);
         $('#count-ai').html(data.aiRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'

@@ -24,7 +24,8 @@ function checkTcpPort(host, port, timeout = 3000) {
 }
 
 router.get('/', function(req, res) {
-  res.render('status', { title: 'Server Status (Live)' });
+  const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
+  res.render('status', { title: 'Server Status (Live)', aiSystem });
 });
 
 function countActiveUsers(sessionStore) {
