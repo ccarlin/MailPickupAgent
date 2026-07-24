@@ -37,9 +37,12 @@ async function testSpamAssassin() {
     timeout: TIMEOUT,
   });
 
+  const overallStart = performance.now();
   try {
+    const pingStart = performance.now();
     await client.ping();
-    console.log('Ping OK - SpamAssassin is reachable');
+    const pingElapsed = ((performance.now() - pingStart) / 1000).toFixed(2);
+    console.log(`Ping OK - SpamAssassin is reachable (${pingElapsed}s)`);
   } catch (err) {
     console.error(`Ping FAILED: ${err.message}`);
     console.error('Check that spamd is running and accessible at the configured host:port.');
@@ -49,12 +52,15 @@ async function testSpamAssassin() {
   console.log('Sending spam-like test message...\n');
 
   try {
+    const checkStart = performance.now();
     const result = await client.report(SPAM_EMAIL);
+    const checkElapsed = ((performance.now() - checkStart) / 1000).toFixed(2);
 
     console.log('=== SpamAssassin Result ===');
     console.log(`  Score:     ${result.score}`);
     console.log(`  Is Spam:   ${result.spam}`);
     console.log(`  Response:  ${result.message}`);
+    console.log(`  Time:      ${checkElapsed}s`);
     console.log('');
 
     if (result.report) {
@@ -66,7 +72,9 @@ async function testSpamAssassin() {
     const thresholdMatch = (result.report || '').match(/threshold[:\s]+([\d.]+)/i);
     const threshold = thresholdMatch ? parseFloat(thresholdMatch[1]) : 5.0;
 
+    const overallElapsed = ((performance.now() - overallStart) / 1000).toFixed(2);
     console.log('');
+    console.log(`Total time: ${overallElapsed}s`);
     if (result.spam) {
       console.log(`PASS: Message correctly classified as spam (score ${result.score} >= ${threshold})`);
     } else {

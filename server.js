@@ -181,6 +181,23 @@ app.get('/api/help', (req, res) => {
         method: 'POST',
         path: '/api/wipeall',
         description: 'Delete all log files and all emails in the queue and deleted folders'
+      },
+      spamReason: {
+        method: 'GET',
+        path: '/api/spam-reason/:type/:id',
+        description: 'Get spam reason for an email from quarantine or deleted directory',
+        pathParams: {
+          type: 'Directory type: "quarantine" or "deleted"',
+          id: 'Email ID'
+        }
+      },
+      emailLookup: {
+        method: 'GET',
+        path: '/api/email-lookup/:id',
+        description: 'Look up email info by ID, trying quarantine then deleted directories',
+        pathParams: {
+          id: 'Email ID'
+        }
       }
     }
   });
@@ -360,6 +377,9 @@ function startServer(protocol) {
   tools.logData(`  GET  /api/config`);
   tools.logData(`  GET  /api/test-emails`);
   tools.logData(`  POST /api/process`);
+  tools.logData(`  GET  /api/spam-reason/:type/:id`);
+  tools.logData(`  GET  /api/email-lookup/:id`);
+  tools.logData(`  POST /api/wipeall`);
 }
 
 if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {

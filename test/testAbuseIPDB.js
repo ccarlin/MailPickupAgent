@@ -15,15 +15,19 @@ async function testAbuseIPDB() {
 
   console.log('Testing AbuseIPDB API connection...\n');
 
+  const overallStart = performance.now();
   let failures = 0;
   for (const test of TEST_IPS) {
     console.log(`=== ${test.name.toUpperCase()} test (${test.ip}) ===`);
     console.log(`  Description: ${test.description}`);
 
+    const testStart = performance.now();
     const result = await check(test.ip);
+    const elapsed = ((performance.now() - testStart) / 1000).toFixed(2);
 
     if (!result) {
-      console.log('  Result:      No response (API error or timeout)');
+      console.log(`  Result:      No response (API error or timeout)`);
+      console.log(`  Time:        ${elapsed}s`);
       console.log('  FAIL: Unable to reach AbuseIPDB API.\n');
       failures += 1;
       continue;
@@ -33,6 +37,7 @@ async function testAbuseIPDB() {
     console.log(`  Reports:     ${result.totalReports}`);
     console.log(`  Country:     ${result.countryCode || 'N/A'}`);
     console.log(`  ISP:         ${result.isp || 'N/A'}`);
+    console.log(`  Time:        ${elapsed}s`);
 
     const isAbusive = result.abuseConfidenceScore > 0;
     const passed = isAbusive === test.expectedAbusive;
@@ -40,6 +45,9 @@ async function testAbuseIPDB() {
 
     if (!passed) failures += 1;
   }
+
+  const overallElapsed = ((performance.now() - overallStart) / 1000).toFixed(2);
+  console.log(`Total time: ${overallElapsed}s`);
 
   if (failures) {
     console.error(`${failures} AbuseIPDB test(s) failed.`);

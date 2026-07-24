@@ -31,9 +31,12 @@ async function testAiCheck() {
   console.log(`Testing ${aiSystem} AI check at ${getAiEndpoint()}...`);
   console.log(`Model: ${aiSystem === 'LLAMACPP' ? config.LLAMACPP_MODEL : config.OLLAMA_MODEL}\n`);
 
+  const overallStart = performance.now();
   let failures = 0;
   for (const test of TEST_EMAILS) {
+    const testStart = performance.now();
     const result = await checkAiSpam(test.from, test.subject, { text: test.text });
+    const elapsed = ((performance.now() - testStart) / 1000).toFixed(2);
     const expectedClassification = test.expectedSpam ? 'SPAM' : 'HAM';
     const passed = result.aiCheckSucceeded && result.aiClassification === expectedClassification;
 
@@ -41,10 +44,14 @@ async function testAiCheck() {
     console.log(`  Classification: ${result.aiClassification}`);
     console.log(`  Score:          ${result.aiScore}`);
     console.log(`  Reasons:        ${result.aiReasons || 'None'}`);
+    console.log(`  Time:           ${elapsed}s`);
     console.log(`  ${passed ? 'PASS' : 'FAIL'}: expected ${expectedClassification}.\n`);
 
     if (!passed) failures += 1;
   }
+
+  const overallElapsed = ((performance.now() - overallStart) / 1000).toFixed(2);
+  console.log(`Total time: ${overallElapsed}s`);
 
   if (failures) {
     console.error(`${failures} AI classification test(s) failed.`);
