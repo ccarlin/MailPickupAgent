@@ -35,7 +35,7 @@
   "license": "MIT",
   "dependencies": {
     "axios": "^1.7.0",
-    "better-sqlite3": "^12.10.1",
+    "better-sqlite3": "^13.0.1",
     "better-sqlite3-session-store": "^0.1.0",
     "collections": "^5.1.13",
     "cookie-parser": "^1.4.7",
@@ -58,6 +58,6 @@
     "globals": "^17.6.0"
   },
   "allowScripts": {
-    "better-sqlite3@12.11.1": true
+    "better-sqlite3@13.0.1": true
   }
 }
