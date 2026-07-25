@@ -120,7 +120,7 @@ block content
             var emailStore = {};
             var allData = emailData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
-                var row = [e.filepath, e.recipients, e.sender, e.subject, String(score), e.antiSpam, e.date, e.clientip, e.dkim, e.safe, e.clientipinfo];
+                var row = [e.filepath, e.recipients, e.sender, e.subject, String(score), e.antiSpam, e.date, e.clientip, e.dkim, e.safe];
                 emailStore[e.filepath] = { subject: e.subject, sender: e.sender, recipients: e.recipients, spamScore: score, antiSpam: e.antiSpam, reason: e.reason, clientip: e.clientip, datetime: e.date, dkim: e.dkim };
                 return row;
             });
@@ -491,8 +491,6 @@ block content
                                     return gridjs.html(html);
                                 }
                             },
-                            { name: 'safe', id: 'safe', hidden: true },
-                            { name: 'clientipinfo', id: 'clientipinfo', hidden: true }
                         ],
                         data: filteredData,
                         pagination: false,
@@ -536,7 +534,7 @@ block content
                     var subRow = document.createElement('tr');
                     subRow.className = 'reason-subrow';
                     var cell = document.createElement('td');
-                    cell.setAttribute('colspan', '100');
+                    cell.setAttribute('colspan', '10');
                     cell.innerHTML = '<strong>Reason:</strong> ' + reason.replace(/</g, '&lt;');
                     subRow.appendChild(cell);
                     row.parentNode.insertBefore(subRow, row.nextSibling);

@@ -253,7 +253,7 @@ module.exports = {
      * @param {string} localAddress
      * @param {string} remoteAddress
      * @param {string} [pagePath] Optional - if provided the key will be tied to a single page (include full path or identifier)
-     * @returns {string} md5 hash key
+     * @returns {string} sha256 hash key
      */
     generateKey: function(localAddress, remoteAddress, pagePath) {
       localAddress = localAddress || '';
@@ -267,6 +267,6 @@ module.exports = {
         base += `:${pagePath}`;
       }
 
-      return crypto.createHash('md5').update(base).digest("hex");
+      return crypto.createHash('sha256').update(base).digest("hex");
     }    
   }; 
