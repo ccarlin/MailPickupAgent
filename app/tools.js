@@ -132,13 +132,35 @@ module.exports = {
     sleep: function(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
+    MESSAGE_ID_PATTERN: /^[A-Fa-f0-9]+\.MAI$/i,
+    resolveWithinDir: function(baseDir, fileName) {
+        const base = path.resolve(baseDir);
+        const resolved = path.resolve(base, fileName);
+        const relative = path.relative(base, resolved);
+        if (relative.startsWith('..') || path.isAbsolute(relative)) {
+            throw new Error(`Invalid messageID: path escapes configured directory (${fileName})`);
+        }
+        return resolved;
+    },
     buildFilePaths: function(messageID, queueType) {
+        if (typeof messageID !== 'string' || !module.exports.MESSAGE_ID_PATTERN.test(messageID)) {
+            throw new Error('Invalid messageID: must be a MailEnable message filename (hex ID ending in .MAI)');
+        }
+
         const qt = (queueType || '').toString().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
         const queueDirKey = `${qt}_QUEUE_DIR`;
         const commandDirKey = `${qt}_COMMAND_DIR`;
-        const messagePath = config[queueDirKey] ? path.join(config[queueDirKey], messageID) : messageID;
-        const controlFilePath = config[commandDirKey] ? path.join(config[commandDirKey], messageID) : messageID;       
-        return { messagePath, controlFilePath };
+        const queueDir = config[queueDirKey];
+        const commandDir = config[commandDirKey];
+
+        if (!queueDir || !commandDir) {
+            throw new Error(`Invalid queueType: no directories configured for ${qt}`);
+        }
+
+        return {
+            messagePath: module.exports.resolveWithinDir(queueDir, messageID),
+            controlFilePath: module.exports.resolveWithinDir(commandDir, messageID),
+        };
     },
     isPrivateIp: function(ip) {
       // Check for IPv4 private ranges

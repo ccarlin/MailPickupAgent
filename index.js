@@ -29,6 +29,7 @@ const THRESHOLD_DELETE = Number(config.THRESHOLD_DELETE || 15);
 const HEADER_SEPARATOR = '\r\n\r\n';
 const PROCESSING_LOG_DIR = config.PROCESSING_LOG;
 const QUARANTINE_LOG_DIR = config.QUARANTINE_LOG;
+const HOSTNAME = config.HOSTNAME || process.env.HOSTNAME || 'localhost';
 
 // Cache of recently released/recovered email MessageIDs to prevent re-processing
 const RECENTLY_RELEASED_TTL = 5 * 60 * 1000; // 5 minutes
@@ -76,7 +77,7 @@ function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, 
   const dateTime = `${pad(d.getMonth() + 1)}/${pad(d.getDate())}/${String(d.getFullYear()).slice(-2)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   const s = (v) => String(v).replace(/\t/g, ' ').replace(/[\r\n]+/g, ' ');
   const line = [
-    dateTime, s(messageId), 'SMTP-IN(0)', Math.round(sizeKb), 'ccarlin.com',
+    dateTime, s(messageId), 'SMTP-IN(0)', Math.round(sizeKb), HOSTNAME,
     s(ip || ''), s(sender), s(recipients), s(subject),
     processTimeSec.toFixed(3), s(result), s(spamInfo), spamScore
   ].join('\t');
@@ -97,7 +98,7 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     }
     let headers = message.substring(0, headerEndIndex);
     let body = message.substring(headerEndIndex + HEADER_SEPARATOR.length);
-    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${config.HOSTNAME || process.env.HOSTNAME || 'localhost'}\r\n`;
+    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${HOSTNAME}\r\n`;
     headers += `X-MPA-Msgid: ${destMessageName}\r\n`;
     headers += `X-MPA-SpamReason: ${quarantineReasons.join('; ')}\r\n`;
     headers += `X-MPA-SpamScore: ${spamScore}\r\n`;
@@ -615,7 +616,12 @@ if (require.main === module) {
   }
   else {
     const [messageFile, queueType] = args;
-    const { messagePath, controlFilePath } = tools.buildFilePaths(messageFile, queueType);
-    processEmail(controlFilePath, messagePath, loadRules()).then(() => process.exit(0));
+    try {
+      const { messagePath, controlFilePath } = tools.buildFilePaths(messageFile, queueType);
+      processEmail(controlFilePath, messagePath, loadRules()).then(() => process.exit(0));
+    } catch (err) {
+      tools.logError(err.message);
+      process.exit(1);
+    }
   }
 }

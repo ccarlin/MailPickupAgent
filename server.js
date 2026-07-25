@@ -72,6 +72,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Lightweight health check for load balancers and process monitors (no auth)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    version,
+    uptime: Math.floor(process.uptime()),
+  });
+});
+
 // Auth routes (unprotected)
 app.use('/', require('./routes/auth'));
 
@@ -148,8 +157,13 @@ function initializeConfiguration() {
 app.get('/api/help', (req, res) => {
   res.status(200).json({
     message: 'Mail Pickup Agent API',
-    version: '1.0.0',
+    version,
     endpoints: {
+      health: {
+        method: 'GET',
+        path: '/health',
+        description: 'Lightweight health check (no authentication required)'
+      },
       help: {
         method: 'GET',
         path: '/api/help',
@@ -214,7 +228,7 @@ app.get('/api/config', (req, res) => {
 // GET Route - Send test emails
 app.get('/api/test-emails', async (req, res) => {
   try {
-    const recipient = req.query.recipient || appConfig.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com';
+    const recipient = req.query.recipient || appConfig.TEST_EMAIL_RECIPIENT || 'test@example.com';
     const tests = buildAllTestEmails();
     const testResults = [];
     
@@ -285,7 +299,8 @@ app.post('/api/process', async (req, res) => {
 
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const status = /^Invalid (messageID|queueType)/.test(error.message) ? 400 : 500;
+    res.status(status).json({ error: error.message });
   }
 });
 
@@ -373,6 +388,7 @@ function startServer(protocol) {
     tools.logData(`Authentication is disabled for local connections.`);
   }
   tools.logData(`API endpoints available:`);
+  tools.logData(`  GET  /health`);
   tools.logData(`  GET  /api/help`);
   tools.logData(`  GET  /api/config`);
   tools.logData(`  GET  /api/test-emails`);
