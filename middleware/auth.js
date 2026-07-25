@@ -12,10 +12,20 @@ function authMiddleware(req, res, next) {
   if (isLocalhost(req)) {
     return next();
   }
-  // Allow /mailq access if Key query param is present or MailKey cookie is valid
+  // Allow /mailq access if Key query param is valid or MailKey cookie is valid
   if (req.path.startsWith('/mailq')) {
     if (req.query.Key) {
-      return next();
+      // Temporarily set the cookie to validate the key
+      req.cookies.MailKey = req.query.Key;
+      if (tools.isValid(req, 'mailq')) {
+        return next();
+      }
+      // Invalid key provided explicitly - reject and clear any existing cookie
+      delete req.cookies.MailKey;
+      if (req.xhr) {
+        return res.status(401).json({ error: 'Invalid access key.' });
+      }
+      return res.redirect('/');
     }
     if (tools.isValid(req, 'mailq')) {
       return next();

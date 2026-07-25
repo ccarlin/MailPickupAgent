@@ -512,6 +512,7 @@ block scripts
         $('#sub-process-time').text('(' + data.processCount + ' emails)');
       }
       $('#last-update-time').text(new Date().toLocaleTimeString());
+      if (data.version) $('#footer-version').text(data.version);
       $('#server-offline').hide();
       $('#status-content').show();
       changeIcon(data.pending);

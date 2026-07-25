@@ -11,6 +11,7 @@ const { purgeOldFiles } = require('../index');
 const { testAiCheck } = require('../test/testAI');
 const { testSpamAssassin } = require('../test/testSpamAssassin');
 const { testAbuseIPDB } = require('../test/testAbuseIPDB');
+const { version } = require('../package.json');
 
 function checkTcpPort(host, port, timeout = 3000) {
   return new Promise((resolve) => {
@@ -25,7 +26,7 @@ function checkTcpPort(host, port, timeout = 3000) {
 
 router.get('/', function(req, res) {
   const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
-  res.render('status', { title: 'Server Status (Live)', aiSystem });
+  res.render('status', { title: 'Server Status (Live)', aiSystem, version });
 });
 
 function countActiveUsers(sessionStore) {
@@ -132,7 +133,8 @@ async function buildStatusData(req) {
       avgProcessTime: data.avgProcessTime,
       processCount: data.processCount,
       loggedInUsers: await countActiveUsers(req.sessionStore),
-      notificationCount: notifications.getAll().length
+      notificationCount: notifications.getAll().length,
+      version
     };
   } catch (err) {
     tools.logError(`Error building status data: ${err.message}`);

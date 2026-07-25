@@ -178,11 +178,20 @@ router.get('/', function(req, res) {
     //If not logged in via session, handle key-based auth
     if (!req.session?.authenticated)
     {
-        //If the key is in the query string then set the cookie and redirect
+        //If the key is in the query string then validate and set the cookie
         if (req.query.key || req.query.Key)
         {
             const keyVal = req.query.key || req.query.Key;
-            res.cookie("MailKey", keyVal, {maxAge: 1000 * 60 * 1440 * 365});    
+            // Validate the key before accepting it
+            req.cookies.MailKey = keyVal;
+            if (tools.isValid(req, "mailq")) {
+                res.cookie("MailKey", keyVal, {maxAge: 1000 * 60 * 1440 * 365});
+            } else {
+                // Invalid key - clear any existing cookie and reject
+                delete req.cookies.MailKey;
+                res.clearCookie("MailKey");
+                return res.redirect("/");
+            }
             //If the user is passed with the key then set that cookie as well
             if (filterUser)
             {
