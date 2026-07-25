@@ -45,8 +45,9 @@ if (!sessionSecret || sessionSecret === 'change-this-to-a-random-secret-in-produ
   }
 }
 
+const sessionDb = new Database(path.join(__dirname, 'config', 'sessions.sqlite'));
 const sessionStore = new SQLiteStore({
-  client: new Database(path.join(__dirname, 'config', 'sessions.sqlite')),
+  client: sessionDb,
   expired: {
     clear: true,
     intervalMs: 900000 // 15 minutes
@@ -434,7 +435,25 @@ process.on('SIGINT', () => {
   
   server.close(() => {
     tools.logData('HTTP server closed');
-    // Close database connections or other persistent resources here
+
+    // Close SQLite database connections
+    const dbs = [
+      { db: sessionDb, name: 'session' },
+    ];
+    try { dbs.push({ db: require('./app/notifications').db, name: 'notifications' }); } catch { /* not loaded */ }
+    try { dbs.push({ db: require('./app/ruleHits').db, name: 'ruleHits' }); } catch { /* not loaded */ }
+
+    for (const { db, name } of dbs) {
+      try {
+        if (db && typeof db.close === 'function') {
+          db.close();
+          tools.logData(`Closed ${name} database connection`);
+        }
+      } catch (err) {
+        tools.logError(`Error closing ${name} database: ${err.message}`);
+      }
+    }
+
     process.exit(0); 
   });
 

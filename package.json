@@ -1,6 +1,6 @@
 {
   "name": "mail-pickup-agent",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "description": "A Node.js executable that acts as a mail pickup agent for MailEnable, intercepting emails and routing them to quarantine or release.",
   "main": "index.js",
   "bin": {
@@ -32,7 +32,7 @@
     "release"
   ],
   "author": "Chuck Carlin",
-  "license": "MIT",
+  "license": "ISC",
   "dependencies": {
     "axios": "^1.7.0",
     "better-sqlite3": "^13.0.1",

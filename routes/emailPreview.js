@@ -3,16 +3,21 @@ const router = express.Router();
 const tools = require("../app/tools");
 const config = require('../config');
 
-/* GET Thumbnail images. */
 router.get('/', async function(req, res) {
-    
-    let mailKey = req.query.mailKey;    
-    let mailFile = config.QUARANTINE_DIR + "\\" + mailKey + ".MAI";
-    if (req.query.isDeleted)
-        mailFile = config.DELETED_DIR + "\\" + mailKey + ".MAI";
-    let inHTML = (req.query.view && req.query.view == "HTML");
-    let mailMessage = await tools.emailExtract(mailFile, inHTML);
-    res.send(mailMessage);    
+    try {
+        const mailKey = req.query.mailKey;
+        if (!mailKey || !/^[A-Fa-f0-9]+$/.test(mailKey)) {
+            return res.status(400).send('Invalid mailKey');
+        }
+        const baseDir = req.query.isDeleted ? config.DELETED_DIR : config.QUARANTINE_DIR;
+        const mailFile = tools.resolveWithinDir(baseDir, mailKey + '.MAI');
+        const inHTML = req.query.view === 'HTML';
+        const mailMessage = await tools.emailExtract(mailFile, inHTML);
+        res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox allow-same-origin");
+        res.send(mailMessage);
+    } catch {
+        res.status(400).send('Invalid request');
+    }
 });
 
 module.exports = router;

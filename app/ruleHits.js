@@ -54,4 +54,4 @@ function clearAllHits() {
   return clearAllHitsStmt.run().changes;
 }
 
-module.exports = { recordHit, getAllHits, getAllHitsArray, ruleValue, deleteHit, clearAllHits };
+module.exports = { recordHit, getAllHits, getAllHitsArray, ruleValue, deleteHit, clearAllHits, db };

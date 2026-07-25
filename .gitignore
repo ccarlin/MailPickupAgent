@@ -19,3 +19,4 @@ config/production.json
 eslint.config.mjs
 ecosystem.config.js
 config/*.bak
+SECURITY-AUDIT.md

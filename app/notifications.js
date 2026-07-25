@@ -53,6 +53,7 @@ try {
 
 module.exports = {
   publicKey: vapidKeys.publicKey,
+  db,
 
   getAll: () => {
     return db.prepare('SELECT * FROM notification_subscriptions ORDER BY created_at DESC').all();
