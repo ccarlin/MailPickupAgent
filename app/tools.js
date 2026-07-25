@@ -108,6 +108,45 @@ module.exports = {
         return "Error parsing email message.";
       }
     },
+    // Async: parse email and resolve CID image references to base64 data URIs.
+    // Returns a Promise<string> of HTML with inline images embedded.
+    emailExtractWithImages: async function(mailFile) {
+      try {
+        if (!fs.existsSync(mailFile)) {
+          return "No message available";
+        }
+        const mailMessage = fs.readFileSync(mailFile);
+        const parsed = await PostalMime.parse(mailMessage);
+        let html = parsed.html || "";
+        const attachments = parsed.attachments || [];
+        if (!html || attachments.length === 0) return html || "No HTML part available";
+
+        // Build a map of cid -> attachment content
+        const cidMap = {};
+        for (const att of attachments) {
+          if (att.contentId) {
+            // contentId may be wrapped in angle brackets
+            const cid = att.contentId.replace(/^</, '').replace(/>$/, '');
+            cidMap[cid] = att;
+          }
+        }
+
+        // Replace cid: references with data URIs
+        html = html.replace(/cid:([^"'\s>]+)/g, (match, cid) => {
+          const att = cidMap[cid];
+          if (att && att.content) {
+            const b64 = Buffer.from(att.content).toString('base64');
+            return `data:${att.contentType || 'application/octet-stream'};base64,${b64}`;
+          }
+          return match;
+        });
+
+        return html;
+      } catch (err) {
+        this.logError(`Error parsing email file with images: ${mailFile}, Error: ${err}`);
+        return "Error parsing email message.";
+      }
+    },
     // Retrieve X-MPA-SpamReason header from an email by its ID and directory path.
     // Returns the spam reason string, or null if not found or on error.
     getSpamReason: async function(emailId, emailPath) {

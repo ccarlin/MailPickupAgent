@@ -214,9 +214,23 @@ block content
                 var key = link.dataset.mailkey;
                 var view = link.dataset.view;
                 if (!key) return;
+                var showImages = document.getElementById('chkShowImages').checked;
                 var url = view === 'html' ? 'emailPreview?isDeleted=true&view=HTML&mailKey=' + encodeURIComponent(key) : 'emailPreview?isDeleted=true&mailKey=' + encodeURIComponent(key);
+                if (view === 'html' && showImages) url += '&showImages=true';
                 document.getElementById('emailPreviewFrame').src = url;
                 document.getElementById('emailPreviewModal').style.display = 'block';
+            });
+
+            document.getElementById('chkShowImages').addEventListener('change', function() {
+                var frame = document.getElementById('emailPreviewFrame');
+                var currentUrl = frame.src;
+                if (!currentUrl || currentUrl === 'about:blank') return;
+                var hasImages = currentUrl.indexOf('showImages=true') !== -1;
+                if (this.checked && !hasImages) {
+                    frame.src = currentUrl + '&showImages=true';
+                } else if (!this.checked && hasImages) {
+                    frame.src = currentUrl.replace(/[&?]showImages=true/, '');
+                }
             });
 
             document.getElementById('chkSelectAll').addEventListener('change', function() {
@@ -468,7 +482,11 @@ block content
         .preview-modal-content
             div(style="display:flex; justify-content:space-between; align-items:center;")
                 h2 Email Preview
-                button#previewCloseBtn.mui-btn(type="button") Close
+                div(style="display:flex; align-items:center; gap:12px;")
+                    label(for="chkShowImages" style="font-size:0.85rem; white-space:nowrap; cursor:pointer;")
+                        input#chkShowImages(type="checkbox" style="margin-right:4px;")
+                        | Show Images
+                    button#previewCloseBtn.mui-btn(type="button") Close
             iframe#emailPreviewFrame
 
     #infoModal.preview-modal

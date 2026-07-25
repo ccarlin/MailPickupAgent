@@ -325,9 +325,23 @@ block scripts
             var key = raw ? decodeURIComponent(raw) : '';
             var safe = ($btn.attr('data-safe') === 'true' || $btn.attr('data-safe') === true);
             if (!key) return;
+            var showImages = document.getElementById('chkShowImages') && document.getElementById('chkShowImages').checked;
             var url = (safe ? 'emailPreview?view=HTML&mailKey=' : 'emailPreview?mailKey=') + encodeURIComponent(key);
+            if (safe && showImages) url += '&showImages=true';
             $('#emailPreviewFrame').attr('src', url);
             $('#emailPreviewModal').show();
+        });
+
+        $('#chkShowImages').on('change', function() {
+            var frame = document.getElementById('emailPreviewFrame');
+            var currentUrl = frame.src;
+            if (!currentUrl || currentUrl === 'about:blank') return;
+            var hasImages = currentUrl.indexOf('showImages=true') !== -1;
+            if (this.checked && !hasImages) {
+                frame.src = currentUrl + '&showImages=true';
+            } else if (!this.checked && hasImages) {
+                frame.src = currentUrl.replace(/[&?]showImages=true/, '');
+            }
         });
 
         // show reason once; after revealing remove the "Show Reason" button so it cannot be hidden again
@@ -529,5 +543,9 @@ block content
         .preview-modal-content
             div(style="display:flex; justify-content:space-between; align-items:center;")
                 h2 Email Preview
-                button.myButton.preview-close(onclick="closePreviewModal()") Close
+                div(style="display:flex; align-items:center; gap:12px;")
+                    label(for="chkShowImages" style="font-size:0.85rem; white-space:nowrap; cursor:pointer;")
+                        input#chkShowImages(type="checkbox" style="margin-right:4px;")
+                        | Show Images
+                    button.myButton.preview-close(onclick="closePreviewModal()") Close
             iframe#emailPreviewFrame
