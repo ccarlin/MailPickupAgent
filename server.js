@@ -61,6 +61,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
+    secure: !!(appConfig.CERT_PATH && appConfig.CERT_KEY_PATH),
     sameSite: 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
@@ -429,10 +430,10 @@ process.on('unhandledRejection', (reason) => {
   tools.logError(`UNHANDLED REJECTION: ${reason instanceof Error ? reason.message : reason}\n${reason instanceof Error ? reason.stack : ''}`);
 });
 
-// Listen for the PM2 shutdown signal
-process.on('SIGINT', () => {
-  tools.logData('SIGINT signal received: closing HTTP server');
-  
+// Graceful shutdown — shared by SIGINT and SIGTERM
+function gracefulShutdown(signal) {
+  tools.logData(`${signal} signal received: closing HTTP server`);
+
   server.close(() => {
     tools.logData('HTTP server closed');
 
@@ -454,7 +455,7 @@ process.on('SIGINT', () => {
       }
     }
 
-    process.exit(0); 
+    process.exit(0);
   });
 
   // Force close after 10 seconds if it's taking too long
@@ -462,4 +463,7 @@ process.on('SIGINT', () => {
     tools.logError('Forcing shutdown...');
     process.exit(1);
   }, 10000);
-});
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

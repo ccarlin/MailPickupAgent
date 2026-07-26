@@ -686,6 +686,11 @@ block scripts
         setConnectionState('connected');
       });
 
+      eventSource.addEventListener('auth-error', function() {
+        eventSource.close();
+        window.location.href = '/login';
+      });
+
       function clearConnectTimeout() {
         if (connectTimeout) {
           clearTimeout(connectTimeout);

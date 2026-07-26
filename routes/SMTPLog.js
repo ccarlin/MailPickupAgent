@@ -4,8 +4,7 @@ const path = require('path');
 const tools = require("../app/tools");
 const fs = require("fs");
 const xss = require("xss");
-const moment = require("moment");
-const Set = require("collections/set");
+
 const MMDBReader = require('mmdb-reader');
 const mmdb = new MMDBReader(path.join(__dirname, '../GeoLite2-Country.mmdb'));
 const config = require('../config');
@@ -52,8 +51,8 @@ router.get('/', function(req, res) {
                         if (ipAddress.startsWith("10.1.10.") || ipAddress.startsWith("192.168.") || ipAddress=="127.0.0.1") 
                             continue;
                                                 
-                        let dateTime = moment(lineParts[0] + " " + lineParts[1]).valueOf();
-                        let date = moment(lineParts[0]).valueOf();
+                        let dateTime = new Date(lineParts[0] + " " + lineParts[1]).getTime();
+                        let date = new Date(lineParts[0]).getTime();
                         
                         let method = lineParts[7];
                         let system = lineParts[8];
@@ -192,12 +191,12 @@ router.get('/', function(req, res) {
             let item = logData[key];
             if (req.query.today)
             {
-                item.FirstSeen = moment(item.FirstSeen).format('HH:mm:ss');
-                item.LastSeen = moment(item.LastSeen).format('HH:mm:ss');
+                item.FirstSeen = new Date(item.FirstSeen).toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                item.LastSeen = new Date(item.LastSeen).toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'});
             }
             else {
-                item.FirstSeen = moment(item.FirstSeen).format('MM/DD/YYYY');
-                item.LastSeen = moment(item.LastSeen).format('MM/DD/YYYY');
+                item.FirstSeen = new Date(item.FirstSeen).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'});
+                item.LastSeen = new Date(item.LastSeen).toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'});
             }
             item.UserDisplay += " (" +  item.Users.size + ")";
             item.UserCount = item.Users.size;

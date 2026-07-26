@@ -12,6 +12,7 @@ const { testAiCheck } = require('../test/testAI');
 const { testSpamAssassin } = require('../test/testSpamAssassin');
 const { testAbuseIPDB } = require('../test/testAbuseIPDB');
 const { version } = require('../package.json');
+const { isLocalhost } = require('../middleware/auth');
 
 function checkTcpPort(host, port, timeout = 3000) {
   return new Promise((resolve) => {
@@ -205,11 +206,26 @@ router.get('/events', function(req, res) {
     res.write(': heartbeat\n\n');
   }, 30000);
 
-  req.on('close', () => {
+  // Periodically re-verify session validity
+  const authCheck = setInterval(() => {
+    if (isLocalhost(req)) return;
+    req.session.reload((err) => {
+      if (err || !req.session.authenticated) {
+        sendEvent('auth-error', {});
+        cleanup();
+        res.end();
+      }
+    });
+  }, 30000);
+
+  function cleanup() {
     metrics.eventBus.off('metricUpdate', onMetricUpdate);
     clearInterval(refreshInterval);
     clearInterval(heartbeat);
-  });
+    clearInterval(authCheck);
+  }
+
+  req.on('close', cleanup);
 });
 
 router.post('/api/purge', function(req, res) {

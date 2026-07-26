@@ -152,6 +152,11 @@ block content
                 console.log('SSE connected:', JSON.parse(e.data));
             });
 
+            eventSource.addEventListener('auth-error', function() {
+                eventSource.close();
+                window.location.href = '/login';
+            });
+
             eventSource.onerror = function() {
                 console.log('SSE connection error, will reconnect...');
             };

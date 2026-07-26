@@ -1,8 +1,13 @@
+const net = require('net');
 const tools = require('../app/tools');
 
 function isLocalhost(req) {
-  const ip = req.ip || req.socket.remoteAddress || '';
-  return ip === '::1' || ip === '::ffff:127.0.0.1' || ip === '127.0.0.1' || ip === 'localhost';
+  const ip = (req.ip || req.socket.remoteAddress || '').replace(/^\[|]$/g, '');
+  if (ip === 'localhost') return true;
+  if (ip === '::1') return true;
+  if (ip.startsWith('::ffff:127.')) return true;
+  if (net.isIP(ip) === 4 && ip.startsWith('127.')) return true;
+  return false;
 }
 
 function authMiddleware(req, res, next) {
@@ -39,3 +44,4 @@ function authMiddleware(req, res, next) {
 }
 
 module.exports = authMiddleware;
+module.exports.isLocalhost = isLocalhost;

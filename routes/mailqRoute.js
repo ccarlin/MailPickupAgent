@@ -10,6 +10,7 @@ const config = require('../config');
 const { recentlyReleased } = require('../index.js');
 const dnsPromises = dns.promises;
 const PostalMime = require('postal-mime').default;
+const { isLocalhost } = require('../middleware/auth');
 
 const prefixUTF = '=?UTF-8?B?';
 const suffix = '?=';
@@ -756,10 +757,27 @@ router.get('/events', function(req, res) {
         res.write(': heartbeat\n\n');
     }, 30000);
 
-    req.on('close', () => {
+    // Periodically re-verify session validity
+    const authCheck = setInterval(() => {
+        if (isLocalhost(req)) return;
+        req.session.reload((err) => {
+            if (err || !req.session.authenticated) {
+                if (!tools.isValid(req, 'mailq')) {
+                    sendEvent('auth-error', {});
+                    cleanup();
+                    res.end();
+                }
+            }
+        });
+    }, 30000);
+
+    function cleanup() {
         metrics.eventBus.off('quarantine', onQuarantine);
         clearInterval(heartbeat);
-    });
+        clearInterval(authCheck);
+    }
+
+    req.on('close', cleanup);
 });
 
 module.exports = router;
