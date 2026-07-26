@@ -151,6 +151,9 @@ module.exports = {
     // Returns the spam reason string, or null if not found or on error.
     getSpamReason: async function(emailId, emailPath) {
         try {
+            if (!module.exports.MESSAGE_ID_PATTERN.test(emailId)) {
+                return null;
+            }
             const mailFile = path.join(emailPath, emailId + '.MAI');
             if (!fs.existsSync(mailFile)) {
                 return null;

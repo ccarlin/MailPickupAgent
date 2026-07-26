@@ -45,7 +45,7 @@ block scripts
 block content
     script.
         document.addEventListener('DOMContentLoaded', function() {
-            var emailData = !{JSON.stringify(emails)};
+            var emailData = !{JSON.stringify(emails).replace(/<\//g, '\\u003c/')};
             emailData.sort(function(a, b) {
                 return (parseInt(b.timeAcquired) || 0) - (parseInt(a.timeAcquired) || 0);
             });
@@ -89,7 +89,7 @@ block content
                 html += '<div class="mui-multiselect-dropdown">';
                 html += '<label><input type="checkbox" class="mui-ms-option" value="" checked data-key="' + config.key + '"> <span>All</span></label>';
                 vals.forEach(function(v) {
-                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + v.replace(/"/g, '&quot;') + '" data-key="' + config.key + '"> <span>' + v + '</span></label>';
+                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + escHtml(v) + '" data-key="' + config.key + '"> <span>' + escHtml(v) + '</span></label>';
                 });
                 html += '</div></div>';
                 container.innerHTML = html;
@@ -285,7 +285,7 @@ block content
                                 width: '40px',
                                 sort: false,
                                 formatter: function(cell) {
-                                    return gridjs.html('<input type="checkbox" class="deleted-chk" value="' + cell.replace(/"/g, '&quot;') + '">');
+                                    return gridjs.html('<input type="checkbox" class="deleted-chk" value="' + escHtml(cell) + '">');
                                 }
                             },
                             { name: 'Time', width: '160px', sort: true },
@@ -301,9 +301,9 @@ block content
                                 formatter: function(cell, row) {
                                     var filepath = row.cells[0].data;
                                     var safe = cell === true || cell === 'true';
-                                    var html = '<button class="preview-btn preview-link" data-mailkey="' + filepath.replace(/"/g, '&quot;') + '" data-view="text" title="Plain Text Preview"><i class="material-icons">article</i></button>';
+                                    var html = '<button class="preview-btn preview-link" data-mailkey="' + escHtml(filepath) + '" data-view="text" title="Plain Text Preview"><i class="material-icons">article</i></button>';
                                     if (safe) {
-                                        html += '&nbsp;<button class="preview-btn preview-link" data-mailkey="' + filepath.replace(/"/g, '&quot;') + '" data-view="html" title="HTML Preview"><i class="material-icons">visibility</i></button>';
+                                        html += '&nbsp;<button class="preview-btn preview-link" data-mailkey="' + escHtml(filepath) + '" data-view="html" title="HTML Preview"><i class="material-icons">visibility</i></button>';
                                     }
                                     return gridjs.html(html);
                                 }
@@ -403,7 +403,7 @@ block content
                 html += '<th>Time</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Score</th><th>Reason</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
-                    html += '<tr><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td><td>' + r[5] + '</td><td>' + r[6] + '</td></tr>';
+                    html += '<tr><td>' + escHtml(r[1]) + '</td><td>' + escHtml(r[2]) + '</td><td>' + escHtml(r[3]) + '</td><td>' + escHtml(r[4]) + '</td><td>' + escHtml(r[5]) + '</td><td>' + escHtml(r[6]) + '</td></tr>';
                 });
                 html += '</tbody></table></body></html>';
                 win.document.write(html);

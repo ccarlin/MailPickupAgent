@@ -62,7 +62,7 @@ block scripts
 block content
     script.
         document.addEventListener('DOMContentLoaded', function() {
-            var subscriptions = !{JSON.stringify(subscriptions)};
+            var subscriptions = !{JSON.stringify(subscriptions).replace(/<\//g, '\\u003c/')};
             var allData = subscriptions.map(function(s) {
                 var sub = JSON.parse(s.subscription);
                 var endpoint = sub.endpoint || 'unknown';
@@ -88,7 +88,7 @@ block content
                                 width: 'auto',
                                 sort: true,
                                 formatter: function(cell) {
-                                    return gridjs.html('<span class="endpoint-cell" title="' + String(cell).replace(/"/g, '&quot;') + '">' + String(cell).replace(/</g, '&lt;') + '</span>');
+                                    return gridjs.html('<span class="endpoint-cell" title="' + escHtml(cell) + '">' + escHtml(cell) + '</span>');
                                 }
                             },
                             {
@@ -96,7 +96,7 @@ block content
                                 width: '140px',
                                 sort: true,
                                 formatter: function(cell) {
-                                    return gridjs.html(cell);
+                                    return gridjs.html('<span>' + escHtml(cell) + '</span>');
                                 }
                             },
                             {

@@ -235,7 +235,7 @@ block content
                 html += '<div class="mui-multiselect-dropdown">';
                 html += '<label><input type="checkbox" class="mui-ms-option" value="" checked data-key="' + config.key + '"> <span>All</span></label>';
                 vals.forEach(function(v) {
-                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + v.replace(/"/g, '&quot;') + '" data-key="' + config.key + '"> <span>' + v + '</span></label>';
+                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + escHtml(v) + '" data-key="' + config.key + '"> <span>' + escHtml(v) + '</span></label>';
                 });
                 html += '</div></div>';
                 container.innerHTML = html;
@@ -342,7 +342,7 @@ block content
                                 width: '400px',
                                 sort: true,
                                 formatter: function(cell) {
-                                    return gridjs.html('<span class="label-cell">' + cell + '</span>');
+                                    return gridjs.html('<span class="label-cell">' + escHtml(cell) + '</span>');
                                 }
                             },
                             {
@@ -350,7 +350,7 @@ block content
                                 width: '90px',
                                 sort: true,
                                 formatter: function(cell) {
-                                    return gridjs.html('<span class="score-cell">' + cell + '</span>');
+                                    return gridjs.html('<span class="score-cell">' + escHtml(cell) + '</span>');
                                 }
                             },
                             {

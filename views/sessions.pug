@@ -73,7 +73,7 @@ block scripts
 block content
     script.
         document.addEventListener('DOMContentLoaded', function() {
-            var sessions = !{JSON.stringify(sessions)};
+            var sessions = !{JSON.stringify(sessions).replace(/<\//g, '\\u003c/')};
             var allData = sessions.map(function(s) {
                 var loginDisplay = s.loginTime ? new Date(s.loginTime).toLocaleString() : 'unknown';
                 return [s.sid, s.ip, s.userAgent, s.identifier || '', loginDisplay, s.currentUser];
@@ -101,7 +101,7 @@ block content
                                 width: 'auto',
                                 sort: true,
                                 formatter: function(cell) {
-                                    return gridjs.html('<span class="user-agent-cell" title="' + String(cell).replace(/"/g, '&quot;') + '">' + String(cell).replace(/</g, '&lt;') + '</span>');
+                                    return gridjs.html('<span class="user-agent-cell" title="' + escHtml(cell) + '">' + escHtml(cell) + '</span>');
                                 }
                             },
                             {

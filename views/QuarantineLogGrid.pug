@@ -32,7 +32,7 @@ block scripts
 block content
     script.
         document.addEventListener('DOMContentLoaded', function() {
-            var logData = !{JSON.stringify(logData)};
+            var logData = !{JSON.stringify(logData).replace(/<\//g, '\\u003c/')};
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 return [e.dateTime, e.action, e.sender, e.recipient, e.subject, String(score), e.spamResults, e.ipAddress];
@@ -70,7 +70,7 @@ block content
                 html += '<div class="mui-multiselect-dropdown">';
                 html += '<label><input type="checkbox" class="mui-ms-option" value="" checked data-key="' + config.key + '"> <span>All</span></label>';
                 vals.forEach(function(v) {
-                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + v.replace(/"/g, '&quot;') + '" data-key="' + config.key + '"> <span>' + v + '</span></label>';
+                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + escHtml(v) + '" data-key="' + config.key + '"> <span>' + escHtml(v) + '</span></label>';
                 });
                 html += '</div></div>';
                 container.innerHTML = html;
@@ -263,7 +263,7 @@ block content
                 html += '<th>Time Stamp</th><th>Action</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Score</th><th>SPAM Results</th><th>IP Address</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
-                    html += '<tr>' + r.map(function(c) { return '<td>' + String(c) + '</td>'; }).join('') + '</tr>';
+                    html += '<tr>' + r.map(function(c) { return '<td>' + escHtml(c) + '</td>'; }).join('') + '</tr>';
                 });
                 html += '</tbody></table></body></html>';
                 win.document.write(html);

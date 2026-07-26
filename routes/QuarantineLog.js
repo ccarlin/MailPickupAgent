@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const tools = require("../app/tools");
 const fs = require("fs");
+const xss = require("xss");
 const config = require('../config');
 
 /* Display Main page */
@@ -20,6 +21,7 @@ router.get('/', function(req, res) {
                 continue;
             if (fs.existsSync(filePath)) {            
                 let logText = fs.readFileSync(filePath).toString();
+                logText = xss(logText);
                 let logLines = logText.split('\n');
                 //Process each log line
                 for(let i=0;i<logLines.length;i++) {

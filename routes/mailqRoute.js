@@ -24,10 +24,22 @@ const quarentineLogPath = () => {
   return `${config.QUARANTINE_LOG}/quarantine-${y}${m}${day}.log`;
 };
 const rulesConfigPath = path.join(__dirname, '..', 'config', 'rules.json');
+const FILEPATH_PATTERN = /^[A-Fa-f0-9]+$/i;
 
 function reasonText(action) {
     const edActions = new Set(['whitelist', 'blacklist']);
     return edActions.has(action) ? `${action}ed` : `${action}d`;
+}
+
+function safeRedirect(req, fallback) {
+    const ref = req.get('Referer') || '';
+    try {
+        const refUrl = new URL(ref, `${req.protocol}://${req.get('host')}`);
+        if (refUrl.origin === `${req.protocol}://${req.get('host')}`) {
+            return refUrl.pathname + refUrl.search;
+        }
+    } catch { /* invalid URL origin, use fallback */ }
+    return fallback || '/';
 }
 
 router.post('/', async function(req, res) {
@@ -92,7 +104,7 @@ router.post('/', async function(req, res) {
             break;        
     }
 
-    res.redirect(req.get('Referrer') || '/');
+    res.redirect(safeRedirect(req, '/'));
 });
 
 router.post('/action', async function(req, res) {
@@ -168,7 +180,7 @@ router.post('/action', async function(req, res) {
             break;        
     }
 
-    res.redirect(req.get('Referrer') || '/');
+    res.redirect(safeRedirect(req, '/'));
 });
 
 /* Display Main page */
@@ -456,6 +468,10 @@ function DeleteMessages(emails, sourcePath)
     for (let i=0;i<emails.length;i++)
     {
         let email = emails[i];
+        if (!email.filepath || !FILEPATH_PATTERN.test(email.filepath)) {
+            tools.logError(`Invalid filepath rejected: ${email.filepath}`);
+            continue;
+        }
         let headerFile = path.join(sourcePath, email.filepath + ".H00");
         let emailFile = path.join(sourcePath, email.filepath + ".MAI");
         let destHeader = path.join(deletedDir, email.filepath + ".H00");
@@ -480,6 +496,10 @@ function ReleaseMessages(emails)
     for (let i=0;i<emails.length;i++)
     {
         let email = emails[i];
+        if (!email.filepath || !FILEPATH_PATTERN.test(email.filepath)) {
+            tools.logError(`Invalid filepath rejected: ${email.filepath}`);
+            continue;
+        }
         let headerFile = spamPath + "\\" + email.filepath + ".H00";
         let emailFile = spamPath + "\\" + email.filepath + ".MAI";
         let newEmailFile = emailFile.replace(spamPath, config.SMTP_QUEUE_DIR);
@@ -575,7 +595,7 @@ router.post('/unsubscribe', async function(req, res) {
         var parsedUrl;
         try {
             parsedUrl = new URL(url);
-        } catch (e) {
+        } catch {
             return res.status(400).json({ success: false, message: 'Invalid URL' });
         }
         if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
