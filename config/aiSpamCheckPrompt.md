@@ -5,7 +5,8 @@ Analyze the email for common spam indicators:
 - Suspicious links, mismatched domains, or strange email senders.
 - Poor grammar, generic greetings (e.g., "Dear Customer"), or vague requests.
 - Too-good-to-be-true offers (lotteries, crypto scams, inheritance).
-- Lack of links but a phone number to call.
+- Lack of links (a href) but a phone number to call.
+- Payment statement for suspect services like BTC (bitcoin) or anti-virus without any links to the payment processor.
 
 You must output your decision strictly in the following JSON format. Do not include any introductory or concluding text outside of the JSON block.  Limit the reasons to the top three reasons you consider it SPAM or HAM.
 
