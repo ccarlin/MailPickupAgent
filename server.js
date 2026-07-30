@@ -278,10 +278,10 @@ app.post('/api/process', async (req, res) => {
 
     // Verify files exist
     if (!fs.existsSync(controlFilePath)) {
-      return res.status(404).json({ error: 'Control file not found', path: controlFilePath });
+      return res.status(404).json({ error: 'Control file not found' });
     }
     if (!fs.existsSync(messagePath)) {
-      return res.status(404).json({ error: 'Message file not found', path: messagePath });
+      return res.status(404).json({ error: 'Message file not found' });
     }
 
     // Process synchronously — load fresh rules each time so editor saves take effect immediately
@@ -291,8 +291,6 @@ app.post('/api/process', async (req, res) => {
       timestamp: new Date().toISOString(),
       messageID,
       queueType,
-      messagePath,
-      controlFilePath,
       status: 'completed',
       message: 'Email processing completed successfully'
     };

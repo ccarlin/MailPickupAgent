@@ -1,7 +1,7 @@
 extends adminLayout
 
 block css
-    link(rel="stylesheet", href="https://unpkg.com/swiper/swiper-bundle.min.css")
+    link(rel="stylesheet", href="https://unpkg.com/swiper/swiper-bundle.min.css" integrity="sha384-Id/5MAwxG2W/++J4XSvh2hX+IqQqTSJxekSzeqE7XnT3aQ6MeA6a05L7dUfmmCuU" crossorigin="anonymous")
     link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
     style.
         body {
@@ -202,8 +202,8 @@ block css
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
     
 block scripts
-    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
-    script(src="https://unpkg.com/swiper/swiper-bundle.min.js")
+    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js" integrity="sha384-fgGyf7Mo7DURSOMnOy7ed+dkq5Job205Gnzu6QIg0BOHKaqt4D76Dt8VlDCzcMHV" crossorigin="anonymous")
+    script(src="https://unpkg.com/swiper/swiper-bundle.min.js" integrity="sha384-RFzzVUJJd7FEy9WnvKrUBJvYNaFMHLs235jiMZqsmc3mw9XZhEZGRn/3WWzvyror" crossorigin="anonymous")
     script.    
         document.addEventListener('DOMContentLoaded', function () {
             var swiper = new Swiper('.swiper-container', {
