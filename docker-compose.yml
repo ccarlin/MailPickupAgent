@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  mail-pickup-agent:
+    build: .
+    container_name: mail-pickup-agent
+    ports:
+      - "6245:6245"
+    environment:
+      - NODE_ENV=docker
+    volumes:
+      # Persistent configuration, SQLite database, secrets, and configuration backups
+      - ./config:/usr/src/app/config
+      # Local processing and quarantine logs
+      - ./logs:/usr/src/app/logs
+      # Quarantined and deleted email storage folders
+      - ./mail/quarantine:/usr/src/app/mail/quarantine
+      - ./mail/deleted:/usr/src/app/mail/deleted
+      # MailEnable queues and logs mounted from the default paths in default.json
+      - "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound/Messages:/mailenable/queues/SMTP/Inbound/Messages"
+      - "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound:/mailenable/queues/SMTP/Inbound"
+      - "C:/Program Files (x86)/Mail Enable/Logging/SMTP:/mailenable/logging/SMTP"
+    restart: unless-stopped
