@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:22-slim
 
 # Install system dependencies needed for compiling better-sqlite3 and other native modules
 RUN apt-get update && apt-get install -y \
@@ -23,6 +23,10 @@ EXPOSE 6245
 
 # Set the default environment variable
 ENV NODE_ENV=docker
+
+# Healthcheck to verify the app is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:6245/health || exit 1
 
 # Command to run the application
 CMD [ "npm", "run", "server" ]
