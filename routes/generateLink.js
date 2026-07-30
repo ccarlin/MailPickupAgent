@@ -20,7 +20,7 @@ router.post('/', function(req, res) {
     const userPart = email.split('@')[0];
     const key = tools.generateKey();
     const host = req.get('host');
-    link = `${req.protocol}://${host}/mailq?Key=${key}&user=${encodeURIComponent(userPart)}`;
+    link = `${req.protocol}://${host}/mailq?Key=${key}`;
     tools.storeKey(key, email, userPart);
   }
 

@@ -6,6 +6,17 @@ block css
       max-width: 100%;
       margin: 20px 24px 0;
     }
+    .link-container .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .link-container .input-row input {
+      flex: 1;
+    }
+    .link-container .input-row button {
+      margin-top: 0;
+    }
     .link-container label {
       font-weight: 600;
       display: block;
@@ -175,9 +186,9 @@ block content
     .link-container
       form(method="POST" action="/generateLink")
         label(for="email") Email Address
-        input#email(type="email" name="email" placeholder="user@example.com" value=email || '' required)
-        br
-        button(type="submit") Generate Link
+        .input-row
+          input#email(type="email" name="email" placeholder="user@example.com" value=email || '' required)
+          button(type="submit") Generate Link
 
       if error
         .error-msg #{error}
@@ -192,14 +203,14 @@ block content
             input(type="text" readonly value=link onclick="this.select()" id="shareLink")
             button(onclick="copyLink()" id="copyBtn") Copy
           p(style="margin:8px 0 0;font-size:13px;color:#555;")
-            | This link will grant access to the Mail Queue filtered for this email address.
+            | This link will grant access to the Mail Queue for this email address.
 
       if keys && keys.length > 0
         h2(style="margin-top:28px;font-size:1.1rem;color:#334155;") Active Keys
         table.keys-table
           thead
             tr
-              th(style="width:120px") Email / Label
+              th(style="width:120px") User
               th Key
               th(style="width:140px") Created
               th(style="width:140px") Last Used

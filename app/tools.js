@@ -231,8 +231,9 @@ module.exports = {
         const key = req.cookies.MailKey;
         if (!key) return false;
         const db = require('./db');
-        const row = db.prepare('SELECT 1 FROM access_keys WHERE key = ?').get(key);
+        const row = db.prepare('SELECT * FROM access_keys WHERE key = ?').get(key);
         if (row) {
+          req.keyInfo = row;
           db.prepare("UPDATE access_keys SET last_used_at = datetime('now'), usage_count = usage_count + 1 WHERE key = ?").run(key);
           return true;
         }

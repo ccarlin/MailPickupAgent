@@ -209,19 +209,16 @@ router.get('/', function(req, res) {
                 res.clearCookie("MailKey");
                 return res.redirect("/");
             }
-            //If the user is passed with the key then set that cookie as well
-            if (filterUser)
-            {
-                //The all value clears the cookie
-                if (filterUser == "all")
-                    res.clearCookie("MailQUserFilter");
-                else
-                    res.cookie("MailQUserFilter", req.query.user, {
-                        httpOnly: true,
-                        secure: !!(config.CERT_PATH && config.CERT_KEY_PATH),
-                        sameSite: 'lax'
-                    });
-            }        
+            //Set the user filter from the stored key info
+            const keyUserFilter = req.keyInfo?.user_filter;
+            if (keyUserFilter)
+                res.cookie("MailQUserFilter", keyUserFilter, {
+                    httpOnly: true,
+                    secure: !!(config.CERT_PATH && config.CERT_KEY_PATH),
+                    sameSite: 'lax'
+                });
+            else
+                res.clearCookie("MailQUserFilter");
             return res.redirect("/mailq");
         }
 
