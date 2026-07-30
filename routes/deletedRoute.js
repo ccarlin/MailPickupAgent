@@ -98,7 +98,7 @@ function getDeletedEmails(callback) {
 
                     try {
                         // Only read TimeAcquired from .H00 (exclusive to header)
-                        let headerContents = fs.readFileSync(filePath).toString();
+                        let headerContents = await fs.promises.readFile(filePath, 'utf8');
                         let headerLines = headerContents.split('\r\n');
                         for(let j=0;j<headerLines.length;j++) {
                             let data = headerLines[j].split(/=(.+)/);
@@ -111,7 +111,7 @@ function getDeletedEmails(callback) {
 
                         // Parse .MAI with postal-mime for sender, recipients, subject
                         if (fs.existsSync(emailFilePath)) {
-                            let mailMessage = fs.readFileSync(emailFilePath);
+                            let mailMessage = await fs.promises.readFile(emailFilePath);
                             let parsed = await PostalMime.parse(mailMessage);
                             emailInfo.sender = parsed.from?.address || 'unknown';
                             let toAddresses = (parsed.to || []).map(v => (v.address || '').split('@')[0].toLowerCase()).filter(Boolean);

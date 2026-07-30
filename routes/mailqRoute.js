@@ -275,8 +275,10 @@ function getEmails(emailPath, callback)
                     let emailInfo = {};
                     let filePath = emailPath + "//" + list[i];
                     let emailFilePath = filePath.toLowerCase().replace(".h00", ".mai");
-                    let emailContents = fs.readFileSync(emailFilePath).toString();
-                    let headerContents = fs.readFileSync(filePath).toString();
+                    let [emailContents, headerContents] = await Promise.all([
+                        fs.promises.readFile(emailFilePath, 'utf8'),
+                        fs.promises.readFile(filePath, 'utf8')
+                    ]);
                     let lines = headerContents.split('\r\n');
                     emailInfo.filepath = list[i].slice(0, -4);
                     emailInfo.subject = "";
