@@ -529,10 +529,7 @@ function updateLogFile(logFile, entry)
     let timestamp = new Date().toLocaleString();
     let esc = v => String(v ?? '').replace(/\t/g, ' ').replace(/\r?\n/g, ' ');
     let data = [timestamp, esc(entry.reason), esc(entry.subject), esc(entry.sender), esc(entry.recipients), esc(entry.spamScore), esc(entry.antiSpam), esc(entry.dkim), esc(entry.clientip)].join('\t') + '\n';
-    if (fs.existsSync(logFile))
-        fs.appendFileSync(logFile, data);
-    else
-        fs.writeFileSync(logFile, data);
+    fs.appendFileSync(logFile, data);
 }
 
 // helper: parse List-Unsubscribe header value and return first usable URL or mailto

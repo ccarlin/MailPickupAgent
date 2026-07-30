@@ -121,7 +121,9 @@ router.post('/api/config/save', (req, res) => {
     }
 
     const merged = { ...existing, ...values };
-    fs.writeFileSync(configPath, JSON.stringify(merged, null, 2), 'utf8');
+    const tmpPath = configPath + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(merged, null, 2), 'utf8');
+    fs.renameSync(tmpPath, configPath);
 
     // Hot-reload config in memory
     config.reload();

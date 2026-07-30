@@ -242,7 +242,7 @@ module.exports = {
             if (validKeys.includes(key))
               return true;
             else 
-              this.logError(`Invalid or expired security key: ${req.cookies.MailKey}, for IP: ${req.socket.localAddress}, Accessing Page: ${req.originalUrl} PageKey: ${pagePath}`, req.socket.remoteAddress);            
+              this.logError(`Invalid or expired security key: ${(req.cookies.MailKey ?? '').replace(/[\x00-\x1f]/g, '')}, for IP: ${req.socket.localAddress}, Accessing Page: ${req.originalUrl} PageKey: ${pagePath}`, req.socket.remoteAddress);            
         }
       }
       catch (exp) {

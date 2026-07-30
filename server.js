@@ -9,7 +9,6 @@ const app = express();
 const { buildAllTestEmails, processEmail, wipeall, loadRules } = require('./index.js');
 const tools = require('./app/tools');
 const appConfig = require('./config');
-const { verifyPassword } = require('./middleware/hash');
 const { version } = require('./package.json');
 const PORT = appConfig.PORT || 6245;
 let server;
@@ -366,17 +365,6 @@ app.post('/api/wipeall', (req, res) => {
 
 // Initialize configuration on startup
 initializeConfiguration();
-
-// Validate security: certificate requires non-default password
-if (appConfig.CERT_PATH) {
-  const pwHash = appConfig.AUTH_PASSWORD_HASH;
-  if (!pwHash || verifyPassword('admin', pwHash)) {
-    tools.logError('SECURITY ERROR: Certificate is configured but the admin password is still the default.');
-    tools.logError('Change it via the Configuration Editor (Security section > Admin Password field).');
-    process.exit(1);
-  }
-}
-
 
 // Start the server
 function startServer(protocol) {

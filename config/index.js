@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { verifyPassword } = require('../middleware/hash');
 
 function getEnv() {
   return process.env.NODE_ENV || 'production';
@@ -18,6 +19,19 @@ function loadConfig() {
 }
 
 const config = loadConfig();
+
+function validateConfig() {
+  if (config.CERT_PATH) {
+    const pwHash = config.AUTH_PASSWORD_HASH;
+    if (!pwHash || verifyPassword('admin', pwHash)) {
+      console.error('SECURITY ERROR: Certificate is configured but the admin password is still the default.');
+      console.error('Change it via the Configuration Editor (Security section > Admin Password field).');
+      process.exit(1);
+    }
+  }
+}
+
+validateConfig();
 
 function reload() {
   const updated = loadConfig();

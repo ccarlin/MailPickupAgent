@@ -78,7 +78,9 @@ router.post('/api/rules/save', (req, res) => {
   
   try {
     const parsed = normalizeRules(JSON.parse(rules));
-    fs.writeFileSync(rulesPath, JSON.stringify(parsed, null, 2), 'utf8');
+    const tmpPath = rulesPath + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(parsed, null, 2), 'utf8');
+    fs.renameSync(tmpPath, rulesPath);
     res.status(200).json({ message: 'Rules saved successfully!' });
   } catch (error) {
     tools.logError('Error saving rules file: ' + error.message);
