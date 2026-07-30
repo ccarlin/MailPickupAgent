@@ -198,7 +198,11 @@ router.get('/', function(req, res) {
             // Validate the key before accepting it
             req.cookies.MailKey = keyVal;
             if (tools.isValid(req, "mailq")) {
-                res.cookie("MailKey", keyVal, {maxAge: 1000 * 60 * 1440 * 365});
+                res.cookie("MailKey", keyVal, {
+                    httpOnly: true,
+                    secure: !!(config.CERT_PATH && config.CERT_KEY_PATH),
+                    sameSite: 'lax'
+                });
             } else {
                 // Invalid key - clear any existing cookie and reject
                 delete req.cookies.MailKey;
@@ -212,7 +216,11 @@ router.get('/', function(req, res) {
                 if (filterUser == "all")
                     res.clearCookie("MailQUserFilter");
                 else
-                    res.cookie("MailQUserFilter", req.query.user, { maxAge: 1000 * 60 * 1440 * 365 });
+                    res.cookie("MailQUserFilter", req.query.user, {
+                        httpOnly: true,
+                        secure: !!(config.CERT_PATH && config.CERT_KEY_PATH),
+                        sameSite: 'lax'
+                    });
             }        
             return res.redirect("/mailq");
         }
