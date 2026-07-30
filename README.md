@@ -43,6 +43,47 @@ cd mailpickupagent
 npm install
 ```
 
+### Docker Compose Deployment (Alternative)
+
+You can also install, build, and deploy the admin web server using Docker Compose. This is ideal for isolated environments and handles dependency installation (including compiling binary SQLite dependencies) automatically.
+
+#### Prerequisites
+
+- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed on the host.
+
+#### Steps
+
+1. **Clone the project:**
+   ```bash
+   git clone <repository-url>
+   cd mailpickupagent
+   ```
+
+2. **Deploy via Docker Compose:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. **Verify the container is running:**
+   ```bash
+   docker compose ps
+   ```
+
+Once deployed, the admin UI will be accessible at `http://localhost:6245`.
+
+#### Docker Mount Details
+
+The provided `docker-compose.yml` mounts the following folders to persist data and integrate with MailEnable:
+- `./config` mapped to `/usr/src/app/config` (persists settings, rules, SQLite sessions/subscriptions, and backups)
+- `./logs` mapped to `/usr/src/app/logs` (persists daily processing logs)
+- `./mail/quarantine` and `./mail/deleted` (persists quarantined/deleted emails)
+- MailEnable inbound and logging directories mounted from their default paths (defined in `default.json`) into the container so the agent can scan inbound mail queues:
+  - `C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound/Messages` -> `/mailenable/queues/SMTP/Inbound/Messages`
+  - `C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound` -> `/mailenable/queues/SMTP/Inbound`
+  - `C:/Program Files (x86)/Mail Enable/Logging/SMTP` -> `/mailenable/logging/SMTP`
+
+*Note: The environment variable `NODE_ENV` inside the container is set to `docker`, which merges `config/default.json` with the path overrides configured in `config/docker.json`.*
+
 ## Configuration
 
 All configuration is stored in JSON files under the `config/` directory. The system loads `config/default.json` as a base, then merges with `config/{NODE_ENV}.json` (where `NODE_ENV` defaults to `production`).
