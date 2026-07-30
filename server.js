@@ -72,6 +72,29 @@ app.use((req, res, next) => {
   next();
 });
 
+// Security headers
+const csp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com",
+  "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com",
+  "img-src 'self' data: https:",
+  "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com",
+  "connect-src 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+  if (appConfig.CERT_PATH) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  res.setHeader('Content-Security-Policy', csp);
+  next();
+});
+
 // Lightweight health check for load balancers and process monitors (no auth)
 app.get('/health', (req, res) => {
   res.status(200).json({
