@@ -409,7 +409,8 @@ if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
 // Global uncaught exception and rejection handlers
 process.on('uncaughtException', (err) => {
   tools.logError(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`);
-  process.exit(1);
+  // Don't exit immediately — let existing connections drain
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 process.on('unhandledRejection', (reason) => {

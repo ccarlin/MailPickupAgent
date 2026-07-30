@@ -155,7 +155,11 @@ router.get('/events', function(req, res) {
   });
 
   const sendEvent = (eventType, data) => {
-    res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+    try {
+      res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+    } catch {
+      cleanup();
+    }
   };
 
   const sendFullStatus = async () => {
@@ -206,7 +210,7 @@ router.get('/events', function(req, res) {
 
   // Heartbeat to keep connection alive
   const heartbeat = setInterval(() => {
-    res.write(': heartbeat\n\n');
+    sendEvent('heartbeat', {});
   }, 30000);
 
   // Periodically re-verify session validity
@@ -228,6 +232,7 @@ router.get('/events', function(req, res) {
     clearInterval(authCheck);
   }
 
+  res.on('error', cleanup);
   req.on('close', cleanup);
 });
 
