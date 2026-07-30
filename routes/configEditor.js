@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const net = require('net');
 const axios = require('axios');
 const config = require('../config');
 const tools = require('../app/tools');
@@ -11,14 +12,74 @@ const router = express.Router();
 
 const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW', 'ABUSEIPDB_KEY'];
 
-function getAiServerUrl(server, port) {
-  const configuredServer = String(server || '').trim();
-  if (!configuredServer) throw new Error('Server is required');
+function isDangerousTarget(host) {
+  const h = host.replace(/^\[|\]$/g, '').toLowerCase();
+  if (h === '0.0.0.0' || h === '::' || h === 'any') return true;
+  if (h === '169.254.169.254' || h === '100.100.100.200') return true;
+  if (h.startsWith('169.254.')) return true;
+  if (h === 'metadata.google.internal' || h === 'metadata') return true;
+  return false;
+}
 
-  const url = new URL(/^https?:\/\//i.test(configuredServer) ? configuredServer : `http://${configuredServer}`);
-  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Server must use HTTP or HTTPS');
-  if (!url.port && port) url.port = String(port);
-  return url.toString().replace(/\/$/, '');
+function getAiServerUrl(server, port) {
+  let raw = String(server || '').trim();
+  if (!raw) throw new Error('Server is required');
+
+  raw = raw.replace(/^https?:\/\//i, '');
+
+  if (/[/@?#\\]|\.\./.test(raw)) {
+    throw new Error('Server must be a hostname or IP address (with optional port), not a full URL');
+  }
+
+  let hostPart;
+  let portPart = String(port || '').trim();
+
+  // Parse IPv6 [host]:port
+  if (raw.startsWith('[')) {
+    const closeBracket = raw.indexOf(']');
+    if (closeBracket === -1) throw new Error('Invalid IPv6 address: missing closing bracket');
+    hostPart = raw.slice(1, closeBracket);
+    if (net.isIPv6(hostPart) !== true) throw new Error('Invalid IPv6 address');
+    const after = raw.slice(closeBracket + 1);
+    if (after.startsWith(':')) portPart = after.slice(1);
+    else if (after !== '') throw new Error('Invalid server address');
+  } else {
+    // IPv6 bare (no brackets) — contains more than one colon
+    if ((raw.match(/:/g) || []).length > 1) {
+      if (net.isIPv6(raw) !== true) throw new Error('Invalid IPv6 address');
+      hostPart = raw;
+    } else {
+      // IPv4 or hostname, optional :port
+      const colonIdx = raw.lastIndexOf(':');
+      if (colonIdx >= 0) {
+        const candidate = raw.slice(colonIdx + 1);
+        if (candidate && /^\d+$/.test(candidate)) {
+          portPart = candidate;
+          hostPart = raw.slice(0, colonIdx);
+        } else {
+          hostPart = raw;
+        }
+      } else {
+        hostPart = raw;
+      }
+    }
+  }
+
+  if (!hostPart) throw new Error('Server is required');
+
+  // Validate: must be IP or valid hostname
+  if (net.isIPv6(hostPart) !== true && net.isIP(hostPart) === 0) {
+    if (!/^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(hostPart)) {
+      throw new Error('Invalid server address: ' + JSON.stringify(raw));
+    }
+  }
+
+  if (isDangerousTarget(hostPart)) {
+    throw new Error('Requests to ' + hostPart + ' are not allowed');
+  }
+
+  const displayHost = net.isIPv6(hostPart) ? '[' + hostPart + ']' : hostPart;
+  return 'http://' + displayHost + (portPart ? ':' + portPart : '');
 }
 
 // GET - render the editor page
