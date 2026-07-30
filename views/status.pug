@@ -55,6 +55,7 @@ block css
     .status-card.pending .icon { color: #f97316; }
     .status-card.users .icon { color: #06b6d4; }
     .status-card.notifications .icon { color: #a855f7; }
+    .status-card.links .icon { color: #3b82f6; }
     .status-card.process-time .icon { color: #0ea5e9; }
 
     .status-card .icon-wrap {
@@ -413,6 +414,11 @@ block content
           i.fas.fa-users
         .count#count-users 0
         .label Logged In Users
+      .status-card.links.clickable#card-links
+        .icon
+          i.fas.fa-link
+        .count#count-links 0
+        .label Access Links
       .status-card.notifications.clickable#card-notifications
         .icon
           i.fas.fa-bell
@@ -506,6 +512,7 @@ block scripts
       } else {
         $('#card-abuseipdb').addClass('hidden');
       }
+      $('#count-links').text(data.linkCount || 0);
       $('#count-notifications').text(data.notificationCount);
       if (data.avgProcessTime !== undefined) {
         $('#count-process-time').text(formatMs(data.avgProcessTime));
@@ -743,6 +750,9 @@ block scripts
       });
       $('#card-users').on('click', function() {
         window.open('/sessions', '_blank');
+      });
+      $('#card-links').on('click', function() {
+        window.open('/manageLinks', '_blank');
       });
       $('#card-notifications').on('click', function() {
         window.open('/notificationsAdmin', '_blank');

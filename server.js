@@ -97,7 +97,7 @@ app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/ruleHits', require('./routes/ruleHitsReport'));
 app.use('/configEditor', require('./routes/configEditor'));
 app.use('/mailq', require('./routes/mailqRoute'));
-app.use('/generateLink', require('./routes/generateLink'));
+app.use('/manageLinks', require('./routes/manageLinks'));
 app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
 app.use('/QuarantineLog', require('./routes/QuarantineLog'));

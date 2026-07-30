@@ -2,27 +2,53 @@ extends adminLayout
 
 block css
   style.
-    .link-container {
+    .manage-links-container {
       max-width: 100%;
       margin: 20px 24px 0;
     }
-    .link-container .input-row {
+    .manage-links-container .summary-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    .manage-links-container .summary-bar .count-num {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #3b82f6;
+    }
+    .manage-links-container .summary-bar .count-label {
+      font-size: 0.95rem;
+      color: #475569;
+    }
+    .generate-section {
+      margin-bottom: 28px;
+      padding: 18px 20px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .generate-section .input-row {
       display: flex;
       gap: 10px;
       align-items: stretch;
     }
-    .link-container .input-row input {
+    .generate-section .input-row input {
       flex: 1;
     }
-    .link-container .input-row button {
+    .generate-section .input-row button {
       margin-top: 0;
     }
-    .link-container label {
+    .generate-section label {
       font-weight: 600;
       display: block;
       margin-bottom: 6px;
     }
-    .link-container input[type="email"] {
+    .generate-section input[type="email"] {
       width: 100%;
       padding: 10px 12px;
       font-size: 14px;
@@ -30,12 +56,12 @@ block css
       border-radius: 4px;
       box-sizing: border-box;
     }
-    .link-container input[type="email"]:focus {
+    .generate-section input[type="email"]:focus {
       border-color: #4a90d9;
       outline: none;
       box-shadow: 0 0 4px rgba(74,144,217,0.3);
     }
-    .link-container button {
+    .generate-section button {
       padding: 10px 24px;
       font-size: 14px;
       background: #4a90d9;
@@ -44,11 +70,11 @@ block css
       border-radius: 4px;
       cursor: pointer;
     }
-    .link-container button:hover {
+    .generate-section button:hover {
       background: #357abd;
     }
     .generated-link {
-      margin-top: 20px;
+      margin-top: 16px;
       padding: 14px 16px;
       background: #e8f5e9;
       border: 1px solid #a5d6a7;
@@ -97,9 +123,13 @@ block css
       border-radius: 4px;
       color: #c62828;
     }
+    .keys-table-section h2 {
+      font-size: 1.1rem;
+      color: #334155;
+      margin: 0 0 12px 0;
+    }
     .keys-table {
       width: 100%;
-      margin-top: 24px;
       border-collapse: collapse;
     }
     .keys-table th, .keys-table td {
@@ -182,56 +212,68 @@ block css
 block content
   .container
     .header-bar
-      h1 Generate Mail Queue Access Link
-    .link-container
-      form(method="POST" action="/generateLink")
-        label(for="email") Email Address
-        .input-row
-          input#email(type="email" name="email" placeholder="user@example.com" value=email || '' required)
-          button(type="submit") Generate Link
-
-      if error
-        .error-msg #{error}
-
-      if link
-        .generated-link
-          p(style="margin:0;")
-            strong Access Link
-            span(style="font-weight:400;font-size:13px;color:#555;margin-left:8px;")
-              | (share this with the user)
-          .link-row
-            input(type="text" readonly value=link onclick="this.select()" id="shareLink")
-            button(onclick="copyLink()" id="copyBtn") Copy
-          p(style="margin:8px 0 0;font-size:13px;color:#555;")
-            | This link will grant access to the Mail Queue for this email address.
-
+      h1 Manage Access Links
+    .manage-links-container
       if keys && keys.length > 0
-        h2(style="margin-top:28px;font-size:1.1rem;color:#334155;") Active Keys
-        table.keys-table
-          thead
-            tr
-              th(style="width:120px") User
-              th Key
-              th(style="width:140px") Created
-              th(style="width:140px") Last Used
-              th(style="width:50px") Used
-              th(style="width:60px")
-          tbody
-            each k in keys
-              tr
-                td= k.label || '-'
-                td
-                  .key-cell
-                    input(type="text" readonly value=k.key onclick="this.select()" id=`key-${k.id}`)
-                    button.btn-copy(type="button" onclick=`copyKey('key-${k.id}', this)`) Copy
-                td= k.created_at || '-'
-                td= k.last_used_at || 'Never'
-                td= k.usage_count || 0
-                td
-                  form(method="POST" action=`/generateLink/delete/${k.id}` onsubmit="return confirm('Revoke this key?')")
-                    button.btn-delete(type="submit") Revoke
+        .summary-bar
+          span.count-num #{keys.length}
+          span.count-label active access key#{keys.length !== 1 ? 's' : ''}
       else
-        .no-keys No access keys have been created yet.
+        .summary-bar
+          span.count-num 0
+          span.count-label active access keys
+
+      .generate-section
+        h2(style="margin:0 0 12px 0;font-size:1rem;color:#334155;") Generate New Link
+        form(method="POST" action="/manageLinks")
+          label(for="email") Email Address
+          .input-row
+            input#email(type="email" name="email" placeholder="user@example.com" value=email || '' required)
+            button(type="submit") Generate Link
+
+        if error
+          .error-msg #{error}
+
+        if link
+          .generated-link
+            p(style="margin:0;")
+              strong Access Link
+              span(style="font-weight:400;font-size:13px;color:#555;margin-left:8px;")
+                | (share this with the user)
+            .link-row
+              input(type="text" readonly value=link onclick="this.select()" id="shareLink")
+              button(onclick="copyLink()" id="copyBtn") Copy
+            p(style="margin:8px 0 0;font-size:13px;color:#555;")
+              | This link will grant access to the Mail Queue for this email address.
+
+      .keys-table-section
+        h2 Existing Keys
+        if keys && keys.length > 0
+          table.keys-table
+            thead
+              tr
+                th(style="width:120px") User
+                th Key
+                th(style="width:140px") Created
+                th(style="width:140px") Last Used
+                th(style="width:50px") Used
+                th(style="width:60px")
+            tbody
+              each k in keys
+                tr
+                  td= k.label || '-'
+                  td
+                    .key-cell
+                      input(type="text" readonly value=k.key onclick="this.select()" id=`key-${k.id}`)
+                      button.btn-copy(type="button" onclick=`copyKey('key-${k.id}', this)`) Copy
+                  td= k.created_at || '-'
+                  td= k.last_used_at || 'Never'
+                  td= k.usage_count || 0
+                  td
+                    form(method="POST" action=`/manageLinks/delete/${k.id}` onsubmit="return confirm('Revoke this key?')")
+                      button.btn-delete(type="submit") Revoke
+        else
+          .no-keys No access keys have been created yet.
 
     script.
       function copyKey(inputId, btn) {

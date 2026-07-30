@@ -4,7 +4,7 @@ const tools = require('../app/tools');
 
 router.get('/', function(req, res) {
   const keys = tools.getStoredKeys();
-  res.render('generateLink', { title: 'Generate Access Link', link: null, keys });
+  res.render('manageLinks', { title: 'Manage Access Links', link: null, keys });
 });
 
 router.post('/', function(req, res) {
@@ -25,7 +25,7 @@ router.post('/', function(req, res) {
   }
 
   const keys = tools.getStoredKeys();
-  res.render('generateLink', { title: 'Generate Access Link', link, email, error, keys });
+  res.render('manageLinks', { title: 'Manage Access Links', link, email, error, keys });
 });
 
 router.post('/delete/:id', function(req, res) {
@@ -33,7 +33,7 @@ router.post('/delete/:id', function(req, res) {
   if (!isNaN(id)) {
     tools.deleteStoredKey(id);
   }
-  res.redirect('/generateLink');
+  res.redirect('/manageLinks');
 });
 
 module.exports = router;

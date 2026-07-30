@@ -108,6 +108,8 @@ async function buildStatusData(req) {
       saEnabled ? checkTcpPort(config.SPAMASSASSIN_HOST || 'localhost', Number(config.SPAMASSASSIN_PORT) || 783) : false,
     ]);
 
+    const linkCount = tools.getStoredKeys().length;
+
     return {
       totalProcessed: data.totalProcessed,
       whitelisted: data.whitelisted,
@@ -116,6 +118,7 @@ async function buildStatusData(req) {
       released: data.released,
       deleted: data.deleted,
       pending: pendingCount,
+      linkCount,
       uptime: data.uptime,
       uptimeFormatted: metrics.formatUptime(data.uptime),
       serverStartTime: data.serverStartTime,
