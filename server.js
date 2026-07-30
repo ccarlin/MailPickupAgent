@@ -4,7 +4,6 @@ const path = require('path');
 const https = require('https');
 const session = require('express-session');
 const SQLiteStore = require('better-sqlite3-session-store')(session);
-const Database = require('better-sqlite3');
 const cookieParser = require('cookie-parser');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall, loadRules } = require('./index.js');
@@ -45,9 +44,9 @@ if (!sessionSecret || sessionSecret === 'change-this-to-a-random-secret-in-produ
   }
 }
 
-const sessionDb = new Database(path.join(__dirname, 'config', 'sessions.sqlite'));
+const db = require('./app/db');
 const sessionStore = new SQLiteStore({
-  client: sessionDb,
+  client: db,
   expired: {
     clear: true,
     intervalMs: 900000 // 15 minutes
@@ -424,6 +423,7 @@ if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
 // Global uncaught exception and rejection handlers
 process.on('uncaughtException', (err) => {
   tools.logError(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
@@ -437,22 +437,14 @@ function gracefulShutdown(signal) {
   server.close(() => {
     tools.logData('HTTP server closed');
 
-    // Close SQLite database connections
-    const dbs = [
-      { db: sessionDb, name: 'session' },
-    ];
-    try { dbs.push({ db: require('./app/notifications').db, name: 'notifications' }); } catch { /* not loaded */ }
-    try { dbs.push({ db: require('./app/ruleHits').db, name: 'ruleHits' }); } catch { /* not loaded */ }
-
-    for (const { db, name } of dbs) {
-      try {
-        if (db && typeof db.close === 'function') {
-          db.close();
-          tools.logData(`Closed ${name} database connection`);
-        }
-      } catch (err) {
-        tools.logError(`Error closing ${name} database: ${err.message}`);
+    // Close the shared SQLite database connection
+    try {
+      if (db && typeof db.close === 'function') {
+        db.close();
+        tools.logData('Closed database connection');
       }
+    } catch (err) {
+      tools.logError(`Error closing database: ${err.message}`);
     }
 
     process.exit(0);

@@ -1,7 +1,4 @@
-const path = require('path');
-const Database = require('better-sqlite3');
-
-const db = new Database(path.join(__dirname, '..', 'config', 'sessions.sqlite'));
+const db = require('./db');
 
 db.prepare(`
   CREATE TABLE IF NOT EXISTS rule_hits (

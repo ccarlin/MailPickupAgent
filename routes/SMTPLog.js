@@ -151,9 +151,9 @@ router.get('/', function(req, res) {
                         if ((username != "-") && (obj.Users.has(username) == false))
                         {
                             //Only track upto 10
-                            if (obj.Users.length == 0)
+                            if (obj.Users.size == 0)
                                 obj.UserDisplay = username;
-                            else if (obj.Users.length < 10)
+                            else if (obj.Users.size < 10)
                                 obj.UserDisplay += ", " + username;                            
 
                             obj.Users.add(username);
