@@ -1,6 +1,6 @@
 {
   "name": "mail-pickup-agent",
-  "version": "2.7.4",
+  "version": "2.7.5",
   "description": "A Node.js executable that acts as a mail pickup agent for MailEnable, intercepting emails and routing them to quarantine or release.",
   "main": "index.js",
   "bin": {
@@ -39,6 +39,7 @@
     "better-sqlite3-session-store": "^0.1.0",
     "cookie-parser": "^1.4.7",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
     "express-session": "^1.19.0",
     "mmdb-reader": "^1.2.0",
     "nodemailer": "^9.0.0",
