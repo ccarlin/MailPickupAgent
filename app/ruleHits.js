@@ -1,7 +1,4 @@
-const path = require('path');
-const Database = require('better-sqlite3');
-
-const db = new Database(path.join(__dirname, '..', 'config', 'sessions.sqlite'));
+const db = require('./db');
 
 db.prepare(`
   CREATE TABLE IF NOT EXISTS rule_hits (
@@ -21,6 +18,9 @@ const incrementHit = db.prepare(`
     updated_at = CURRENT_TIMESTAMP
 `);
 const getHits = db.prepare('SELECT rule_type, rule_value, hit_count FROM rule_hits');
+const getHitsDetailed = db.prepare('SELECT rule_type, rule_value, hit_count, updated_at FROM rule_hits ORDER BY hit_count DESC');
+const deleteHitStmt = db.prepare('DELETE FROM rule_hits WHERE rule_type = ? AND rule_value = ?');
+const clearAllHitsStmt = db.prepare('DELETE FROM rule_hits');
 
 function ruleValue(rule) {
   return typeof rule === 'string' ? rule : JSON.stringify(rule);
@@ -38,4 +38,17 @@ function getAllHits() {
   }, {});
 }
 
-module.exports = { recordHit, getAllHits, ruleValue };
+function getAllHitsArray() {
+  return getHitsDetailed.all();
+}
+
+function deleteHit(ruleType, ruleValue) {
+  if (!ruleType || ruleValue === undefined || ruleValue === null) return 0;
+  return deleteHitStmt.run(ruleType, ruleValue).changes;
+}
+
+function clearAllHits() {
+  return clearAllHitsStmt.run().changes;
+}
+
+module.exports = { recordHit, getAllHits, getAllHitsArray, ruleValue, deleteHit, clearAllHits, db };

@@ -3,7 +3,8 @@ const router = express.Router();
 const tools = require('../app/tools');
 
 router.get('/', function(req, res) {
-  res.render('generateLink', { title: 'Generate Access Link', link: null });
+  const keys = tools.getStoredKeys();
+  res.render('manageLinks', { title: 'Manage Access Links', link: null, keys });
 });
 
 router.post('/', function(req, res) {
@@ -16,14 +17,23 @@ router.post('/', function(req, res) {
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     error = 'Please enter a valid email address.';
   } else {
-    const localAddress = req.socket.localAddress || '127.0.0.1';
     const userPart = email.split('@')[0];
-    const key = tools.generateKey(localAddress, null, 'mailq:' + userPart);
+    const key = tools.generateKey();
     const host = req.get('host');
-    link = `${req.protocol}://${host}/mailq?Key=${key}&user=${encodeURIComponent(userPart)}`;
+    link = `${req.protocol}://${host}/mailq?Key=${key}`;
+    tools.storeKey(key, email, userPart);
   }
 
-  res.render('generateLink', { title: 'Generate Access Link', link, email, error });
+  const keys = tools.getStoredKeys();
+  res.render('manageLinks', { title: 'Manage Access Links', link, email, error, keys });
+});
+
+router.post('/delete/:id', function(req, res) {
+  const id = parseInt(req.params.id, 10);
+  if (!isNaN(id)) {
+    tools.deleteStoredKey(id);
+  }
+  res.redirect('/manageLinks');
 });
 
 module.exports = router;

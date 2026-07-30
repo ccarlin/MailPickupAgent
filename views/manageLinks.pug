@@ -1,0 +1,312 @@
+extends adminLayout
+
+block css
+  style.
+    .manage-links-container {
+      max-width: 100%;
+      margin: 20px 24px 0;
+    }
+    .manage-links-container .summary-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    .manage-links-container .summary-bar .count-num {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #3b82f6;
+    }
+    .manage-links-container .summary-bar .count-label {
+      font-size: 0.95rem;
+      color: #475569;
+    }
+    .generate-section {
+      margin-bottom: 28px;
+      padding: 18px 20px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .generate-section .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .generate-section .input-row input {
+      flex: 1;
+    }
+    .generate-section .input-row button {
+      margin-top: 0;
+    }
+    .generate-section label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .generate-section input[type="email"] {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .generate-section input[type="email"]:focus {
+      border-color: #4a90d9;
+      outline: none;
+      box-shadow: 0 0 4px rgba(74,144,217,0.3);
+    }
+    .generate-section button {
+      padding: 10px 24px;
+      font-size: 14px;
+      background: #4a90d9;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .generate-section button:hover {
+      background: #357abd;
+    }
+    .generated-link {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 4px;
+    }
+    .generated-link .link-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+      margin-top: 8px;
+    }
+    .generated-link .link-row input {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: monospace;
+      border: 1px solid #a5d6a7;
+      border-radius: 4px;
+      background: #fff;
+      color: #2e7d32;
+      outline: none;
+      cursor: text;
+    }
+    .generated-link .link-row button {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      background: #2e7d32;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .generated-link .link-row button:hover {
+      background: #1b5e20;
+    }
+    .generated-link .link-row button.copied {
+      background: #558b2f;
+    }
+    .error-msg {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fce4ec;
+      border: 1px solid #ef9a9a;
+      border-radius: 4px;
+      color: #c62828;
+    }
+    .keys-table-section h2 {
+      font-size: 1.1rem;
+      color: #334155;
+      margin: 0 0 12px 0;
+    }
+    .keys-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .keys-table th, .keys-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+    .keys-table th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: #334155;
+    }
+    .keys-table tr:hover {
+      background: #f8fafc;
+    }
+    .keys-table .key-cell {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      width: 100%;
+    }
+    .keys-table .key-cell input {
+      font-family: monospace;
+      font-size: 11px;
+      color: #64748b;
+      padding: 4px 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      background: #f8fafc;
+      flex: 1;
+      min-width: 0;
+      cursor: text;
+      box-sizing: border-box;
+      line-height: 1.4;
+    }
+    .keys-table .key-cell .btn-copy {
+      padding: 4px 8px;
+      font-size: 11px;
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      line-height: 1.4;
+      box-sizing: border-box;
+    }
+    .keys-table .key-cell .btn-copy:hover {
+      background: #cbd5e1;
+    }
+    .keys-table .key-cell .btn-copy.copied {
+      background: #10b981;
+      color: #fff;
+    }
+    .keys-table .btn-delete {
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .keys-table .btn-delete:hover {
+      background: #dc2626;
+    }
+    .no-keys {
+      margin-top: 20px;
+      padding: 20px;
+      text-align: center;
+      color: #94a3b8;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+    }
+  link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
+
+block content
+  .container
+    .header-bar
+      h1 Manage Access Links
+    .manage-links-container
+      if keys && keys.length > 0
+        .summary-bar
+          span.count-num #{keys.length}
+          span.count-label active access key#{keys.length !== 1 ? 's' : ''}
+      else
+        .summary-bar
+          span.count-num 0
+          span.count-label active access keys
+
+      .generate-section
+        h2(style="margin:0 0 12px 0;font-size:1rem;color:#334155;") Generate New Link
+        form(method="POST" action="/manageLinks")
+          label(for="email") Email Address
+          .input-row
+            input#email(type="email" name="email" placeholder="user@example.com" value=email || '' required)
+            button(type="submit") Generate Link
+
+        if error
+          .error-msg #{error}
+
+        if link
+          .generated-link
+            p(style="margin:0;")
+              strong Access Link
+              span(style="font-weight:400;font-size:13px;color:#555;margin-left:8px;")
+                | (share this with the user)
+            .link-row
+              input(type="text" readonly value=link onclick="this.select()" id="shareLink")
+              button(onclick="copyLink()" id="copyBtn") Copy
+            p(style="margin:8px 0 0;font-size:13px;color:#555;")
+              | This link will grant access to the Mail Queue for this email address.
+
+      .keys-table-section
+        h2 Existing Keys
+        if keys && keys.length > 0
+          table.keys-table
+            thead
+              tr
+                th(style="width:120px") User
+                th Key
+                th(style="width:140px") Created
+                th(style="width:140px") Last Used
+                th(style="width:50px") Used
+                th(style="width:60px")
+            tbody
+              each k in keys
+                tr
+                  td= k.label || '-'
+                  td
+                    .key-cell
+                      input(type="text" readonly value=k.key onclick="this.select()" id=`key-${k.id}`)
+                      button.btn-copy(type="button" onclick=`copyKey('key-${k.id}', this)`) Copy
+                  td= k.created_at || '-'
+                  td= k.last_used_at || 'Never'
+                  td= k.usage_count || 0
+                  td
+                    form(method="POST" action=`/manageLinks/delete/${k.id}` onsubmit="return confirm('Revoke this key?')")
+                      button.btn-delete(type="submit") Revoke
+        else
+          .no-keys No access keys have been created yet.
+
+    script.
+      function copyKey(inputId, btn) {
+        const input = document.getElementById(inputId);
+        input.select();
+        input.setSelectionRange(0, 99999);
+        try {
+          navigator.clipboard.writeText(input.value);
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+        } catch {
+          document.execCommand('copy');
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 2000);
+        }
+      }
+      function copyLink() {
+        const input = document.getElementById('shareLink');
+        const btn = document.getElementById('copyBtn');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        try {
+          navigator.clipboard.writeText(input.value);
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2500);
+        } catch {
+          document.execCommand('copy');
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 2500);
+        }
+      }

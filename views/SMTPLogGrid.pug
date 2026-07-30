@@ -54,7 +54,7 @@ block scripts
 block content
     script.
         document.addEventListener('DOMContentLoaded', function() {
-            var logData = !{JSON.stringify(logData)};
+            var logData = !{JSON.stringify(logData).replace(/<\//g, '\\u003c/')};
             var allData = logData.map(function(e) {
                 var danger = (Number(e.Failures) > 100) || (Number(e.UserCount) > 50);
                 var ipDisplay = e.ipAddress;
@@ -108,7 +108,7 @@ block content
                 html += '<div class="mui-multiselect-dropdown">';
                 html += '<label><input type="checkbox" class="mui-ms-option" value="" checked data-key="' + config.key + '"> <span>All</span></label>';
                 vals.forEach(function(v) {
-                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + v.replace(/"/g, '&quot;') + '" data-key="' + config.key + '"> <span>' + v + '</span></label>';
+                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + escHtml(v) + '" data-key="' + config.key + '"> <span>' + escHtml(v) + '</span></label>';
                 });
                 html += '</div></div>';
                 container.innerHTML = html;
@@ -214,7 +214,7 @@ block content
                                     var lookup = row.cells[12].data;
                                     var isDanger = row.cells[11].data;
                                     var style = isDanger ? ' style="color:#dc2626;"' : '';
-                                    return gridjs.html('<a href="' + lookup + '" target="_blank"' + style + '>' + cell + '</a>');
+                                    return gridjs.html('<a href="' + escHtml(lookup) + '" target="_blank"' + style + '>' + escHtml(cell) + '</a>');
                                 }
                             },
                             {
@@ -391,7 +391,7 @@ block content
                 rows.forEach(function(r) {
                     var danger = r[11];
                     var style = danger ? ' style="color:#dc2626;"' : '';
-                    html += '<tr' + style + '><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td><td>' + Number(r[5]).toLocaleString('en-US') + '</td><td>' + Number(r[6]).toLocaleString('en-US') + '</td><td>' + Number(r[7]).toLocaleString('en-US') + '</td><td>' + Number(r[8]).toLocaleString('en-US') + '</td><td>' + r[9] + '</td><td>' + String(r[10]).replace(/</g, '&lt;') + '</td></tr>';
+                    html += '<tr' + style + '><td>' + escHtml(r[0]) + '</td><td>' + escHtml(r[1]) + '</td><td>' + escHtml(r[2]) + '</td><td>' + escHtml(r[3]) + '</td><td>' + escHtml(r[4]) + '</td><td>' + Number(r[5]).toLocaleString('en-US') + '</td><td>' + Number(r[6]).toLocaleString('en-US') + '</td><td>' + Number(r[7]).toLocaleString('en-US') + '</td><td>' + Number(r[8]).toLocaleString('en-US') + '</td><td>' + escHtml(r[9]) + '</td><td>' + escHtml(r[10]) + '</td></tr>';
                 });
                 html += '</tbody></table></body></html>';
                 win.document.write(html);

@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
+const tools = require('../app/tools');
 
 const router = express.Router();
 const CONFIG_DIR = path.resolve(__dirname, '..', 'config');
@@ -45,7 +46,7 @@ router.get('/api/backups', (req, res) => {
 
     res.json({ rules, settings });
   } catch (error) {
-    console.error('Error listing backups:', error);
+    tools.logError('Error listing backups: ' + error.message);
     res.status(500).json({ message: 'Failed to list backups' });
   }
 });
@@ -66,7 +67,7 @@ router.get('/api/backup/content', (req, res) => {
     const content = fs.readFileSync(filePath, 'utf8');
     res.json({ filename, content });
   } catch (error) {
-    console.error('Error reading backup:', error);
+    tools.logError('Error reading backup: ' + error.message);
     res.status(500).json({ message: 'Failed to read backup' });
   }
 });
@@ -93,7 +94,7 @@ router.get('/api/current', (req, res) => {
     const content = fs.readFileSync(filePath, 'utf8');
     res.json({ type, content });
   } catch (error) {
-    console.error('Error reading current:', error);
+    tools.logError('Error reading current: ' + error.message);
     res.status(500).json({ message: 'Failed to read current file' });
   }
 });
@@ -139,7 +140,7 @@ router.post('/api/restore', (req, res) => {
 
     res.json({ success: true, message: `${type === 'rules' ? 'Rules' : 'Settings'} restored successfully from backup` });
   } catch (error) {
-    console.error('Error restoring backup:', error);
+    tools.logError('Error restoring backup: ' + error.message);
     res.status(500).json({ message: 'Failed to restore: ' + (error.message || 'Unknown error') });
   }
 });
@@ -160,7 +161,7 @@ router.delete('/api/backup', (req, res) => {
     fs.unlinkSync(filePath);
     res.json({ success: true, message: 'Backup deleted successfully' });
   } catch (error) {
-    console.error('Error deleting backup:', error);
+    tools.logError('Error deleting backup: ' + error.message);
     res.status(500).json({ message: 'Failed to delete backup: ' + (error.message || 'Unknown error') });
   }
 });

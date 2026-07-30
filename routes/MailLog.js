@@ -14,7 +14,7 @@ router.get('/', function(req, res) {
     const logPath = config.PROCESSING_LOG;
     const fileTypes = ".log";
    
-    tools.getSortedFiles(logPath, fileTypes, "ByLastUpdateDesc", function (err, files) {
+    tools.getSortedFiles(logPath, fileTypes, "ByLastUpdateDesc", async function (err, files) {
         //Process each log file
         let logList = [];
         let startTime = performance.now();
@@ -27,7 +27,7 @@ router.get('/', function(req, res) {
                 continue;
             if (fs.existsSync(filePath))
             {            
-                let logText = fs.readFileSync(filePath).toString();
+                let logText = await fs.promises.readFile(filePath, 'utf8');
                 logText = xss(logText);
                 let logLines = logText.split('\n');
                 //Process each log line

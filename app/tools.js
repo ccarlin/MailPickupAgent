@@ -108,10 +108,52 @@ module.exports = {
         return "Error parsing email message.";
       }
     },
+    // Async: parse email and resolve CID image references to base64 data URIs.
+    // Returns a Promise<string> of HTML with inline images embedded.
+    emailExtractWithImages: async function(mailFile) {
+      try {
+        if (!fs.existsSync(mailFile)) {
+          return "No message available";
+        }
+        const mailMessage = fs.readFileSync(mailFile);
+        const parsed = await PostalMime.parse(mailMessage);
+        let html = parsed.html || "";
+        const attachments = parsed.attachments || [];
+        if (!html || attachments.length === 0) return html || "No HTML part available";
+
+        // Build a map of cid -> attachment content
+        const cidMap = {};
+        for (const att of attachments) {
+          if (att.contentId) {
+            // contentId may be wrapped in angle brackets
+            const cid = att.contentId.replace(/^</, '').replace(/>$/, '');
+            cidMap[cid] = att;
+          }
+        }
+
+        // Replace cid: references with data URIs
+        html = html.replace(/cid:([^"'\s>]+)/g, (match, cid) => {
+          const att = cidMap[cid];
+          if (att && att.content) {
+            const b64 = Buffer.from(att.content).toString('base64');
+            return `data:${att.contentType || 'application/octet-stream'};base64,${b64}`;
+          }
+          return match;
+        });
+
+        return html;
+      } catch (err) {
+        this.logError(`Error parsing email file with images: ${mailFile}, Error: ${err}`);
+        return "Error parsing email message.";
+      }
+    },
     // Retrieve X-MPA-SpamReason header from an email by its ID and directory path.
     // Returns the spam reason string, or null if not found or on error.
     getSpamReason: async function(emailId, emailPath) {
         try {
+            if (!module.exports.MESSAGE_ID_PATTERN.test(emailId)) {
+                return null;
+            }
             const mailFile = path.join(emailPath, emailId + '.MAI');
             if (!fs.existsSync(mailFile)) {
                 return null;
@@ -132,13 +174,35 @@ module.exports = {
     sleep: function(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
+    MESSAGE_ID_PATTERN: /^[A-Fa-f0-9]+\.MAI$/i,
+    resolveWithinDir: function(baseDir, fileName) {
+        const base = path.resolve(baseDir);
+        const resolved = path.resolve(base, fileName);
+        const relative = path.relative(base, resolved);
+        if (relative.startsWith('..') || path.isAbsolute(relative)) {
+            throw new Error(`Invalid messageID: path escapes configured directory (${fileName})`);
+        }
+        return resolved;
+    },
     buildFilePaths: function(messageID, queueType) {
+        if (typeof messageID !== 'string' || !module.exports.MESSAGE_ID_PATTERN.test(messageID)) {
+            throw new Error('Invalid messageID: must be a MailEnable message filename (hex ID ending in .MAI)');
+        }
+
         const qt = (queueType || '').toString().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
         const queueDirKey = `${qt}_QUEUE_DIR`;
         const commandDirKey = `${qt}_COMMAND_DIR`;
-        const messagePath = config[queueDirKey] ? path.join(config[queueDirKey], messageID) : messageID;
-        const controlFilePath = config[commandDirKey] ? path.join(config[commandDirKey], messageID) : messageID;       
-        return { messagePath, controlFilePath };
+        const queueDir = config[queueDirKey];
+        const commandDir = config[commandDirKey];
+
+        if (!queueDir || !commandDir) {
+            throw new Error(`Invalid queueType: no directories configured for ${qt}`);
+        }
+
+        return {
+            messagePath: module.exports.resolveWithinDir(queueDir, messageID),
+            controlFilePath: module.exports.resolveWithinDir(commandDir, messageID),
+        };
     },
     isPrivateIp: function(ip) {
       // Check for IPv4 private ranges
@@ -160,26 +224,20 @@ module.exports = {
      //Validate the connection
     isValid: function(req, pagePath) {           
       try {
-        //Create list of valid keys
         if (this.isPrivateIp(req.socket.remoteAddress)) 
           return true;     
         if (req.session?.authenticated)
           return true;
-        else {
-            const key = req.cookies.MailKey;
-            let validPageKey = this.generateKey(req.socket.localAddress, null, pagePath);
-            let validKey = this.generateKey(req.socket.localAddress);
-            const validKeys = [validPageKey, validKey];
-            // Also accept a user-tied key based on the MailQUserFilter cookie
-            const userFilter = req.cookies.MailQUserFilter;
-            if (userFilter) {
-              validKeys.push(this.generateKey(req.socket.localAddress, null, `${pagePath}:${userFilter}`));
-            }
-            if (validKeys.includes(key))
-              return true;
-            else 
-              this.logError(`Invalid or expired security key: ${req.cookies.MailKey}, for IP: ${req.socket.localAddress}, Accessing Page: ${req.originalUrl} PageKey: ${pagePath}`, req.socket.remoteAddress);            
+        const key = req.cookies.MailKey;
+        if (!key) return false;
+        const db = require('./db');
+        const row = db.prepare('SELECT * FROM access_keys WHERE key = ?').get(key);
+        if (row) {
+          req.keyInfo = row;
+          db.prepare("UPDATE access_keys SET last_used_at = datetime('now'), usage_count = usage_count + 1 WHERE key = ?").run(key);
+          return true;
         }
+        this.logError(`Invalid or expired security key: ${(key ?? '').replace(/[^\x20-\x7e]/g, '')}, for IP: ${req.socket.localAddress}, Accessing Page: ${req.originalUrl} PageKey: ${pagePath}`, req.socket.remoteAddress);
       }
       catch (exp) {
         this.logError(`Unable to validate security key, exception: ${exp}`, req.socket.remoteAddress);            
@@ -192,20 +250,40 @@ module.exports = {
      * @param {string} localAddress
      * @param {string} remoteAddress
      * @param {string} [pagePath] Optional - if provided the key will be tied to a single page (include full path or identifier)
-     * @returns {string} md5 hash key
+     * @returns {string} sha256 hash key
      */
-    generateKey: function(localAddress, remoteAddress, pagePath) {
-      localAddress = localAddress || '';
-      remoteAddress = remoteAddress || '';
+    generateKey: function() {
+      return crypto.randomBytes(32).toString('hex');
+    },
 
-      // base key includes local and optionally remote
-      let base = remoteAddress ? `${localAddress}:${remoteAddress}` : `${localAddress}`;
+    storeKey: function(key, label, userFilter) {
+      const db = require('./db');
+      db.prepare(`
+        INSERT OR IGNORE INTO access_keys (key, label, user_filter, created_at)
+        VALUES (?, ?, ?, datetime('now'))
+      `).run(key, label || null, userFilter || null);
+    },
 
-      // if a pagePath is provided include it in the hash so the key is page-specific
-      if (pagePath && pagePath !== '') {
-        base += `:${pagePath}`;
-      }
+    getStoredKeys: function() {
+      const db = require('./db');
+      return db.prepare('SELECT id, key, label, user_filter, created_at, last_used_at, usage_count FROM access_keys ORDER BY created_at DESC').all();
+    },
 
-      return crypto.createHash('md5').update(base).digest("hex");
-    }    
-  }; 
+    deleteStoredKey: function(id) {
+      const db = require('./db');
+      return db.prepare('DELETE FROM access_keys WHERE id = ?').run(id).changes > 0;
+    }
+  };
+
+const db = require('./db');
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS access_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT NOT NULL UNIQUE,
+    label TEXT,
+    user_filter TEXT,
+    created_at TEXT,
+    last_used_at TEXT,
+    usage_count INTEGER NOT NULL DEFAULT 0
+  )
+`).run(); 

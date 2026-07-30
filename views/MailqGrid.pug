@@ -1,7 +1,7 @@
 extends adminLayout
 
 block css
-    link(href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet")
+    link(href="https://cdn.jsdelivr.net/npm/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" integrity="sha384-i8iPOOXHyYKlqvjJjbORq7m/VrfUhgupTg3IZvtXz8M7c0CiTPUUhM5gdjiQiGbv" crossorigin="anonymous")
     link(href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet")
     link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
     style.
@@ -109,18 +109,18 @@ block css
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
 block scripts
-    script(src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js")
+    script(src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js" integrity="sha384-y62I+ZvjNRolkugL/AMpUZykqrL6oqYxBruObmlDAhDpmapM0s+xgvVK+wGVpza0" crossorigin="anonymous")
 
 block content
     script.
-        var hsFilterUser = !{JSON.stringify(filterUser || null)};
+        var hsFilterUser = !{JSON.stringify(filterUser || null).replace(/<\//g, '\\u003c/')};
 
         document.addEventListener('DOMContentLoaded', function() {
-            var emailData = !{JSON.stringify(emails)};
+            var emailData = !{JSON.stringify(emails).replace(/<\//g, '\\u003c/')};
             var emailStore = {};
             var allData = emailData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
-                var row = [e.filepath, e.recipients, e.sender, e.subject, String(score), e.antiSpam, e.date, e.clientip, e.dkim, e.safe, e.clientipinfo];
+                var row = [e.filepath, e.recipients, e.sender, e.subject, String(score), e.antiSpam, e.date, e.clientip, e.dkim, e.safe];
                 emailStore[e.filepath] = { subject: e.subject, sender: e.sender, recipients: e.recipients, spamScore: score, antiSpam: e.antiSpam, reason: e.reason, clientip: e.clientip, datetime: e.date, dkim: e.dkim };
                 return row;
             });
@@ -150,6 +150,11 @@ block content
 
             eventSource.addEventListener('connected', function(e) {
                 console.log('SSE connected:', JSON.parse(e.data));
+            });
+
+            eventSource.addEventListener('auth-error', function() {
+                eventSource.close();
+                window.location.href = '/login';
             });
 
             eventSource.onerror = function() {
@@ -379,9 +384,23 @@ block content
                 var key = link.getAttribute('data-mailkey');
                 var view = link.getAttribute('data-view');
                 if (!key) return;
+                var showImages = document.getElementById('chkShowImages').checked;
                 var url = view === 'html' ? 'emailPreview?view=HTML&mailKey=' + encodeURIComponent(key) : 'emailPreview?mailKey=' + encodeURIComponent(key);
+                if (view === 'html' && showImages) url += '&showImages=true';
                 document.getElementById('emailPreviewFrame').src = url;
                 document.getElementById('emailPreviewModal').style.display = 'block';
+            });
+
+            document.getElementById('chkShowImages').addEventListener('change', function() {
+                var frame = document.getElementById('emailPreviewFrame');
+                var currentUrl = frame.src;
+                if (!currentUrl || currentUrl === 'about:blank') return;
+                var hasImages = currentUrl.indexOf('showImages=true') !== -1;
+                if (this.checked && !hasImages) {
+                    frame.src = currentUrl + '&showImages=true';
+                } else if (!this.checked && hasImages) {
+                    frame.src = currentUrl.replace(/[&?]showImages=true/, '');
+                }
             });
 
             document.getElementById('chkSelectAll').addEventListener('change', function() {
@@ -430,7 +449,7 @@ block content
                                 width: '40px',
                                 sort: false,
                                 formatter: function(cell) {
-                                    return gridjs.html('<input type="checkbox" class="mailq-chk" value="' + cell.replace(/"/g, '&quot;') + '">');
+                                    return gridjs.html('<input type="checkbox" class="mailq-chk" value="' + escHtml(cell) + '">');
                                 }
                             },
                             { name: 'Recipients', id: 'recipients', width: '180px', sort: true },
@@ -443,7 +462,7 @@ block content
                                     var raw = cell;
                                     var safe = row.cells[9].data;
                                     var cls = (safe === false || safe === 'false') ? 'sender-danger' : '';
-                                    return gridjs.html('<span class="' + cls + '">' + raw.replace(/</g, '&lt;') + '</span>');
+                                    return gridjs.html('<span class="' + escHtml(cls) + '">' + escHtml(raw) + '</span>');
                                 }
                             },
                             { name: 'Subject', id: 'subject', width: '220px', sort: true },
@@ -456,7 +475,7 @@ block content
                                 width: '130px',
                                 sort: true,
                                 formatter: function(cell) {
-                                    return gridjs.html('<a href="https://www.ipqualityscore.com/ip-reputation-check/lookup/' + encodeURIComponent(cell) + '" target="_blank">' + cell + '</a>');
+                                    return gridjs.html('<a href="https://www.ipqualityscore.com/ip-reputation-check/lookup/' + encodeURIComponent(cell) + '" target="_blank">' + escHtml(cell) + '</a>');
                                 }
                             },
                             { name: 'DKIM', id: 'dkim', width: '80px', sort: true },
@@ -468,17 +487,15 @@ block content
                                 formatter: function(cell, row) {
                                     var fp = row.cells[0].data;
                                     var safe = row.cells[9].data;
-                                    var html = '<button class="action-btn preview-link" data-mailkey="' + fp.replace(/"/g, '&quot;') + '" data-view="text" title="Plain Text Preview"><i class="material-icons">article</i></button>';
+                                    var html = '<button class="action-btn preview-link" data-mailkey="' + escHtml(fp) + '" data-view="text" title="Plain Text Preview"><i class="material-icons">article</i></button>';
                                     if (safe === true || safe === 'true') {
-                                        html += '&nbsp;<button class="action-btn preview-link" data-mailkey="' + fp.replace(/"/g, '&quot;') + '" data-view="html" title="HTML Preview"><i class="material-icons">visibility</i></button>';
+                                        html += '&nbsp;<button class="action-btn preview-link" data-mailkey="' + escHtml(fp) + '" data-view="html" title="HTML Preview"><i class="material-icons">visibility</i></button>';
                                     }
                                     html += '&nbsp;<button class="action-btn btn-whitelist" type="button" title="Whitelist Sender" data-mailkey="' + encodeURIComponent(fp) + '"><i class="material-icons">check_circle</i></button>';
                                     html += '&nbsp;<button class="action-btn btn-blacklist" type="button" title="Blacklist Sender" data-mailkey="' + encodeURIComponent(fp) + '"><i class="material-icons">block</i></button>';
                                     return gridjs.html(html);
                                 }
                             },
-                            { name: 'safe', id: 'safe', hidden: true },
-                            { name: 'clientipinfo', id: 'clientipinfo', hidden: true }
                         ],
                         data: filteredData,
                         pagination: false,
@@ -522,8 +539,8 @@ block content
                     var subRow = document.createElement('tr');
                     subRow.className = 'reason-subrow';
                     var cell = document.createElement('td');
-                    cell.setAttribute('colspan', '100');
-                    cell.innerHTML = '<strong>Reason:</strong> ' + reason.replace(/</g, '&lt;');
+                    cell.setAttribute('colspan', '10');
+                    cell.innerHTML = '<strong>Reason:</strong> ' + escHtml(reason);
                     subRow.appendChild(cell);
                     row.parentNode.insertBefore(subRow, row.nextSibling);
                 });
@@ -632,7 +649,7 @@ block content
                 html += '<th>Recipients</th><th>Sender</th><th>Subject</th><th>Score</th><th>Spam Detail</th><th>Date/Time</th><th>ClientIP</th><th>DKIM</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
-                    html += '<tr><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td>' + r[4] + '</td><td>' + r[5] + '</td><td>' + r[6] + '</td><td>' + r[7] + '</td><td>' + r[8] + '</td></tr>';
+                    html += '<tr><td>' + escHtml(r[1]) + '</td><td>' + escHtml(r[2]) + '</td><td>' + escHtml(r[3]) + '</td><td>' + escHtml(r[4]) + '</td><td>' + escHtml(r[5]) + '</td><td>' + escHtml(r[6]) + '</td><td>' + escHtml(r[7]) + '</td><td>' + escHtml(r[8]) + '</td></tr>';
                 });
                 html += '</tbody></table></body></html>';
                 win.document.write(html);
@@ -729,5 +746,9 @@ block content
         .preview-modal-content
             div(style="display:flex; justify-content:space-between; align-items:center;")
                 h2 Email Preview
-                button#previewCloseBtn.mui-btn(type="button") Close
+                div(style="display:flex; align-items:center; gap:12px;")
+                    label(for="chkShowImages" style="font-size:0.85rem; white-space:nowrap; cursor:pointer;")
+                        input#chkShowImages(type="checkbox" style="margin-right:4px;")
+                        | Show Images
+                    button#previewCloseBtn.mui-btn(type="button") Close
             iframe#emailPreviewFrame

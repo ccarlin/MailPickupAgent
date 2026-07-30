@@ -6,6 +6,18 @@ const config = require('../config');
 const tools = require('../app/tools');
 const PostalMime = require('postal-mime');
 const { recentlyReleased } = require('../index.js');
+const FILEPATH_PATTERN = /^[A-Fa-f0-9]+$/i;
+
+function safeRedirect(req, fallback) {
+    const ref = req.get('Referer') || '';
+    try {
+        const refUrl = new URL(ref, `${req.protocol}://${req.get('host')}`);
+        if (refUrl.origin === `${req.protocol}://${req.get('host')}`) {
+            return refUrl.pathname + refUrl.search;
+        }
+    } catch { /* invalid URL origin, use fallback */ }
+    return fallback || '/';
+}
 
 router.get('/', function(req, res) {
     getDeletedEmails(function(err, emails) {
@@ -59,7 +71,7 @@ router.post('/', function(req, res) {
         RecoverMessages(emails);
     }
 
-    res.redirect(req.get('Referrer') || '/');
+    res.redirect(safeRedirect(req, '/'));
 });
 
 function getDeletedEmails(callback) {
@@ -86,7 +98,7 @@ function getDeletedEmails(callback) {
 
                     try {
                         // Only read TimeAcquired from .H00 (exclusive to header)
-                        let headerContents = fs.readFileSync(filePath).toString();
+                        let headerContents = await fs.promises.readFile(filePath, 'utf8');
                         let headerLines = headerContents.split('\r\n');
                         for(let j=0;j<headerLines.length;j++) {
                             let data = headerLines[j].split(/=(.+)/);
@@ -99,7 +111,7 @@ function getDeletedEmails(callback) {
 
                         // Parse .MAI with postal-mime for sender, recipients, subject
                         if (fs.existsSync(emailFilePath)) {
-                            let mailMessage = fs.readFileSync(emailFilePath);
+                            let mailMessage = await fs.promises.readFile(emailFilePath);
                             let parsed = await PostalMime.parse(mailMessage);
                             emailInfo.sender = parsed.from?.address || 'unknown';
                             let toAddresses = (parsed.to || []).map(v => (v.address || '').split('@')[0].toLowerCase()).filter(Boolean);
@@ -149,6 +161,10 @@ function RecoverMessages(emails) {
 
     for (let i=0;i<emails.length;i++) {
         let email = emails[i];
+        if (!email.filepath || !FILEPATH_PATTERN.test(email.filepath)) {
+            tools.logError(`Invalid filepath rejected: ${email.filepath}`);
+            continue;
+        }
         let headerFile = path.join(deletedPath, email.filepath + ".H00");
         let emailFile = path.join(deletedPath, email.filepath + ".MAI");
         tools.logData(`Recovering email ${email.filepath} from ${deletedPath}`, "INFO");

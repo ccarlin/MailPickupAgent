@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const net = require('net');
+const rateLimit = require('express-rate-limit');
+const tools = require('../app/tools');
 const appConfig = require('../config');
 const { verifyPassword, hashPassword } = require('../middleware/hash');
 
@@ -9,8 +12,8 @@ function getPasswordHash() {
   }
   if (appConfig.AUTH_PASSWORD) {
     const hash = hashPassword(appConfig.AUTH_PASSWORD);
-    console.warn('WARNING: AUTH_PASSWORD is stored in plaintext. Replace it with AUTH_PASSWORD_HASH in your config file.');
-    console.warn(`  Generated hash: "${hash}"`);
+    tools.logWarn('WARNING: AUTH_PASSWORD is stored in plaintext. Replace it with AUTH_PASSWORD_HASH in your config file.');
+    tools.logWarn(`  Generated hash: "${hash}"`);
     return hash;
   }
   return hashPassword('admin');
@@ -19,6 +22,24 @@ function getPasswordHash() {
 const validPassHash = getPasswordHash();
 const validUser = appConfig.AUTH_USERNAME || 'admin';
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  skip: (req) => {
+    const ip = (req.ip || req.socket.remoteAddress || '').replace(/^\[|\]$/g, '');
+    return ip === 'localhost' || ip === '::1' || ip.startsWith('::ffff:127.') || (net.isIP(ip) === 4 && ip.startsWith('127.'));
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const retryAfter = Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000);
+    const minutes = Math.ceil(retryAfter / 60);
+    res.status(429).render('login', {
+      error: `Too many login attempts. Try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`
+    });
+  }
+});
+
 router.get('/login', (req, res) => {
   if (req.session && req.session.authenticated) {
     return res.redirect('/');
@@ -26,7 +47,7 @@ router.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
   const { username, password, identifier } = req.body;
   if (username === validUser && verifyPassword(password, validPassHash)) {
     req.session.authenticated = true;

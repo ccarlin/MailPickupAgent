@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
-const tools = require('../app/tools');
 const TEST_RECIPIENT = config.TEST_EMAIL_RECIPIENT || 'test@localhost';
 const HOSTNAME = config.HOSTNAME || 'localhost';
 const FALL_BACK_SPAM_FILLER = '\n\ncamp lejeune';

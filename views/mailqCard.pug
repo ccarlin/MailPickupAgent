@@ -1,7 +1,7 @@
 extends adminLayout
 
 block css
-    link(rel="stylesheet", href="https://unpkg.com/swiper/swiper-bundle.min.css")
+    link(rel="stylesheet", href="https://unpkg.com/swiper/swiper-bundle.min.css" integrity="sha384-Id/5MAwxG2W/++J4XSvh2hX+IqQqTSJxekSzeqE7XnT3aQ6MeA6a05L7dUfmmCuU" crossorigin="anonymous")
     link(href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet")
     style.
         body {
@@ -202,8 +202,8 @@ block css
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
     
 block scripts
-    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
-    script(src="https://unpkg.com/swiper/swiper-bundle.min.js")
+    script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js" integrity="sha384-fgGyf7Mo7DURSOMnOy7ed+dkq5Job205Gnzu6QIg0BOHKaqt4D76Dt8VlDCzcMHV" crossorigin="anonymous")
+    script(src="https://unpkg.com/swiper/swiper-bundle.min.js" integrity="sha384-RFzzVUJJd7FEy9WnvKrUBJvYNaFMHLs235jiMZqsmc3mw9XZhEZGRn/3WWzvyror" crossorigin="anonymous")
     script.    
         document.addEventListener('DOMContentLoaded', function () {
             var swiper = new Swiper('.swiper-container', {
@@ -253,6 +253,11 @@ block scripts
 
             eventSource.addEventListener('connected', function(e) {
                 console.log('SSE connected:', JSON.parse(e.data));
+            });
+
+            eventSource.addEventListener('auth-error', function() {
+                eventSource.close();
+                window.location.href = '/login';
             });
 
             eventSource.onerror = function() {
@@ -325,9 +330,23 @@ block scripts
             var key = raw ? decodeURIComponent(raw) : '';
             var safe = ($btn.attr('data-safe') === 'true' || $btn.attr('data-safe') === true);
             if (!key) return;
+            var showImages = document.getElementById('chkShowImages') && document.getElementById('chkShowImages').checked;
             var url = (safe ? 'emailPreview?view=HTML&mailKey=' : 'emailPreview?mailKey=') + encodeURIComponent(key);
+            if (safe && showImages) url += '&showImages=true';
             $('#emailPreviewFrame').attr('src', url);
             $('#emailPreviewModal').show();
+        });
+
+        $('#chkShowImages').on('change', function() {
+            var frame = document.getElementById('emailPreviewFrame');
+            var currentUrl = frame.src;
+            if (!currentUrl || currentUrl === 'about:blank') return;
+            var hasImages = currentUrl.indexOf('showImages=true') !== -1;
+            if (this.checked && !hasImages) {
+                frame.src = currentUrl + '&showImages=true';
+            } else if (!this.checked && hasImages) {
+                frame.src = currentUrl.replace(/[&?]showImages=true/, '');
+            }
         });
 
         // show reason once; after revealing remove the "Show Reason" button so it cannot be hidden again
@@ -529,5 +548,9 @@ block content
         .preview-modal-content
             div(style="display:flex; justify-content:space-between; align-items:center;")
                 h2 Email Preview
-                button.myButton.preview-close(onclick="closePreviewModal()") Close
+                div(style="display:flex; align-items:center; gap:12px;")
+                    label(for="chkShowImages" style="font-size:0.85rem; white-space:nowrap; cursor:pointer;")
+                        input#chkShowImages(type="checkbox" style="margin-right:4px;")
+                        | Show Images
+                    button.myButton.preview-close(onclick="closePreviewModal()") Close
             iframe#emailPreviewFrame

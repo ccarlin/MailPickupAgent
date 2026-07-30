@@ -24,6 +24,15 @@ block css
     .status-card .icon {
       font-size: 2rem;
       margin-bottom: 0.5rem;
+      min-height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .status-card .icon img {
+      max-width: 10rem;
+      max-height: 3rem;
+      object-fit: contain;
     }
     .status-card .count {
       font-size: 2.2rem;
@@ -33,7 +42,6 @@ block css
     .status-card .label {
       font-size: 0.85rem;
       color: #64748b;
-      text-transform: uppercase;
       letter-spacing: 0.05em;
       margin-top: 0.25rem;
     }
@@ -47,8 +55,7 @@ block css
     .status-card.pending .icon { color: #f97316; }
     .status-card.users .icon { color: #06b6d4; }
     .status-card.notifications .icon { color: #a855f7; }
-    .status-card.ai-time .icon { color: #8b5cf6; }
-    .status-card.sa-time .icon { color: #f97316; }
+    .status-card.links .icon { color: #3b82f6; }
     .status-card.process-time .icon { color: #0ea5e9; }
 
     .status-card .icon-wrap {
@@ -97,10 +104,33 @@ block css
       50% { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
     }
 
+    .status-card .test-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      letter-spacing: 0.04em;
+    }
+    .status-card .test-badge i {
+      font-size: 0.55rem;
+    }
+
     .status-card.service-up .icon { color: #22c55e; }
     .status-card.service-down .icon { color: #ef4444; }
     .status-card.service-up .count { color: #16a34a; font-size: 1rem; }
     .status-card.service-down .count { color: #dc2626; font-size: 1rem; }
+    .status-card.abuseipdb .icon { color: #f59e0b; }
+    .status-card.abuseipdb.configured .icon { color: #22c55e; }
+    .status-card.abuseipdb.not-configured .icon { color: #94a3b8; }
+    .status-card.abuseipdb.configured .count { color: #16a34a; font-size: 1rem; }
+    .status-card.abuseipdb.not-configured .count { color: #94a3b8; font-size: 1rem; }
+    .status-card.process-time .icon { color: #0ea5e9; }
     .status-card.hidden { display: none; }
 
     #server-offline {
@@ -132,7 +162,7 @@ block css
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
+      margin-bottom: .2rem;
       min-height: 2rem;
     }
     #status-header .header-left {
@@ -196,6 +226,81 @@ block css
     .reset-stats-btn:hover {
       background: #fef2f2;
       border-color: #fca5a5;
+    }
+
+    #ai-test-modal,
+    #sa-test-modal,
+    #abuseipdb-test-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    #ai-test-modal.show,
+    #sa-test-modal.show,
+    #abuseipdb-test-modal.show { display: flex; }
+    #ai-test-modal .modal-box,
+    #sa-test-modal .modal-box,
+    #abuseipdb-test-modal .modal-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 900px;
+      width: 95%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    #ai-test-modal .modal-box h2,
+    #sa-test-modal .modal-box h2,
+    #abuseipdb-test-modal .modal-box h2 {
+      margin: 0 0 1rem 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #ai-test-modal .modal-box pre,
+    #sa-test-modal .modal-box pre,
+    #abuseipdb-test-modal .modal-box pre {
+      flex: 1;
+      overflow: auto;
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      white-space: pre;
+      min-height: 200px;
+      margin: 0;
+    }
+    #ai-test-modal .modal-box .modal-footer,
+    #sa-test-modal .modal-box .modal-footer,
+    #abuseipdb-test-modal .modal-box .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+    #ai-test-modal .modal-box .modal-footer button,
+    #sa-test-modal .modal-box .modal-footer button,
+    #abuseipdb-test-modal .modal-box .modal-footer button {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    #ai-test-modal .modal-box .modal-footer button:hover,
+    #sa-test-modal .modal-box .modal-footer button:hover,
+    #abuseipdb-test-modal .modal-box .modal-footer button:hover {
+      background: #2563eb;
     }
 
 block content
@@ -264,32 +369,40 @@ block content
         .count#count-deleted 0
         .label Deleted
         .sub-label (since last restart)
-      .status-card.service-down.hidden#card-ai
+      .status-card.service-down.hidden.clickable#card-ai
         .icon
-          i.fas.fa-brain
+          - var aiLogo = aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/ollama-logo.svg'
+          img(src=aiLogo, alt="AI Check")
         .count#count-ai
           i.fas.fa-times-circle
           |  Offline
-        .label AI Check (Ollama)
-      .status-card.ai-time.hidden#card-ai-time
+        .label#label-ai AI Check
+        .sub-label#sub-ai-time
+        .test-badge
+          i.fas.fa-play
+          |  Clicking card runs test
+      .status-card.service-down.hidden.clickable#card-sa
         .icon
-          i.fas.fa-brain
-        .count#count-ai-time N/A
-        .label Avg AI Check
-        .sub-label#sub-ai-time (0 checks)
-      .status-card.service-down.hidden#card-sa
-        .icon
-          i.fas.fa-shield-halved
+          img(src="/img/spamassassin.png" alt="SpamAssassin")
         .count#count-sa
           i.fas.fa-times-circle
           |  Offline
         .label SpamAssassin
-      .status-card.sa-time.hidden#card-sa-time
+        .sub-label#sub-sa-time
+        .test-badge
+          i.fas.fa-play
+          |  Clicking card runs test
+      .status-card.abuseipdb.not-configured.hidden.clickable#card-abuseipdb
         .icon
-          i.fas.fa-shield-halved
-        .count#count-sa-time N/A
-        .label Avg SA Check
-        .sub-label#sub-sa-time (0 checks)
+          img(src="/img/abuseipdb-logo.svg" alt="AbuseIPDB")
+        .count#count-abuseipdb
+          i.fas.fa-times-circle
+          |  Not Configured
+        .label AbuseIPDB
+        .sub-label#sub-abuseipdb-time
+        .test-badge
+          i.fas.fa-play
+          |  Clicking card runs test
       .status-card.uptime
         .icon
           i.fas.fa-clock
@@ -301,6 +414,11 @@ block content
           i.fas.fa-users
         .count#count-users 0
         .label Logged In Users
+      .status-card.links.clickable#card-links
+        .icon
+          i.fas.fa-link
+        .count#count-links 0
+        .label Access Links
       .status-card.notifications.clickable#card-notifications
         .icon
           i.fas.fa-bell
@@ -313,6 +431,33 @@ block content
         .label Auto Purge 
         .sub-label#purge-on-message (runs while page is open)
         .sub-label#purge-last-run
+
+  #ai-test-modal
+    .modal-box
+      h2
+        i.fas.fa-brain
+        | AI Check Test
+      pre#ai-test-output Running AI test...
+      .modal-footer
+        button(onclick="$('#ai-test-modal').removeClass('show')") Close
+
+  #sa-test-modal
+    .modal-box
+      h2
+        i.fas.fa-shield-halved
+        | SpamAssassin Test
+      pre#sa-test-output Running SpamAssassin test...
+      .modal-footer
+        button(onclick="$('#sa-test-modal').removeClass('show')") Close
+
+  #abuseipdb-test-modal
+    .modal-box
+      h2
+        i.fas.fa-globe
+        | AbuseIPDB Test
+      pre#abuseipdb-test-output Running AbuseIPDB test...
+      .modal-footer
+        button(onclick="$('#abuseipdb-test-modal').removeClass('show')") Close
 
 block scripts
   script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
@@ -335,39 +480,46 @@ block scripts
       $('#count-pending').text(data.pending);
       $('#card-pending').toggleClass('alert', data.pending > 0);
       if (data.aiEnabled) {
-        $('#card-ai').removeClass('hidden').toggleClass('service-up service-down', data.aiRunning);
+        $('#label-ai').text('AI Check (' + data.aiSystem + ')');
+        $('#card-ai .icon img').attr('src', data.aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/ollama-logo.svg');
+        $('#card-ai').removeClass('hidden service-up service-down').addClass(data.aiRunning ? 'service-up' : 'service-down');
         $('#count-ai').html(data.aiRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
           : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
-        $('#card-ai-time').removeClass('hidden');
+        if (data.aiAvgTime !== undefined) {
+          $('#sub-ai-time').text('Avg: ' + formatMs(data.aiAvgTime) + ' (' + data.aiCheckCount + ' checks)');
+        }
       } else {
         $('#card-ai').addClass('hidden');
-        $('#card-ai-time').addClass('hidden');
       }
       if (data.saEnabled) {
-        $('#card-sa').removeClass('hidden').toggleClass('service-up service-down', data.saRunning);
+        $('#card-sa').removeClass('hidden service-up service-down').addClass(data.saRunning ? 'service-up' : 'service-down');
         $('#count-sa').html(data.saRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
           : '<i class="fas fa-times-circle" style="color:#dc2626"></i> <span style="color:#dc2626">Offline</span>');
-        $('#card-sa-time').removeClass('hidden');
+        if (data.saAvgTime !== undefined) {
+          $('#sub-sa-time').text('Avg: ' + formatMs(data.saAvgTime) + ' (' + data.saCheckCount + ' checks)');
+        }
       } else {
         $('#card-sa').addClass('hidden');
-        $('#card-sa-time').addClass('hidden');
       }
+      if (data.abuseipdbEnabled) {
+        $('#card-abuseipdb').removeClass('hidden').toggleClass('configured not-configured', true);
+        $('#count-abuseipdb').html('<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Configured</span>');
+        if (data.abuseipdbAvgTime !== undefined) {
+          $('#sub-abuseipdb-time').text('Avg: ' + formatMs(data.abuseipdbAvgTime) + ' (' + data.abuseipdbCheckCount + ' checks)');
+        }
+      } else {
+        $('#card-abuseipdb').addClass('hidden');
+      }
+      $('#count-links').text(data.linkCount || 0);
       $('#count-notifications').text(data.notificationCount);
-      if (data.aiAvgTime !== undefined) {
-        $('#count-ai-time').text(formatMs(data.aiAvgTime));
-        $('#sub-ai-time').text('(' + data.aiCheckCount + ' checks)');
-      }
-      if (data.saAvgTime !== undefined) {
-        $('#count-sa-time').text(formatMs(data.saAvgTime));
-        $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
-      }
       if (data.avgProcessTime !== undefined) {
         $('#count-process-time').text(formatMs(data.avgProcessTime));
         $('#sub-process-time').text('(' + data.processCount + ' emails)');
       }
       $('#last-update-time').text(new Date().toLocaleTimeString());
+      if (data.version) $('#footer-version').text(data.version);
       $('#server-offline').hide();
       $('#status-content').show();
       changeIcon(data.pending);
@@ -388,12 +540,13 @@ block scripts
       }
       if (data.uptimeFormatted !== undefined) $('#count-uptime').text(data.uptimeFormatted);
       if (data.aiAvgTime !== undefined) {
-        $('#count-ai-time').text(formatMs(data.aiAvgTime));
-        $('#sub-ai-time').text('(' + data.aiCheckCount + ' checks)');
+        $('#sub-ai-time').text('Avg: ' + formatMs(data.aiAvgTime) + ' (' + data.aiCheckCount + ' checks)');
       }
       if (data.saAvgTime !== undefined) {
-        $('#count-sa-time').text(formatMs(data.saAvgTime));
-        $('#sub-sa-time').text('(' + data.saCheckCount + ' checks)');
+        $('#sub-sa-time').text('Avg: ' + formatMs(data.saAvgTime) + ' (' + data.saCheckCount + ' checks)');
+      }
+      if (data.abuseipdbAvgTime !== undefined) {
+        $('#sub-abuseipdb-time').text('Avg: ' + formatMs(data.abuseipdbAvgTime) + ' (' + data.abuseipdbCheckCount + ' checks)');
       }
       if (data.avgProcessTime !== undefined) {
         $('#count-process-time').text(formatMs(data.avgProcessTime));
@@ -540,6 +693,11 @@ block scripts
         setConnectionState('connected');
       });
 
+      eventSource.addEventListener('auth-error', function() {
+        eventSource.close();
+        window.location.href = '/login';
+      });
+
       function clearConnectTimeout() {
         if (connectTimeout) {
           clearTimeout(connectTimeout);
@@ -593,6 +751,9 @@ block scripts
       $('#card-users').on('click', function() {
         window.open('/sessions', '_blank');
       });
+      $('#card-links').on('click', function() {
+        window.open('/manageLinks', '_blank');
+      });
       $('#card-notifications').on('click', function() {
         window.open('/notificationsAdmin', '_blank');
       });
@@ -603,6 +764,33 @@ block scripts
         window.open('/deleted', '_blank');
       });
       $('#card-purge').on('click', togglePurge);
+      $('#card-ai').on('click', function() {
+        $('#ai-test-modal').addClass('show');
+        $('#ai-test-output').text('Running AI test...');
+        $.post('/status/api/ai-test').done(function(data) {
+          $('#ai-test-output').text(data.output || 'No output returned.');
+        }).fail(function() {
+          $('#ai-test-output').text('Failed to run AI test. Is the server reachable?');
+        });
+      });
+      $('#card-sa').on('click', function() {
+        $('#sa-test-modal').addClass('show');
+        $('#sa-test-output').text('Running SpamAssassin test...');
+        $.post('/status/api/sa-test').done(function(data) {
+          $('#sa-test-output').text(data.output || 'No output returned.');
+        }).fail(function() {
+          $('#sa-test-output').text('Failed to run SpamAssassin test. Is spamd reachable?');
+        });
+      });
+      $('#card-abuseipdb').on('click', function() {
+        $('#abuseipdb-test-modal').addClass('show');
+        $('#abuseipdb-test-output').text('Running AbuseIPDB test...');
+        $.post('/status/api/abuseipdb-test').done(function(data) {
+          $('#abuseipdb-test-output').text(data.output || 'No output returned.');
+        }).fail(function() {
+          $('#abuseipdb-test-output').text('Failed to run AbuseIPDB test. Is the API key configured?');
+        });
+      });
       $('#btn-reset-stats').on('click', function() {
         if (confirm('Reset all metrics to zero? This cannot be undone.')) {
           $.post('/status/api/reset-stats').done(function() {

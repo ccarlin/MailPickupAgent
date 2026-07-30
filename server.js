@@ -4,13 +4,11 @@ const path = require('path');
 const https = require('https');
 const session = require('express-session');
 const SQLiteStore = require('better-sqlite3-session-store')(session);
-const Database = require('better-sqlite3');
 const cookieParser = require('cookie-parser');
 const app = express();
 const { buildAllTestEmails, processEmail, wipeall, loadRules } = require('./index.js');
 const tools = require('./app/tools');
 const appConfig = require('./config');
-const { verifyPassword } = require('./middleware/hash');
 const { version } = require('./package.json');
 const PORT = appConfig.PORT || 6245;
 let server;
@@ -45,8 +43,9 @@ if (!sessionSecret || sessionSecret === 'change-this-to-a-random-secret-in-produ
   }
 }
 
+const db = require('./app/db');
 const sessionStore = new SQLiteStore({
-  client: new Database(path.join(__dirname, 'config', 'sessions.sqlite')),
+  client: db,
   expired: {
     clear: true,
     intervalMs: 900000 // 15 minutes
@@ -60,6 +59,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
+    secure: !!(appConfig.CERT_PATH && appConfig.CERT_KEY_PATH),
     sameSite: 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   }
@@ -70,6 +70,38 @@ app.use((req, res, next) => {
   res.locals.envLabel = appConfig.NODE_ENV || 'production';
   res.locals.envClass = appConfig.NODE_ENV || 'production';
   next();
+});
+
+// Security headers
+const csp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com",
+  "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com",
+  "img-src 'self' data: https:",
+  "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com",
+  "connect-src 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+  if (appConfig.CERT_PATH) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  res.setHeader('Content-Security-Policy', csp);
+  next();
+});
+
+// Lightweight health check for load balancers and process monitors (no auth)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    version,
+    uptime: Math.floor(process.uptime()),
+  });
 });
 
 // Auth routes (unprotected)
@@ -85,9 +117,10 @@ app.get('/', (req, res) => {
 });
 
 app.use('/rulesEditor', require('./routes/rulesEditor'));
+app.use('/ruleHits', require('./routes/ruleHitsReport'));
 app.use('/configEditor', require('./routes/configEditor'));
 app.use('/mailq', require('./routes/mailqRoute'));
-app.use('/generateLink', require('./routes/generateLink'));
+app.use('/manageLinks', require('./routes/manageLinks'));
 app.use('/MailLog', require('./routes/MailLog.js'));
 app.use('/SMTPLog', require('./routes/SMTPLog'));
 app.use('/QuarantineLog', require('./routes/QuarantineLog'));
@@ -147,8 +180,13 @@ function initializeConfiguration() {
 app.get('/api/help', (req, res) => {
   res.status(200).json({
     message: 'Mail Pickup Agent API',
-    version: '1.0.0',
+    version,
     endpoints: {
+      health: {
+        method: 'GET',
+        path: '/health',
+        description: 'Lightweight health check (no authentication required)'
+      },
       help: {
         method: 'GET',
         path: '/api/help',
@@ -180,6 +218,23 @@ app.get('/api/help', (req, res) => {
         method: 'POST',
         path: '/api/wipeall',
         description: 'Delete all log files and all emails in the queue and deleted folders'
+      },
+      spamReason: {
+        method: 'GET',
+        path: '/api/spam-reason/:type/:id',
+        description: 'Get spam reason for an email from quarantine or deleted directory',
+        pathParams: {
+          type: 'Directory type: "quarantine" or "deleted"',
+          id: 'Email ID'
+        }
+      },
+      emailLookup: {
+        method: 'GET',
+        path: '/api/email-lookup/:id',
+        description: 'Look up email info by ID, trying quarantine then deleted directories',
+        pathParams: {
+          id: 'Email ID'
+        }
       }
     }
   });
@@ -196,7 +251,7 @@ app.get('/api/config', (req, res) => {
 // GET Route - Send test emails
 app.get('/api/test-emails', async (req, res) => {
   try {
-    const recipient = req.query.recipient || appConfig.TEST_EMAIL_RECIPIENT || 'chuck@ccarlin.com';
+    const recipient = req.query.recipient || appConfig.TEST_EMAIL_RECIPIENT || 'test@example.com';
     const tests = buildAllTestEmails();
     const testResults = [];
     
@@ -246,10 +301,10 @@ app.post('/api/process', async (req, res) => {
 
     // Verify files exist
     if (!fs.existsSync(controlFilePath)) {
-      return res.status(404).json({ error: 'Control file not found', path: controlFilePath });
+      return res.status(404).json({ error: 'Control file not found' });
     }
     if (!fs.existsSync(messagePath)) {
-      return res.status(404).json({ error: 'Message file not found', path: messagePath });
+      return res.status(404).json({ error: 'Message file not found' });
     }
 
     // Process synchronously — load fresh rules each time so editor saves take effect immediately
@@ -259,15 +314,14 @@ app.post('/api/process', async (req, res) => {
       timestamp: new Date().toISOString(),
       messageID,
       queueType,
-      messagePath,
-      controlFilePath,
       status: 'completed',
       message: 'Email processing completed successfully'
     };
 
     res.status(200).json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const status = /^Invalid (messageID|queueType)/.test(error.message) ? 400 : 500;
+    res.status(status).json({ error: error.message });
   }
 });
 
@@ -333,17 +387,6 @@ app.post('/api/wipeall', (req, res) => {
 // Initialize configuration on startup
 initializeConfiguration();
 
-// Validate security: certificate requires non-default password
-if (appConfig.CERT_PATH) {
-  const pwHash = appConfig.AUTH_PASSWORD_HASH;
-  if (!pwHash || verifyPassword('admin', pwHash)) {
-    tools.logError('SECURITY ERROR: Certificate is configured but the admin password is still the default.');
-    tools.logError('Change it via the Configuration Editor (Security section > Admin Password field).');
-    process.exit(1);
-  }
-}
-
-
 // Start the server
 function startServer(protocol) {
   tools.logData(`Server is running on ${protocol}://localhost:${PORT}`);
@@ -355,10 +398,14 @@ function startServer(protocol) {
     tools.logData(`Authentication is disabled for local connections.`);
   }
   tools.logData(`API endpoints available:`);
+  tools.logData(`  GET  /health`);
   tools.logData(`  GET  /api/help`);
   tools.logData(`  GET  /api/config`);
   tools.logData(`  GET  /api/test-emails`);
   tools.logData(`  POST /api/process`);
+  tools.logData(`  GET  /api/spam-reason/:type/:id`);
+  tools.logData(`  GET  /api/email-lookup/:id`);
+  tools.logData(`  POST /api/wipeall`);
 }
 
 if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
@@ -385,25 +432,40 @@ if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
 // Global uncaught exception and rejection handlers
 process.on('uncaughtException', (err) => {
   tools.logError(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`);
+  // Don't exit immediately — let existing connections drain
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 process.on('unhandledRejection', (reason) => {
   tools.logError(`UNHANDLED REJECTION: ${reason instanceof Error ? reason.message : reason}\n${reason instanceof Error ? reason.stack : ''}`);
 });
 
-// Listen for the PM2 shutdown signal
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received: closing HTTP server');
-  
+// Graceful shutdown — shared by SIGINT and SIGTERM
+function gracefulShutdown(signal) {
+  tools.logData(`${signal} signal received: closing HTTP server`);
+
   server.close(() => {
-    console.log('HTTP server closed');
-    // Close database connections or other persistent resources here
-    process.exit(0); 
+    tools.logData('HTTP server closed');
+
+    // Close the shared SQLite database connection
+    try {
+      if (db && typeof db.close === 'function') {
+        db.close();
+        tools.logData('Closed database connection');
+      }
+    } catch (err) {
+      tools.logError(`Error closing database: ${err.message}`);
+    }
+
+    process.exit(0);
   });
 
   // Force close after 10 seconds if it's taking too long
   setTimeout(() => {
-    console.error('Forcing shutdown...');
+    tools.logError('Forcing shutdown...');
     process.exit(1);
   }, 10000);
-});
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

@@ -12,6 +12,8 @@ const metrics = {
   aiCheckCount: 0,
   saCheckTimeTotal: 0,
   saCheckCount: 0,
+  abuseipdbCheckTimeTotal: 0,
+  abuseipdbCheckCount: 0,
   processTimeTotal: 0,
   processCount: 0
 };
@@ -34,6 +36,9 @@ function addTiming(type, ms) {
   } else if (type === 'sa') {
     metrics.saCheckTimeTotal += ms;
     metrics.saCheckCount++;
+  } else if (type === 'abuseipdb') {
+    metrics.abuseipdbCheckTimeTotal += ms;
+    metrics.abuseipdbCheckCount++;
   } else if (type === 'process') {
     metrics.processTimeTotal += ms;
     metrics.processCount++;
@@ -45,6 +50,7 @@ function getMetrics() {
   const m = { ...metrics, uptime: Date.now() - metrics.serverStartTime };
   m.aiAvgTime = m.aiCheckCount > 0 ? Math.round(m.aiCheckTimeTotal / m.aiCheckCount) : null;
   m.saAvgTime = m.saCheckCount > 0 ? Math.round(m.saCheckTimeTotal / m.saCheckCount) : null;
+  m.abuseipdbAvgTime = m.abuseipdbCheckCount > 0 ? Math.round(m.abuseipdbCheckTimeTotal / m.abuseipdbCheckCount) : null;
   m.avgProcessTime = m.processCount > 0 ? Math.round(m.processTimeTotal / m.processCount) : null;
   return m;
 }
@@ -61,6 +67,8 @@ function resetMetrics() {
   metrics.aiCheckCount = 0;
   metrics.saCheckTimeTotal = 0;
   metrics.saCheckCount = 0;
+  metrics.abuseipdbCheckTimeTotal = 0;
+  metrics.abuseipdbCheckCount = 0;
   metrics.processTimeTotal = 0;
   metrics.processCount = 0;
 }

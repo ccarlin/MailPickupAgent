@@ -8,6 +8,11 @@ const metrics = require('../app/metrics');
 const config = require('../config');
 const notifications = require('../app/notifications');
 const { purgeOldFiles } = require('../index');
+const { testAiCheck } = require('../test/testAI');
+const { testSpamAssassin } = require('../test/testSpamAssassin');
+const { testAbuseIPDB } = require('../test/testAbuseIPDB');
+const { version } = require('../package.json');
+const { isLocalhost } = require('../middleware/auth');
 
 function checkTcpPort(host, port, timeout = 3000) {
   return new Promise((resolve) => {
@@ -21,7 +26,8 @@ function checkTcpPort(host, port, timeout = 3000) {
 }
 
 router.get('/', function(req, res) {
-  res.render('status', { title: 'Server Status (Live)' });
+  const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
+  res.render('status', { title: 'Server Status (Live)', aiSystem, version });
 });
 
 function countActiveUsers(sessionStore) {
@@ -88,11 +94,21 @@ async function buildStatusData(req) {
 
     const aiEnabled = !!(config.AI_CHECK_ENABLED && config.AI_CHECK_ENABLED !== 'false');
     const saEnabled = !!(config.SPAMASSASSIN_ENABLED && config.SPAMASSASSIN_ENABLED !== 'false');
+    const abuseipdbEnabled = !!(config.ABUSEIPDB_KEY && config.ABUSEIPDB_KEY !== '');
+    const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
+    const aiHost = aiSystem === 'LLAMACPP'
+      ? (config.LLAMACPP_SERVER || 'localhost')
+      : (config.OLLAMA_SERVER || 'localhost');
+    const aiPort = aiSystem === 'LLAMACPP'
+      ? (Number(config.LLAMACPP_PORT) || 8080)
+      : (Number(config.OLLAMA_PORT) || 11434);
 
     const [aiRunning, saRunning] = await Promise.all([
-      aiEnabled ? checkTcpPort(config.OLLAMA_HOST || 'localhost', Number(config.OLLAMA_PORT) || 11434) : false,
+      aiEnabled ? checkTcpPort(aiHost, aiPort) : false,
       saEnabled ? checkTcpPort(config.SPAMASSASSIN_HOST || 'localhost', Number(config.SPAMASSASSIN_PORT) || 783) : false,
     ]);
+
+    const linkCount = tools.getStoredKeys().length;
 
     return {
       totalProcessed: data.totalProcessed,
@@ -102,21 +118,27 @@ async function buildStatusData(req) {
       released: data.released,
       deleted: data.deleted,
       pending: pendingCount,
+      linkCount,
       uptime: data.uptime,
       uptimeFormatted: metrics.formatUptime(data.uptime),
       serverStartTime: data.serverStartTime,
       aiEnabled,
       aiRunning,
+      aiSystem,
       aiAvgTime: data.aiAvgTime,
       aiCheckCount: data.aiCheckCount,
       saEnabled,
       saRunning,
       saAvgTime: data.saAvgTime,
       saCheckCount: data.saCheckCount,
+      abuseipdbEnabled,
+      abuseipdbAvgTime: data.abuseipdbAvgTime,
+      abuseipdbCheckCount: data.abuseipdbCheckCount,
       avgProcessTime: data.avgProcessTime,
       processCount: data.processCount,
       loggedInUsers: await countActiveUsers(req.sessionStore),
-      notificationCount: notifications.getAll().length
+      notificationCount: notifications.getAll().length,
+      version
     };
   } catch (err) {
     tools.logError(`Error building status data: ${err.message}`);
@@ -133,7 +155,11 @@ router.get('/events', function(req, res) {
   });
 
   const sendEvent = (eventType, data) => {
-    res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+    try {
+      res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+    } catch {
+      cleanup();
+    }
   };
 
   const sendFullStatus = async () => {
@@ -170,6 +196,8 @@ router.get('/events', function(req, res) {
       aiCheckCount: data.aiCheckCount,
       saAvgTime: data.saAvgTime,
       saCheckCount: data.saCheckCount,
+      abuseipdbAvgTime: data.abuseipdbAvgTime,
+      abuseipdbCheckCount: data.abuseipdbCheckCount,
       avgProcessTime: data.avgProcessTime,
       processCount: data.processCount
     });
@@ -182,14 +210,30 @@ router.get('/events', function(req, res) {
 
   // Heartbeat to keep connection alive
   const heartbeat = setInterval(() => {
-    res.write(': heartbeat\n\n');
+    sendEvent('heartbeat', {});
   }, 30000);
 
-  req.on('close', () => {
+  // Periodically re-verify session validity
+  const authCheck = setInterval(() => {
+    if (isLocalhost(req)) return;
+    req.session.reload((err) => {
+      if (err || !req.session.authenticated) {
+        sendEvent('auth-error', {});
+        cleanup();
+        res.end();
+      }
+    });
+  }, 30000);
+
+  function cleanup() {
     metrics.eventBus.off('metricUpdate', onMetricUpdate);
     clearInterval(refreshInterval);
     clearInterval(heartbeat);
-  });
+    clearInterval(authCheck);
+  }
+
+  res.on('error', cleanup);
+  req.on('close', cleanup);
 });
 
 router.post('/api/purge', function(req, res) {
@@ -211,6 +255,63 @@ router.post('/api/reset-stats', function(req, res) {
   } catch (err) {
     tools.logError(`Stats reset failed: ${err.message}`);
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.post('/api/ai-test', async function(req, res) {
+  const output = [];
+  const origLog = console.log;
+  const origError = console.error;
+  console.log = function(...args) { output.push(args.map(String).join(' ')); };
+  console.error = function(...args) { output.push(args.map(String).join(' ')); };
+  try {
+    await testAiCheck();
+    res.json({ success: true, output: output.join('\n') });
+  } catch (err) {
+    output.push('AI test failed: ' + err.message);
+    res.json({ success: false, output: output.join('\n') });
+  } finally {
+    console.log = origLog;
+    console.error = origError;
+  }
+});
+
+router.post('/api/sa-test', async function(req, res) {
+  const output = [];
+  const origLog = console.log;
+  const origError = console.error;
+  const origExit = process.exit;
+  console.log = function(...args) { output.push(args.map(String).join(' ')); };
+  console.error = function(...args) { output.push(args.map(String).join(' ')); };
+  process.exit = function() {};
+  try {
+    await testSpamAssassin();
+    res.json({ success: true, output: output.join('\n') });
+  } catch (err) {
+    output.push('SpamAssassin test failed: ' + err.message);
+    res.json({ success: false, output: output.join('\n') });
+  } finally {
+    console.log = origLog;
+    console.error = origError;
+    process.exit = origExit;
+  }
+});
+
+router.post('/api/abuseipdb-test', async function(req, res) {
+  const output = [];
+  const origLog = console.log;
+  const origError = console.error;
+  console.log = function(...args) { output.push(args.map(String).join(' ')); };
+  console.error = function(...args) { output.push(args.map(String).join(' ')); };
+  try {
+    await testAbuseIPDB();
+    res.json({ success: true, output: output.join('\n') });
+  } catch (err) {
+    output.push('AbuseIPDB test failed: ' + err.message);
+    res.json({ success: false, output: output.join('\n') });
+  } finally {
+    console.log = origLog;
+    console.error = origError;
   }
 });
 

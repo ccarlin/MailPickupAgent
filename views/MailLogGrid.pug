@@ -32,7 +32,7 @@ block scripts
 block content
     script.
         document.addEventListener('DOMContentLoaded', function() {
-            var logData = !{JSON.stringify(logData)};
+            var logData = !{JSON.stringify(logData).replace(/<\//g, '\\u003c/')};
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 var ts = e.dateTime.replace(/:\d{2}(?=\s|$)/, '');
@@ -75,7 +75,7 @@ block content
                 html += '<div class="mui-multiselect-dropdown">';
                 html += '<label><input type="checkbox" class="mui-ms-option" value="" checked data-key="' + config.key + '"> <span>All</span></label>';
                 vals.forEach(function(v) {
-                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + v.replace(/"/g, '&quot;') + '" data-key="' + config.key + '"> <span>' + v + '</span></label>';
+                    html += '<label><input type="checkbox" class="mui-ms-option" value="' + escHtml(v) + '" data-key="' + config.key + '"> <span>' + escHtml(v) + '</span></label>';
                 });
                 html += '</div></div>';
                 container.innerHTML = html;
@@ -180,7 +180,7 @@ block content
                                     var ip = cell;
                                     var lookup = row.cells[11].data;
                                     var msgId = (row.cells[12] || {}).data || '';
-                                    return gridjs.html('<a href="' + lookup + '" target="_blank" data-messageid="' + msgId.replace(/"/g, '&quot;') + '">' + ip + '</a>');
+                                    return gridjs.html('<a href="' + escHtml(lookup) + '" target="_blank" data-messageid="' + escHtml(msgId) + '">' + escHtml(ip) + '</a>');
                                 }
                             },
                             { name: 'Ctry', width: '60px', sort: true },
@@ -287,7 +287,7 @@ block content
                 html += '<th>Time Stamp</th><th>IP Address</th><th>Country</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Sec</th><th>Size(Kb)</th><th>Score</th><th>Result</th><th>Details</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
-                    html += '<tr>' + r.slice(0, 11).map(function(c) { return '<td>' + String(c) + '</td>'; }).join('') + '</tr>';
+                    html += '<tr>' + r.slice(0, 11).map(function(c) { return '<td>' + escHtml(c) + '</td>'; }).join('') + '</tr>';
                 });
                 html += '</tbody></table></body></html>';
                 win.document.write(html);

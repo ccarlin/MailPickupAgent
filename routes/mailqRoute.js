@@ -10,6 +10,7 @@ const config = require('../config');
 const { recentlyReleased } = require('../index.js');
 const dnsPromises = dns.promises;
 const PostalMime = require('postal-mime').default;
+const { isLocalhost } = require('../middleware/auth');
 
 const prefixUTF = '=?UTF-8?B?';
 const suffix = '?=';
@@ -23,10 +24,22 @@ const quarentineLogPath = () => {
   return `${config.QUARANTINE_LOG}/quarantine-${y}${m}${day}.log`;
 };
 const rulesConfigPath = path.join(__dirname, '..', 'config', 'rules.json');
+const FILEPATH_PATTERN = /^[A-Fa-f0-9]+$/i;
 
 function reasonText(action) {
     const edActions = new Set(['whitelist', 'blacklist']);
     return edActions.has(action) ? `${action}ed` : `${action}d`;
+}
+
+function safeRedirect(req, fallback) {
+    const ref = req.get('Referer') || '';
+    try {
+        const refUrl = new URL(ref, `${req.protocol}://${req.get('host')}`);
+        if (refUrl.origin === `${req.protocol}://${req.get('host')}`) {
+            return refUrl.pathname + refUrl.search;
+        }
+    } catch { /* invalid URL origin, use fallback */ }
+    return fallback || '/';
 }
 
 router.post('/', async function(req, res) {
@@ -91,7 +104,7 @@ router.post('/', async function(req, res) {
             break;        
     }
 
-    res.redirect(req.get('Referrer') || '/');
+    res.redirect(safeRedirect(req, '/'));
 });
 
 router.post('/action', async function(req, res) {
@@ -167,7 +180,7 @@ router.post('/action', async function(req, res) {
             break;        
     }
 
-    res.redirect(req.get('Referrer') || '/');
+    res.redirect(safeRedirect(req, '/'));
 });
 
 /* Display Main page */
@@ -178,20 +191,34 @@ router.get('/', function(req, res) {
     //If not logged in via session, handle key-based auth
     if (!req.session?.authenticated)
     {
-        //If the key is in the query string then set the cookie and redirect
+        //If the key is in the query string then validate and set the cookie
         if (req.query.key || req.query.Key)
         {
             const keyVal = req.query.key || req.query.Key;
-            res.cookie("MailKey", keyVal, {maxAge: 1000 * 60 * 1440 * 365});    
-            //If the user is passed with the key then set that cookie as well
-            if (filterUser)
-            {
-                //The all value clears the cookie
-                if (filterUser == "all")
-                    res.clearCookie("MailQUserFilter");
-                else
-                    res.cookie("MailQUserFilter", req.query.user, { maxAge: 1000 * 60 * 1440 * 365 });
-            }        
+            // Validate the key before accepting it
+            req.cookies.MailKey = keyVal;
+            if (tools.isValid(req, "mailq")) {
+                res.cookie("MailKey", keyVal, {
+                    httpOnly: true,
+                    secure: !!(config.CERT_PATH && config.CERT_KEY_PATH),
+                    sameSite: 'lax'
+                });
+            } else {
+                // Invalid key - clear any existing cookie and reject
+                delete req.cookies.MailKey;
+                res.clearCookie("MailKey");
+                return res.redirect("/");
+            }
+            //Set the user filter from the stored key info
+            const keyUserFilter = req.keyInfo?.user_filter;
+            if (keyUserFilter)
+                res.cookie("MailQUserFilter", keyUserFilter, {
+                    httpOnly: true,
+                    secure: !!(config.CERT_PATH && config.CERT_KEY_PATH),
+                    sameSite: 'lax'
+                });
+            else
+                res.clearCookie("MailQUserFilter");
             return res.redirect("/mailq");
         }
 
@@ -253,8 +280,10 @@ function getEmails(emailPath, callback)
                     let emailInfo = {};
                     let filePath = emailPath + "//" + list[i];
                     let emailFilePath = filePath.toLowerCase().replace(".h00", ".mai");
-                    let emailContents = fs.readFileSync(emailFilePath).toString();
-                    let headerContents = fs.readFileSync(filePath).toString();
+                    let [emailContents, headerContents] = await Promise.all([
+                        fs.promises.readFile(emailFilePath, 'utf8'),
+                        fs.promises.readFile(filePath, 'utf8')
+                    ]);
                     let lines = headerContents.split('\r\n');
                     emailInfo.filepath = list[i].slice(0, -4);
                     emailInfo.subject = "";
@@ -446,6 +475,10 @@ function DeleteMessages(emails, sourcePath)
     for (let i=0;i<emails.length;i++)
     {
         let email = emails[i];
+        if (!email.filepath || !FILEPATH_PATTERN.test(email.filepath)) {
+            tools.logError(`Invalid filepath rejected: ${email.filepath}`);
+            continue;
+        }
         let headerFile = path.join(sourcePath, email.filepath + ".H00");
         let emailFile = path.join(sourcePath, email.filepath + ".MAI");
         let destHeader = path.join(deletedDir, email.filepath + ".H00");
@@ -470,6 +503,10 @@ function ReleaseMessages(emails)
     for (let i=0;i<emails.length;i++)
     {
         let email = emails[i];
+        if (!email.filepath || !FILEPATH_PATTERN.test(email.filepath)) {
+            tools.logError(`Invalid filepath rejected: ${email.filepath}`);
+            continue;
+        }
         let headerFile = spamPath + "\\" + email.filepath + ".H00";
         let emailFile = spamPath + "\\" + email.filepath + ".MAI";
         let newEmailFile = emailFile.replace(spamPath, config.SMTP_QUEUE_DIR);
@@ -499,10 +536,7 @@ function updateLogFile(logFile, entry)
     let timestamp = new Date().toLocaleString();
     let esc = v => String(v ?? '').replace(/\t/g, ' ').replace(/\r?\n/g, ' ');
     let data = [timestamp, esc(entry.reason), esc(entry.subject), esc(entry.sender), esc(entry.recipients), esc(entry.spamScore), esc(entry.antiSpam), esc(entry.dkim), esc(entry.clientip)].join('\t') + '\n';
-    if (fs.existsSync(logFile))
-        fs.appendFileSync(logFile, data);
-    else
-        fs.writeFileSync(logFile, data);
+    fs.appendFileSync(logFile, data);
 }
 
 // helper: parse List-Unsubscribe header value and return first usable URL or mailto
@@ -530,6 +564,21 @@ function parseUnsubscribeHeader(val) {
     return parts[0] || null;
 }
 
+// SSRF protection: check if a hostname/IP points to a private or internal address
+function isPrivateHost(hostname) {
+    var host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    if (host === 'localhost' || host === '::1' || host === '0.0.0.0' || host === '::') return true;
+    var ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4) {
+        var a = parseInt(ipv4[1], 10), b = parseInt(ipv4[2], 10);
+        if (a === 0 || a === 10 || a === 127) return true;
+        if (a === 169 && b === 254) return true;
+        if (a === 172 && b >= 16 && b <= 31) return true;
+        if (a === 192 && b === 168) return true;
+    }
+    return false;
+}
+
 // handle unsubscribe requests from client
 router.post('/unsubscribe', async function(req, res) {
     try {
@@ -546,15 +595,44 @@ router.post('/unsubscribe', async function(req, res) {
             return res.json({ success: false, message: 'mailto', info: url });
         }
 
+        // Validate URL scheme
+        var parsedUrl;
+        try {
+            parsedUrl = new URL(url);
+        } catch {
+            return res.status(400).json({ success: false, message: 'Invalid URL' });
+        }
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            return res.status(400).json({ success: false, message: 'Only HTTP/HTTPS URLs are supported' });
+        }
+
+        // Block private/internal hosts by hostname
+        if (isPrivateHost(parsedUrl.hostname)) {
+            return res.status(400).json({ success: false, message: 'Requests to internal or private hosts are not allowed' });
+        }
+
+        // Resolve DNS and reject if any resolved IP is private (mitigates DNS rebinding)
+        try {
+            var addrs = await dnsPromises.resolve4(parsedUrl.hostname, { all: true });
+            for (var i = 0; i < addrs.length; i++) {
+                if (isPrivateHost(addrs[i].address)) {
+                    tools.logWarn(`SSRF blocked: ${url} resolved to private IP ${addrs[i].address}`);
+                    return res.status(400).json({ success: false, message: 'Unsubscribe URL resolves to a private address' });
+                }
+            }
+        } catch (dnsErr) {
+            tools.logWarn(`DNS lookup failed for unsubscribe URL ${parsedUrl.hostname}: ${dnsErr.message}`);
+        }
+
         // attempt POST (many unsubscribe endpoints accept GET or POST; POST is safer for forms)
         try {
-            const resp = await axios.post(url, {}, { timeout: 8000, headers: { 'User-Agent': 'HomeSite/1.0' } });
+            const resp = await axios.post(url, {}, { timeout: 8000, maxRedirects: 5, headers: { 'User-Agent': 'HomeSite/1.0' } });
             tools.logData(`Unsubscribe request for ${filepath || 'unknown'} => ${url} returned ${resp.status}`, "INFO");
             return res.json({ success: true, status: resp.status });
         } catch (err) {
             // try GET as fallback
             try {
-                const resp2 = await axios.get(url, { timeout: 8000, headers: { 'User-Agent': 'HomeSite/1.0' } });
+                const resp2 = await axios.get(url, { timeout: 8000, maxRedirects: 5, headers: { 'User-Agent': 'HomeSite/1.0' } });
                 tools.logData(`Unsubscribe GET fallback for ${filepath || 'unknown'} => ${url} returned ${resp2.status}`, "INFO");
                 return res.json({ success: true, status: resp2.status });
             } catch (err2) {
@@ -681,7 +759,11 @@ router.get('/events', function(req, res) {
     });
 
     const sendEvent = (eventType, data) => {
-        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+        try {
+            res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+        } catch {
+            cleanup();
+        }
     };
 
     // Send initial connection confirmation
@@ -700,13 +782,31 @@ router.get('/events', function(req, res) {
 
     // Heartbeat to keep connection alive
     const heartbeat = setInterval(() => {
-        res.write(': heartbeat\n\n');
+        sendEvent('heartbeat', {});
     }, 30000);
 
-    req.on('close', () => {
+    // Periodically re-verify session validity
+    const authCheck = setInterval(() => {
+        if (isLocalhost(req)) return;
+        req.session.reload((err) => {
+            if (err || !req.session.authenticated) {
+                if (!tools.isValid(req, 'mailq')) {
+                    sendEvent('auth-error', {});
+                    cleanup();
+                    res.end();
+                }
+            }
+        });
+    }, 30000);
+
+    function cleanup() {
         metrics.eventBus.off('quarantine', onQuarantine);
         clearInterval(heartbeat);
-    });
+        clearInterval(authCheck);
+    }
+
+    res.on('error', cleanup);
+    req.on('close', cleanup);
 });
 
 module.exports = router;
