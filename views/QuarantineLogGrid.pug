@@ -35,7 +35,7 @@ block content
             var logData = !{JSON.stringify(logData).replace(/<\//g, '\\u003c/')};
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
-                return [e.dateTime, e.action, e.sender, e.recipient, e.subject, String(score), e.spamResults, e.ipAddress];
+                return [e.dateTime, e.sender, e.recipient, e.subject, String(score), e.spamResults, e.action, e.ipAddress];
             }).sort(function(a, b) {
                 return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0;
             });
@@ -44,8 +44,8 @@ block content
             var filteredData = allData.slice();
 
             var filterConfig = [
-                { idx: 1, label: 'Action', key: 'action' },
-                { idx: 3, label: 'Recipient', key: 'recipient' }
+                { idx: 6, label: 'Action', key: 'action' },
+                { idx: 2, label: 'Recipient', key: 'recipient' }
             ];
 
             var customSearchInput = document.getElementById('custom-search');
@@ -161,12 +161,12 @@ block content
                     grid = new gridjs.Grid({
                         columns: [
                             { name: 'Time Stamp', width: '150px', sort: true },
-                            { name: 'Action', width: '90px', sort: true },
                             { name: 'Sender', width: '200px', sort: true },
                             { name: 'Recipient', width: '80px', sort: true },
                             { name: 'Subject', width: '280px', sort: true },
                             { name: 'Score', width: '65px', sort: true },
                             { name: 'SPAM Results', width: '240px', sort: true },
+                            { name: 'Action', width: '90px', sort: true },
                             { name: 'IP Address', width: '100px', sort: true }
                         ],
                         data: filteredData,
@@ -220,7 +220,7 @@ block content
 
             document.getElementById('btn-csv').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Time Stamp','Action','Sender','Recipient','Subject','Score','SPAM Results','IP Address'];
+                var header = ['Time Stamp','Sender','Recipient','Subject','Score','SPAM Results','Action','IP Address'];
                 var csv = header.join(',') + '\\n';
                 rows.forEach(function(r) {
                     var esc = r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
@@ -236,8 +236,8 @@ block content
 
             document.getElementById('btn-copy').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Time Stamp','Action','Sender','Recipient','Subject','Score','SPAM Results','IP Address'];
-                var pad = [20, 12, 30, 30, 40, 8, 30, 16];
+                var header = ['Time Stamp','Sender','Recipient','Subject','Score','SPAM Results','Action','IP Address'];
+                var pad = [20, 30, 30, 40, 8, 30, 12, 16];
                 function fmtRow(arr) {
                     return arr.map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
                 }
@@ -260,7 +260,7 @@ block content
                 html += 'th{background:#1976d2;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}';
                 html += 'td{padding:6px 10px;border-bottom:1px solid #e2e8f0;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
                 html += '<h2>Quarantine Log</h2><table><thead><tr>';
-                html += '<th>Time Stamp</th><th>Action</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Score</th><th>SPAM Results</th><th>IP Address</th>';
+                html += '<th>Time Stamp</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Score</th><th>SPAM Results</th><th>Action</th><th>IP Address</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
                     html += '<tr>' + r.map(function(c) { return '<td>' + escHtml(c) + '</td>'; }).join('') + '</tr>';

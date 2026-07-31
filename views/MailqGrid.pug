@@ -120,7 +120,7 @@ block content
             var emailStore = {};
             var allData = emailData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
-                var row = [e.filepath, e.recipients, e.sender, e.subject, String(score), e.antiSpam, e.date, e.clientip, e.dkim, e.safe];
+                var row = [e.filepath, e.date, e.recipients, e.sender, e.subject, String(score), e.antiSpam, e.dkim, e.clientip, e.safe];
                 emailStore[e.filepath] = { subject: e.subject, sender: e.sender, recipients: e.recipients, spamScore: score, antiSpam: e.antiSpam, reason: e.reason, clientip: e.clientip, datetime: e.date, dkim: e.dkim };
                 return row;
             });
@@ -452,6 +452,7 @@ block content
                                     return gridjs.html('<input type="checkbox" class="mailq-chk" value="' + escHtml(cell) + '">');
                                 }
                             },
+                            { name: 'Date/Time', id: 'datetime', width: '160px', sort: true },
                             { name: 'Recipients', id: 'recipients', width: '180px', sort: true },
                             {
                                 name: 'Sender',
@@ -468,7 +469,7 @@ block content
                             { name: 'Subject', id: 'subject', width: '220px', sort: true },
                             { name: 'Score', id: 'score', width: '65px', sort: true },
                             { name: 'Spam Detail', id: 'spamdetail', width: '150px', sort: true },
-                            { name: 'Date/Time', id: 'datetime', width: '160px', sort: true },
+                            { name: 'DKIM', id: 'dkim', width: '80px', sort: true },
                             {
                                 name: 'ClientIP',
                                 id: 'clientip',
@@ -478,7 +479,6 @@ block content
                                     return gridjs.html('<a href="https://www.ipqualityscore.com/ip-reputation-check/lookup/' + encodeURIComponent(cell) + '" target="_blank">' + escHtml(cell) + '</a>');
                                 }
                             },
-                            { name: 'DKIM', id: 'dkim', width: '80px', sort: true },
                             {
                                 name: 'Actions',
                                 id: 'actions',
@@ -591,7 +591,7 @@ block content
                     filteredData = allData.slice();
                 } else {
                     filteredData = allData.filter(function(row) {
-                        for (var ci = 1; ci < row.length - 2; ci++) {
+                        for (var ci = 1; ci < row.length - 1; ci++) {
                             if (String(row[ci]).toLowerCase().indexOf(q) !== -1) return true;
                         }
                         return false;
@@ -604,7 +604,7 @@ block content
 
             document.getElementById('btn-csv').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['File','Recipients','Sender','Subject','Score','Spam Detail','Date/Time','ClientIP','DKIM'];
+                var header = ['File','Date/Time','Recipients','Sender','Subject','Score','Spam Detail','DKIM','ClientIP'];
                 var csv = header.join(',') + '\\n';
                 rows.forEach(function(r) {
                     var vals = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]];
@@ -621,8 +621,8 @@ block content
 
             document.getElementById('btn-copy').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Recipients','Sender','Subject','Score','Spam Detail','Date/Time','ClientIP','DKIM'];
-                var pad = [22, 30, 40, 8, 18, 20, 16, 10];
+                var header = ['Date/Time','Recipients','Sender','Subject','Score','Spam Detail','DKIM','ClientIP'];
+                var pad = [20, 22, 30, 40, 8, 18, 10, 16];
                 function fmtRow(arr) {
                     var vals = [arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7], arr[8]];
                     return vals.map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
@@ -646,7 +646,7 @@ block content
                 html += 'th{background:#1976d2;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}';
                 html += 'td{padding:6px 10px;border-bottom:1px solid #e2e8f0;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
                 html += '<h2>Mail Queue</h2><table><thead><tr>';
-                html += '<th>Recipients</th><th>Sender</th><th>Subject</th><th>Score</th><th>Spam Detail</th><th>Date/Time</th><th>ClientIP</th><th>DKIM</th>';
+                html += '<th>Date/Time</th><th>Recipients</th><th>Sender</th><th>Subject</th><th>Score</th><th>Spam Detail</th><th>DKIM</th><th>ClientIP</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
                     html += '<tr><td>' + escHtml(r[1]) + '</td><td>' + escHtml(r[2]) + '</td><td>' + escHtml(r[3]) + '</td><td>' + escHtml(r[4]) + '</td><td>' + escHtml(r[5]) + '</td><td>' + escHtml(r[6]) + '</td><td>' + escHtml(r[7]) + '</td><td>' + escHtml(r[8]) + '</td></tr>';

@@ -36,7 +36,7 @@ block content
             var allData = logData.map(function(e) {
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 var ts = e.dateTime.replace(/:\d{2}(?=\s|$)/, '');
-                return [ts, e.ipAddress, e.Country === 'Unknown' ? '' : e.Country, e.sender, e.recipient, e.subject, +Number(e.msgTime).toFixed(1), e.msgSize, String(score), e.spamResult, e.spamInfo, e.ipLookup, e.messageId || ''];
+                return [ts, e.sender, e.recipient, e.subject, +Number(e.msgTime).toFixed(1), e.msgSize, String(score), e.spamResult, e.spamInfo, e.ipAddress, e.Country === 'Unknown' ? '' : e.Country, e.ipLookup, e.messageId || ''];
             }).sort(function(a, b) {
                 return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0;
             });
@@ -45,9 +45,9 @@ block content
             var filteredData = allData.slice();
 
             var filterConfig = [
-                { idx: 2, label: 'Country', key: 'country' },
-                { idx: 4, label: 'Recipient', key: 'recipient' },
-                { idx: 9, label: 'Results', key: 'results' }
+                { idx: 10, label: 'Country', key: 'country' },
+                { idx: 2, label: 'Recipient', key: 'recipient' },
+                { idx: 7, label: 'Results', key: 'results' }
             ];
 
             var customSearchInput = document.getElementById('custom-search');
@@ -165,25 +165,7 @@ block content
                 } else {
                     grid = new gridjs.Grid({
                         columns: [
-                            { name: 'Time Stamp', width: '124px', sort: true },
-                            {
-                                name: 'IP Address',
-                                width: '140px',
-                        sort: {
-                            enabled: true,
-                            default: {
-                                column: 0,
-                                order: 'desc'
-                            }
-                        },
-                                formatter: function(cell, row) {
-                                    var ip = cell;
-                                    var lookup = row.cells[11].data;
-                                    var msgId = (row.cells[12] || {}).data || '';
-                                    return gridjs.html('<a href="' + escHtml(lookup) + '" target="_blank" data-messageid="' + escHtml(msgId) + '">' + escHtml(ip) + '</a>');
-                                }
-                            },
-                            { name: 'Ctry', width: '60px', sort: true },
+                            { name: 'Time Stamp', width: '124px', sort: { enabled: true, default: { column: 0, order: 'desc' } } },
                             { name: 'Sender', width: '200px', sort: true },
                             { name: 'Recipient', width: '120px', sort: true },
                             { name: 'Subject', width: '220px', sort: true },
@@ -192,6 +174,18 @@ block content
                             { name: 'Score', width: '80px', sort: true },
                             { name: 'Result', width: '120px', sort: true },
                             { name: 'Details', width: '180px', sort: true },
+                            {
+                                name: 'IP Address',
+                                width: '140px',
+                                sort: true,
+                                formatter: function(cell, row) {
+                                    var ip = cell;
+                                    var lookup = row.cells[11].data;
+                                    var msgId = (row.cells[12] || {}).data || '';
+                                    return gridjs.html('<a href="' + escHtml(lookup) + '" target="_blank" data-messageid="' + escHtml(msgId) + '">' + escHtml(ip) + '</a>');
+                                }
+                            },
+                            { name: 'Ctry', width: '60px', sort: true },
                             { name: 'ipLookup', hidden: true },
                             { name: 'messageId', hidden: true }
                         ],
@@ -244,7 +238,7 @@ block content
 
             document.getElementById('btn-csv').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Time Stamp','IP Address','Country','Sender','Recipient','Subject','Sec','Size(Kb)','Score','Result','Details'];
+                var header = ['Time Stamp','Sender','Recipient','Subject','Sec','Size(Kb)','Score','Result','Details','IP Address','Country'];
                 var csv = header.join(',') + '\\n';
                 rows.forEach(function(r) {
                     var esc = r.slice(0, 11).map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; });
@@ -260,8 +254,8 @@ block content
 
             document.getElementById('btn-copy').addEventListener('click', function() {
                 var rows = grid ? grid.config.data : filteredData;
-                var header = ['Time Stamp','IP Address','Country','Sender','Recipient','Subject','Sec','Size(Kb)','Score','Result','Details'];
-                var pad = [20, 16, 10, 30, 30, 40, 6, 10, 8, 14, 20];
+                var header = ['Time Stamp','Sender','Recipient','Subject','Sec','Size(Kb)','Score','Result','Details','IP Address','Country'];
+                var pad = [20, 30, 30, 40, 6, 10, 8, 14, 20, 16, 10];
                 function fmtRow(arr) {
                     return arr.slice(0, 11).map(function(c, i) { return String(c).padEnd(pad[i] || 20).slice(0, pad[i] || 20); }).join(' | ');
                 }
@@ -284,7 +278,7 @@ block content
                 html += 'th{background:#1976d2;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}';
                 html += 'td{padding:6px 10px;border-bottom:1px solid #e2e8f0;}tr:nth-child(even){background:#fafafa;}</style></head><body>';
                 html += '<h2>Mail Log</h2><table><thead><tr>';
-                html += '<th>Time Stamp</th><th>IP Address</th><th>Country</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Sec</th><th>Size(Kb)</th><th>Score</th><th>Result</th><th>Details</th>';
+                html += '<th>Time Stamp</th><th>Sender</th><th>Recipient</th><th>Subject</th><th>Sec</th><th>Size(Kb)</th><th>Score</th><th>Result</th><th>Details</th><th>IP Address</th><th>Country</th>';
                 html += '</tr></thead><tbody>';
                 rows.forEach(function(r) {
                     html += '<tr>' + r.slice(0, 11).map(function(c) { return '<td>' + escHtml(c) + '</td>'; }).join('') + '</tr>';
@@ -318,12 +312,12 @@ block content
                 var cells = row.querySelectorAll('td');
                 document.getElementById('infoModalFilepath').textContent = filepath;
                 document.getElementById('infoModalDate').textContent = cells[0] ? cells[0].textContent.trim() : 'N/A';
-                document.getElementById('infoModalSender').textContent = cells[3] ? cells[3].textContent.trim() : 'N/A';
-                document.getElementById('infoModalRecipients').textContent = cells[4] ? cells[4].textContent.trim() : 'N/A';
-                document.getElementById('infoModalSubject').textContent = cells[5] ? cells[5].textContent.trim() : 'N/A';
-                document.getElementById('infoModalScore').textContent = cells[8] ? cells[8].textContent.trim() : 'N/A';
-                document.getElementById('infoModalDetail').textContent = cells[10] ? cells[10].textContent.trim() : 'N/A';
-                document.getElementById('infoModalResult').textContent = cells[9] ? cells[9].textContent.trim() : 'N/A';
+                document.getElementById('infoModalSender').textContent = cells[1] ? cells[1].textContent.trim() : 'N/A';
+                document.getElementById('infoModalRecipients').textContent = cells[2] ? cells[2].textContent.trim() : 'N/A';
+                document.getElementById('infoModalSubject').textContent = cells[3] ? cells[3].textContent.trim() : 'N/A';
+                document.getElementById('infoModalScore').textContent = cells[6] ? cells[6].textContent.trim() : 'N/A';
+                document.getElementById('infoModalDetail').textContent = cells[8] ? cells[8].textContent.trim() : 'N/A';
+                document.getElementById('infoModalResult').textContent = cells[7] ? cells[7].textContent.trim() : 'N/A';
                 document.getElementById('infoModalEmailStatus').textContent = 'Looking up email...';
                 document.getElementById('infoModalEmailStatus').className = 'info-email-status';
                 document.getElementById('infoModalReasonContainer').innerHTML = '';
