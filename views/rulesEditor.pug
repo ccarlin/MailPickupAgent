@@ -197,12 +197,54 @@ block scripts
             promptOverlay.querySelector('#aiPromptText').focus();
         }
 
+        function ensureRulesStructure() {
+            if (!rulesData || typeof rulesData !== 'object') {
+                rulesData = {};
+            }
+
+            if (!rulesData.whitelist || typeof rulesData.whitelist !== 'object') {
+                rulesData.whitelist = {};
+            }
+            if (!Array.isArray(rulesData.whitelist.senders)) rulesData.whitelist.senders = [];
+            if (!Array.isArray(rulesData.whitelist.ipRanges)) rulesData.whitelist.ipRanges = [];
+
+            if (!rulesData.blacklist || typeof rulesData.blacklist !== 'object') {
+                rulesData.blacklist = {};
+            }
+            if (!Array.isArray(rulesData.blacklist.senders)) rulesData.blacklist.senders = [];
+            if (!Array.isArray(rulesData.blacklist.ipRanges)) rulesData.blacklist.ipRanges = [];
+            if (!Array.isArray(rulesData.blacklist.countries)) rulesData.blacklist.countries = [];
+            if (!Array.isArray(rulesData.blacklist.combos)) rulesData.blacklist.combos = [];
+            if (!Array.isArray(rulesData.blacklist.keywordFilters)) rulesData.blacklist.keywordFilters = [];
+
+            if (!Array.isArray(rulesData.allowedTLDs)) rulesData.allowedTLDs = [];
+            return rulesData;
+        }
+
+        function getRuleArray(parent, key) {
+            ensureRulesStructure();
+            if (parent) {
+                if (!rulesData[parent] || typeof rulesData[parent] !== 'object') {
+                    rulesData[parent] = {};
+                }
+                if (!Array.isArray(rulesData[parent][key])) {
+                    rulesData[parent][key] = [];
+                }
+                return rulesData[parent][key];
+            }
+            if (!Array.isArray(rulesData[key])) {
+                rulesData[key] = [];
+            }
+            return rulesData[key];
+        }
+
         // --- Render sections ---
         function renderAllSections() {
             const container = document.getElementById('sectionsContainer');
             container.innerHTML = '';
 
             if (!rulesData) return;
+            ensureRulesStructure();
 
             renderSection(container, 'Whitelist', 'whitelist', [
                 { key: 'senders', label: 'Senders', type: 'string-array', parent: 'whitelist' },
@@ -343,7 +385,7 @@ block scripts
         }
 
         function addStringItem(parent, key) {
-            const arr = parent ? rulesData[parent][key] : rulesData[key];
+            const arr = getRuleArray(parent, key);
             const label = key.charAt(0).toUpperCase() + key.slice(1);
             showModal('Add ' + label.slice(0, -1), [
                 { name: 'value', label: 'Value', type: 'text', value: '', placeholder: 'Enter value' }
@@ -357,7 +399,7 @@ block scripts
         }
 
         function editStringItem(parent, key, index, currentValue) {
-            const arr = parent ? rulesData[parent][key] : rulesData[key];
+            const arr = getRuleArray(parent, key);
             const label = key.charAt(0).toUpperCase() + key.slice(1);
             showModal('Edit ' + label.slice(0, -1), [
                 { name: 'value', label: 'Value', type: 'text', value: currentValue, placeholder: 'Enter value' }
@@ -411,7 +453,7 @@ block scripts
                 if (values.sender.trim()) obj.sender = values.sender.trim();
                 if (values.ipAddress.trim()) obj.ipAddress = values.ipAddress.trim();
                 if (!obj.recipient && (!obj.sender && !obj.ipAddress)) { showToast('Need at least recipient or sender/IP', 'error'); return; }
-                rulesData[parent][key].push(obj);
+                getRuleArray(parent, key).push(obj);
                 renderAllSections();
                 markUnsaved();
                 showToast('Combo added', 'success');
@@ -424,7 +466,7 @@ block scripts
                 { name: 'sender', label: 'Sender', type: 'text', value: item.sender || '', placeholder: 'e.g. example.com' },
                 { name: 'ipAddress', label: 'IP Address', type: 'text', value: item.ipAddress || '', placeholder: 'e.g. 10.0.0.0/8' }
             ], (values) => {
-                const arr = rulesData[parent][key];
+                const arr = getRuleArray(parent, key);
                 const obj = {};
                 if (values.recipient.trim()) obj.recipient = values.recipient.trim();
                 if (values.sender.trim()) obj.sender = values.sender.trim();
@@ -505,7 +547,7 @@ block scripts
                 };
                 if (values.Recipient.trim()) filter.Recipient = values.Recipient.trim().toLowerCase();
                 if (values.Comment.trim()) filter.Comment = values.Comment.trim();
-                rulesData[parent][key].push(filter);
+                getRuleArray(parent, key).push(filter);
                 renderAllSections();
                 markUnsaved();
                 showToast('Filter added', 'success');
@@ -532,7 +574,7 @@ block scripts
             ], (values) => {
                 if (!values.FilterName.trim()) { showToast('Filter name is required', 'error'); return; }
                 if (!values.FilterExpression.trim()) { showToast('Expression is required', 'error'); return; }
-                const arr = rulesData[parent][key];
+                const arr = getRuleArray(parent, key);
                 arr[index] = {
                 FilterName: values.FilterName.trim(),
                 SearchScope: values.SearchScope,
@@ -574,6 +616,7 @@ block scripts
                 const response = await fetch('/rulesEditor/api/rules');
                 if (!response.ok) throw new Error('Failed to fetch rules');
                 rulesData = await response.json();
+                ensureRulesStructure();
                 const hitsResponse = await fetch('/rulesEditor/api/rule-hits');
                 if (!hitsResponse.ok) throw new Error('Failed to fetch rule hits');
                 ruleHits = await hitsResponse.json();

@@ -18,7 +18,7 @@ router.get('/api/rules', (req, res) => {
   const rulesPath = path.resolve(__dirname, '../config/rules.json');
   try {
     const rulesContent = fs.readFileSync(rulesPath, 'utf8');
-    res.json(JSON.parse(rulesContent));
+    res.json(normalizeRules(JSON.parse(rulesContent)));
   } catch (error) {
     tools.logError('Error reading rules file: ' + error.message);
     res.status(500).json({ message: 'Internal Server Error' });
@@ -29,7 +29,27 @@ router.get('/api/rule-hits', (req, res) => {
   res.json(getAllHits());
 });
 
+function ensureRuleStructure(rulesObj) {
+  if (!rulesObj || typeof rulesObj !== 'object') return rulesObj;
+
+  if (!rulesObj.whitelist || typeof rulesObj.whitelist !== 'object') rulesObj.whitelist = {};
+  if (!Array.isArray(rulesObj.whitelist.senders)) rulesObj.whitelist.senders = [];
+  if (!Array.isArray(rulesObj.whitelist.ipRanges)) rulesObj.whitelist.ipRanges = [];
+
+  if (!rulesObj.blacklist || typeof rulesObj.blacklist !== 'object') rulesObj.blacklist = {};
+  if (!Array.isArray(rulesObj.blacklist.senders)) rulesObj.blacklist.senders = [];
+  if (!Array.isArray(rulesObj.blacklist.ipRanges)) rulesObj.blacklist.ipRanges = [];
+  if (!Array.isArray(rulesObj.blacklist.countries)) rulesObj.blacklist.countries = [];
+  if (!Array.isArray(rulesObj.blacklist.combos)) rulesObj.blacklist.combos = [];
+  if (!Array.isArray(rulesObj.blacklist.keywordFilters)) rulesObj.blacklist.keywordFilters = [];
+
+  if (!Array.isArray(rulesObj.allowedTLDs)) rulesObj.allowedTLDs = [];
+  return rulesObj;
+}
+
 function normalizeRules(rulesObj) {
+  ensureRuleStructure(rulesObj);
+
   function lowerStrings(arr) {
     if (!Array.isArray(arr)) return;
     arr.forEach((item, i) => {
@@ -162,3 +182,4 @@ Output ONLY the JSON object, no markdown or explanation.`;
 });
 
 module.exports = router;
+module.exports.normalizeRules = normalizeRules;

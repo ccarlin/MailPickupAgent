@@ -4,16 +4,20 @@ FROM node:22-slim
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3 \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Create directory for the application
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json (if it exists)
+# Copy package.json and package-lock.json first (before npm install)
 COPY package*.json ./
 
-# Install application dependencies (including better-sqlite3 which will compile)
-RUN npm install --omit=dev
+# Install application dependencies (ignore-scripts prevents postinstall hook from running)
+RUN npm install --omit=dev --ignore-scripts
+
+# Now rebuild better-sqlite3 without running postinstall
+RUN npm rebuild better-sqlite3 --ignore-scripts
 
 # Copy the rest of the application files
 COPY . .
