@@ -78,8 +78,8 @@ function validateConfig() {
 
   // --- NODE_ENV validation ---
   const nodeEnv = String(config.NODE_ENV || '').toLowerCase();
-  if (nodeEnv !== 'development' && nodeEnv !== 'production') {
-    warnings.push(`NODE_ENV should be "development" or "production" (got: ${JSON.stringify(config.NODE_ENV)})`);
+  if (nodeEnv !== 'development' && nodeEnv !== 'production' && nodeEnv !== 'docker') {
+    warnings.push(`NODE_ENV should be "development", "production", or "docker" (got: ${JSON.stringify(config.NODE_ENV)})`);
   }
 
   // --- Directory existence checks (warnings only — dirs may be created later) ---

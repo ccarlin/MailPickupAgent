@@ -7,6 +7,7 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - **MailEnable Pickup Integration** — invoked per-email via the pickup event
 - **Admin Web Server** — UI for configuration, log viewing, quarantine/deleted email management, session management, notification subscriptions, and config history
 - **Multi-Layer Filtering** — whitelist/blacklist by sender, subject, IP, country, combo rules, keyword filters (regex/plain text), and allowed TLDs
+- **Rule Hits Report** — track, view, and clear hit counts for whitelist, blacklist, country, combo, and keyword filter rules to see which rules are most active
 - **SpamAssassin Integration** — optional spamd scoring with configurable enable/disable
 - **AI Classification** — Ollama- or llama.cpp-powered spam classification with configurable backend, model, server, timeout, and scoring points
 - **AbuseIPDB Integration** — optional IP reputation checking via AbuseIPDB API with configurable base/max scoring (runs automatically when API key is set)
@@ -42,6 +43,47 @@ cd mailpickupagent
 # Install dependencies (runs install.js postinstall to validate paths)
 npm install
 ```
+
+### Docker Compose Deployment (Alternative)
+
+You can also install, build, and deploy the admin web server using Docker Compose. This is ideal for isolated environments and handles dependency installation (including compiling binary SQLite dependencies) automatically.
+
+#### Prerequisites
+
+- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed on the host.
+
+#### Steps
+
+1. **Clone the project:**
+   ```bash
+   git clone <repository-url>
+   cd mailpickupagent
+   ```
+
+2. **Deploy via Docker Compose:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. **Verify the container is running:**
+   ```bash
+   docker compose ps
+   ```
+
+Once deployed, the admin UI will be accessible at `http://localhost:6245`.
+
+#### Docker Mount Details
+
+The provided `docker-compose.yml` mounts the following folders to persist data and integrate with MailEnable:
+- `./config` mapped to `/usr/src/app/config` (persists settings, rules, SQLite sessions/subscriptions, and backups)
+- `./logs` mapped to `/usr/src/app/logs` (persists daily processing logs)
+- `./mail/quarantine` and `./mail/deleted` (persists quarantined/deleted emails)
+- MailEnable inbound and logging directories mounted from their default paths (defined in `default.json`) into the container so the agent can scan inbound mail queues:
+  - `C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound/Messages` -> `/mailenable/queues/SMTP/Inbound/Messages`
+  - `C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound` -> `/mailenable/queues/SMTP/Inbound`
+  - `C:/Program Files (x86)/Mail Enable/Logging/SMTP` -> `/mailenable/logging/SMTP`
+
+*Note: The environment variable `NODE_ENV` inside the container is set to `docker`, which merges `config/default.json` with the path overrides configured in `config/docker.json`.*
 
 ## Configuration
 
@@ -79,12 +121,19 @@ Configuration changes are automatically backed up to timestamped `.bak` files in
 | `SMTP_QUEUE_DIR` | *(MailEnable path)* | Inbound SMTP message queue |
 | `SMTP_COMMAND_DIR` | *(MailEnable path)* | Inbound SMTP control files |
 | `SMTP_LOG_DIR` | *(MailEnable path)* | MailEnable SMTP logs |
+| `SMTP_HOST` | `localhost` | MailEnable SMTP server host for sending test/released emails |
+| `SMTP_PORT` | `25` | MailEnable SMTP server port |
+| `SMTP_USER` | *(empty)* | SMTP authentication username |
+| `SMTP_PASS` | *(empty)* | SMTP authentication password |
 | `THRESHOLD_QUARANTINE` | `5` | Score at or above this value quarantines the email |
 | `THRESHOLD_DELETE` | `15` | Score at or above this value deletes the email |
+| `PROCESSING_LOG` | `./logs` | Directory for processing logs |
+| `QUARANTINE_LOG` | `./logs` | Directory for quarantine logs |
 | `SPAMASSASSIN_ENABLED` | `false` | Enable SpamAssassin spam checks |
 | `SPAMASSASSIN_HOST` | `localhost` | SpamAssassin server hostname |
 | `SPAMASSASSIN_PORT` | `783` | SpamAssassin server port |
 | `AI_CHECK_ENABLED` | `false` | Enable AI spam classification |
+| `AI_SPAM_CHECK_PROMPT_PATH` | `config/aiSpamCheckPrompt.md` | Path to the markdown-formatted AI spam checker prompt |
 | `AI_SYSTEM` | `OLLAMA` | AI backend to use: `OLLAMA` or `LLAMACPP` |
 | `OLLAMA_SERVER` | `localhost` | Ollama server hostname |
 | `OLLAMA_PORT` | `11434` | Ollama server port |
@@ -105,6 +154,7 @@ Configuration changes are automatically backed up to timestamped `.bak` files in
 | `BACKUP_MAX_COUNT` | `5` | Maximum number of configuration backups to retain |
 | `BACKUP_MAX_DAYS` | `90` | Maximum age of configuration backups in days |
 | `TEST_EMAIL_SLEEP_SECONDS` | `3` | Delay between test emails |
+| `TEST_EMAIL_FROM` | `"MailPickupAgent" <no-reply@localhost>` | From address used when sending test emails |
 | `TEST_EMAIL_RECIPIENT` | `test@localhost` | Recipient for test emails |
 | `CERT_KEY_PATH` | *(empty)* | Path to SSL private key (enables HTTPS) |
 | `CERT_PATH` | *(empty)* | Path to SSL certificate (enables HTTPS) |
@@ -147,7 +197,8 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 - **Quarantine Log** (`/QuarantineLog`) — view quarantine action logs with date filtering
 - **SMTP Log Analyzer** (`/SMTPLog`) — analyze MailEnable SMTP logs
 - **Rules Editor** (`/rulesEditor`) — manage whitelist, blacklist, keyword, combo, TLD, and country filters; generate keyword filters via AI
-- **Generate Link** (`/generateLink`) — create shareable access links for the mail queue
+- **Rule Hits Report** (`/ruleHits`) — track, view, and clear hit counts for whitelist, blacklist, country, combo, and keyword filters to observe rule efficacy
+- **Manage Access Links** (`/manageLinks`) — generate, view, and delete shareable access links for the mail queue
 - **Notifications** (`/notificationsAdmin`) — view and manage browser push notification subscriptions
 - **Session Manager** (`/sessions`) — view active admin sessions with login metadata (IP, user agent, identifier) and terminate sessions
 
@@ -179,6 +230,7 @@ Make sure to exclude logging directories and quarantine/deleted directories from
 | `npm run purge` | Remove old deleted emails, log files, and config backups |
 | `npm run wipeall` | Delete all quarantined and deleted emails and ALL log files |
 | `npm run spamTest` | Test SpamAssassin to see if it is running and working |
+| `npm run spamTest:dev` | Test SpamAssassin using `config/development.json` (Windows) |
 | `npm run aiTest` | Test the configured AI spam classifier with spam and ham emails |
 | `npm run aiTest:dev` | Test the AI classifier using `config/development.json` (Windows) |
 | `npm run abuseipdbTest` | Test AbuseIPDB API connection and IP reputation checking |
@@ -302,6 +354,11 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 | `GET` | `/api/spam-reason/:type/:id` | Get spam reason for a quarantined/deleted email |
 | `GET` | `/api/email-lookup/:id` | Look up email by ID across quarantine and deleted directories |
 | `POST` | `/status/api/purge` | Trigger manual purge |
+| `POST` | `/status/api/reset-stats` | Reset live processing statistics metrics to zero |
+| `POST` | `/status/api/ai-test` | Trigger an asynchronous/direct AI classification and connection test |
+| `POST` | `/status/api/sa-test` | Trigger a connection and scan test for the SpamAssassin service |
+| `POST` | `/status/api/abuseipdb-test` | Trigger a reputation API connection test with AbuseIPDB |
+| `GET` | `/status/events` | Server-Sent Events (SSE) stream for real-time dashboard status updates |
 | `GET` | `/notifications/public-key` | Get VAPID public key for push subscriptions |
 | `POST` | `/notifications/subscribe` | Subscribe to quarantine push notifications |
 | `POST` | `/notifications/unsubscribe` | Unsubscribe from push notifications |
@@ -312,7 +369,13 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 | `GET` | `/configHistory/api/current` | View current rules or settings |
 | `POST` | `/configHistory/api/restore` | Restore configuration from a backup |
 | `DELETE` | `/configHistory/api/backup` | Delete a configuration backup |
-| `POST` | `/api/rules/generate-keyword-filter` | Generate a keyword filter via AI (Ollama or llama.cpp) |
+| `GET` | `/rulesEditor/api/rules` | Get current rules (`rules.json`) content |
+| `POST` | `/rulesEditor/api/rules/save` | Save updated rules to `rules.json` with automatic backup |
+| `GET` | `/rulesEditor/api/rule-hits` | Get simple object mapping rules to hit counts |
+| `POST` | `/rulesEditor/api/rules/generate-keyword-filter` | Generate a keyword filter via AI (Ollama or llama.cpp) |
+| `GET` | `/ruleHits/api/rule-hits` | Get detailed list of rule hits with resolved display labels and scores |
+| `DELETE` | `/ruleHits/api/rule-hits/clear` | Clear all recorded rule hits from database |
+| `DELETE` | `/ruleHits/api/rule-hits/:ruleType/:ruleValue` | Delete a specific rule hit count from database |
 
 ## GeoIP Database
 

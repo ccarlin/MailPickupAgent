@@ -142,11 +142,97 @@ block css
             background: #c62828;
             color: #fff;
         }
+        .view-toggle {
+            display: inline-flex;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .view-toggle button {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: none;
+            background: #fff;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .view-toggle button + button {
+            border-left: 1px solid #cbd5e1;
+        }
+        .view-toggle button.active {
+            background: #1976d2;
+            color: #fff;
+        }
+        .view-toggle button:not(.active):hover {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .chart-container {
+            padding: 8px 20px 16px;
+        }
+        .chart-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .chart-toolbar label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .top-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.8125rem;
+            outline: none;
+            color: #334155;
+            background: #fff;
+            cursor: pointer;
+        }
+        .top-select:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
+        }
+        .chart-wrapper {
+            position: relative;
+            max-width: 720px;
+            height: 420px;
+            margin: 0 auto;
+        }
+        .chart-empty {
+            padding: 48px 16px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .chart-empty i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 12px;
+            color: #cbd5e1;
+        }
 
     link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
 
 block scripts
     script(src="https://cdn.jsdelivr.net/npm/gridjs/dist/gridjs.umd.js")
+    script(src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js")
 
 block content
     script.
@@ -155,6 +241,9 @@ block content
             var filteredData = [];
             var grid = null;
             var typeSummary = {};
+            var chart = null;
+            var chartFullLabels = [];
+            var viewMode = 'table';
 
             document.getElementById('last-update').textContent = 'Loading...';
 
@@ -310,6 +399,7 @@ block content
                 });
 
                 renderGrid();
+                if (viewMode === 'chart') renderChart();
             }
 
             function clearFilters() {
@@ -398,7 +488,7 @@ block content
                             { name: '_raw_value', hidden: true }
                         ],
                         data: filteredData,
-                        pagination: { limit: 15, summary: true },
+                        pagination: { limit: 14, summary: true },
                         search: { enabled: false },
                         sort: { enabled: true, multiColumn: false },
                         language: {
@@ -413,6 +503,119 @@ block content
                         }
                     }).render(container);
                 }
+            }
+
+            function shortLabel(s, max) {
+                max = max || 45;
+                if (s.length <= max) return s;
+                return s.substring(0, max - 1) + '…';
+            }
+
+            function renderChart() {
+                var topN = parseInt(document.getElementById('top-rules-select').value, 10) || 10;
+                var total = 0;
+                filteredData.forEach(function(r) { total += r[3]; });
+
+                var empty = document.getElementById('chart-empty');
+                var wrapper = document.getElementById('chart-wrapper');
+                if (total <= 0) {
+                    empty.style.display = 'block';
+                    wrapper.style.display = 'none';
+                    return;
+                }
+                empty.style.display = 'none';
+                wrapper.style.display = '';
+
+                var sorted = filteredData.slice().sort(function(a, b) { return b[3] - a[3]; });
+                var top = sorted.slice(0, topN).filter(function(r) { return r[3] > 0; });
+                var restTotal = 0;
+                var restCount = 0;
+                for (var i = topN; i < sorted.length; i++) {
+                    if (sorted[i][3] > 0) {
+                        restCount++;
+                        restTotal += sorted[i][3];
+                    }
+                }
+
+                var labels = [];
+                chartFullLabels = [];
+                var colors = [
+                    '#1976d2', '#ef6c00', '#2e7d32', '#c62828', '#7b1fa2',
+                    '#ad1457', '#00695c', '#f57f17', '#0288d1', '#37474f'
+                ];
+
+                top.forEach(function(r) {
+                    var full = getTypeLabel(r[0]) + ' - ' + r[1];
+                    chartFullLabels.push(full);
+                    labels.push(shortLabel(full));
+                });
+                if (restTotal > 0) {
+                    chartFullLabels.push('All Other Rules (' + restCount + ')');
+                    labels.push('All Other Rules (' + restCount + ')');
+                }
+                var values = top.map(function(r) { return r[3]; });
+                if (restTotal > 0) values.push(restTotal);
+
+                var bg = top.map(function(_, i) { return colors[i % colors.length]; });
+                if (restTotal > 0) bg.push('#94a3b8');
+
+                if (chart) {
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = values;
+                    chart.data.datasets[0].backgroundColor = bg;
+                    chart._total = total;
+                    chart.update();
+                    return;
+                }
+
+                chart = new Chart(document.getElementById('hits-chart'), {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: bg,
+                            borderColor: '#ffffff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { family: 'Roboto', size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var idx = context.dataIndex;
+                                        var val = context.parsed || 0;
+                                        var total = context.chart._total || 0;
+                                        var pct = total > 0 ? (val / total * 100).toFixed(1) : '0.0';
+                                        var full = (chartFullLabels && chartFullLabels[idx]) || context.label;
+                                        return ' ' + full + ': ' + val.toLocaleString() + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                chart._total = total;
+            }
+
+            function setView(mode) {
+                viewMode = mode;
+                document.getElementById('hits-grid').style.display = mode === 'table' ? '' : 'none';
+                document.getElementById('chart-section').style.display = mode === 'chart' ? '' : 'none';
+                document.getElementById('btn-view-table').classList.toggle('active', mode === 'table');
+                document.getElementById('btn-view-chart').classList.toggle('active', mode === 'chart');
+                if (mode === 'chart') renderChart();
             }
 
             function toCSV() {
@@ -451,6 +654,11 @@ block content
             document.getElementById('btn-csv').addEventListener('click', toCSV);
             document.getElementById('btn-copy').addEventListener('click', toCopyText);
             document.getElementById('btn-clear-filters').addEventListener('click', clearFilters);
+            document.getElementById('btn-view-table').addEventListener('click', function() { setView('table'); });
+            document.getElementById('btn-view-chart').addEventListener('click', function() { setView('chart'); });
+            document.getElementById('top-rules-select').addEventListener('change', function() {
+                if (viewMode === 'chart') renderChart();
+            });
             document.getElementById('custom-search').addEventListener('input', applyFilters);
             document.getElementById('btn-clear-all').addEventListener('click', function() {
                 if (!confirm('Are you sure you want to clear ALL rule hit data? This cannot be undone.')) return;
@@ -462,6 +670,7 @@ block content
                             filteredData = [];
                             buildSummaryCards();
                             if (grid) grid.updateConfig({ data: [] }).forceRender();
+                            if (viewMode === 'chart') renderChart();
                             document.getElementById('btn-clear-all').innerHTML = '<i class="fas fa-check"></i> Cleared!';
                             setTimeout(function() {
                                 document.getElementById('btn-clear-all').innerHTML = '<i class="fas fa-trash-alt"></i>  Clear All';
@@ -490,6 +699,7 @@ block content
                             });
                             buildSummaryCards();
                             if (grid) grid.updateConfig({ data: filteredData }).forceRender();
+                            if (viewMode === 'chart') renderChart();
                         }
                     })
                     .catch(function(err) {
@@ -560,6 +770,14 @@ block content
                     .mui-btn#btn-copy
                         i.fas.fa-copy
                         | Copy
+                    .mui-btn-separator
+                    .view-toggle
+                        button#btn-view-table.active(type="button")
+                            i.fas.fa-table
+                            | Table
+                        button#btn-view-chart(type="button")
+                            i.fas.fa-chart-pie
+                            | Chart
                     .mui-btn-clear-all#btn-clear-all
                         i.fas.fa-trash-alt
                         |  Clear All
@@ -571,4 +789,20 @@ block content
                 .mui-filters-right
                     input#custom-search(type="search" placeholder="Search rules...")
             .mui-divider
+            #chart-section(style="display:none")
+                .chart-container
+                    .chart-toolbar
+                        label Top Rules
+                        select.top-select#top-rules-select
+                            option(value="5") 5
+                            option(value="10") 10
+                            option(value="15") 15
+                            option(value="20" selected) 20
+                            option(value="25") 25
+                            option(value="30") 30
+                    #chart-empty.chart-empty(style="display:none")
+                        i.fas.fa-chart-pie
+                        | No rule hit data to chart.
+                    #chart-wrapper.chart-wrapper(style="display:none")
+                        canvas#hits-chart
             #hits-grid
