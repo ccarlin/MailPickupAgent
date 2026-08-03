@@ -792,7 +792,7 @@ block scripts
         });
       });
       $('#btn-reset-stats').on('click', function() {
-        if (confirm('Reset all metrics to zero? This cannot be undone.')) {
+        if (confirm('Reset all metrics to zero? This cannot be undone, similar to a system restart.')) {
           $.post('/status/api/reset-stats').done(function() {
             // Force a full refresh from the server
             location.reload();
