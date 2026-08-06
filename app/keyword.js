@@ -67,15 +67,33 @@ function matchKeywordFilter(parsed, filter, recipients) {
     const matchType = String(filter.FilterMatchType || '').trim();
     if (matchType === '1') {
       const pattern = `\\b${escapeRegex(expr)}`;
-      try { return new RegExp(pattern, flags).test(text); } catch { return false; }
+      try { 
+        return new RegExp(pattern, flags).test(text); 
+      } 
+      catch { 
+        tools.logWarn(`Invalid regex pattern for match type Starts With: ${pattern}`);
+        return false; 
+      }
     }
     if (matchType === '2') {
       const pattern = `${escapeRegex(expr)}\\b`;
-      try { return new RegExp(pattern, flags).test(text); } catch { return false; }
+      try { 
+        return new RegExp(pattern, flags).test(text); 
+      } 
+      catch { 
+        tools.logWarn(`Invalid regex pattern for match type Ends With: ${pattern}`);
+        return false; 
+      }
     }
     if (matchType === '3') {
       const pattern = `\\b${escapeRegex(expr)}\\b`;
-      try { return new RegExp(pattern, flags).test(text); } catch { return false; }
+      try { 
+        return new RegExp(pattern, flags).test(text); 
+      } 
+      catch { 
+        tools.logWarn(`Invalid regex pattern for match type Contains: ${pattern}`);
+        return false; 
+      }
     }
     if (caseSensitive) return text.includes(expr);
     return text.toLowerCase().includes(expr.toLowerCase());
