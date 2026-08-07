@@ -1,4 +1,4 @@
-FROM node:22-slim
+FROM node:22.24.0-slim
 
 # Install system dependencies needed for compiling better-sqlite3 and other native modules
 RUN apt-get update && apt-get install -y \
