@@ -288,7 +288,19 @@ block content
                                     return gridjs.html('<input type="checkbox" class="deleted-chk" value="' + escHtml(cell) + '">');
                                 }
                             },
-                            { name: 'Time', width: '160px', sort: true },
+                            {
+                                name: 'Time',
+                                width: '160px',
+                                sort: {
+                                    compare: function(a, b) {
+                                        var ta = new Date(a).getTime();
+                                        var tb = new Date(b).getTime();
+                                        if (isNaN(ta)) ta = 0;
+                                        if (isNaN(tb)) tb = 0;
+                                        return ta - tb;
+                                    }
+                                }
+                            },
                             { name: 'Sender', width: '220px', sort: true },
                             { name: 'Recipient', width: '120px', sort: true },
                             { name: 'Subject', width: '300px', sort: true },
