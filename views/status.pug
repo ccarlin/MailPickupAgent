@@ -371,7 +371,7 @@ block content
         .sub-label (since last restart)
       .status-card.service-down.hidden.clickable#card-ai
         .icon
-          - var aiLogo = aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/ollama-logo.svg'
+          - var aiLogo = aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/Ollama-logo.svg'
           img(src=aiLogo, alt="AI Check")
         .count#count-ai
           i.fas.fa-times-circle
@@ -481,7 +481,7 @@ block scripts
       $('#card-pending').toggleClass('alert', data.pending > 0);
       if (data.aiEnabled) {
         $('#label-ai').text('AI Check (' + data.aiSystem + ')');
-        $('#card-ai .icon img').attr('src', data.aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/ollama-logo.svg');
+        $('#card-ai .icon img').attr('src', data.aiSystem === 'LLAMACPP' ? '/img/llamacpp-logo.svg' : '/img/.svg');
         $('#card-ai').removeClass('hidden service-up service-down').addClass(data.aiRunning ? 'service-up' : 'service-down');
         $('#count-ai').html(data.aiRunning
           ? '<i class="fas fa-check-circle" style="color:#16a34a"></i> <span style="color:#16a34a">Running</span>'
@@ -792,7 +792,7 @@ block scripts
         });
       });
       $('#btn-reset-stats').on('click', function() {
-        if (confirm('Reset all metrics to zero? This cannot be undone.')) {
+        if (confirm('Reset all metrics to zero? This cannot be undone, similar to a system restart.')) {
           $.post('/status/api/reset-stats').done(function() {
             // Force a full refresh from the server
             location.reload();

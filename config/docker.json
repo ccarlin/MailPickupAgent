@@ -2,5 +2,10 @@
   "NODE_ENV": "docker",
   "SMTP_QUEUE_DIR": "/mailenable/queues/SMTP/Inbound/Messages",
   "SMTP_COMMAND_DIR": "/mailenable/queues/SMTP/Inbound",
-  "SMTP_LOG_DIR": "/mailenable/logging/SMTP"
+  "SMTP_LOG_DIR": "/mailenable/logging/SMTP",
+
+  "SMTP_HOST": "host.docker.internal",
+  "OLLAMA_SERVER": "host.docker.internal",
+  "LLAMACPP_SERVER": "host.docker.internal",
+  "SPAMASSASSIN_HOST": "host.docker.internal"
 }

@@ -37,7 +37,11 @@ block content
                 var score = isNaN(Number(e.spamScore)) ? e.spamScore : +Number(e.spamScore).toFixed(1);
                 return [e.dateTime, e.sender, e.recipient, e.subject, String(score), e.spamResults, e.action, e.ipAddress];
             }).sort(function(a, b) {
-                return a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0;
+                var ta = new Date(a[0]).getTime();
+                var tb = new Date(b[0]).getTime();
+                if (isNaN(ta)) ta = 0;
+                if (isNaN(tb)) tb = 0;
+                return ta < tb ? 1 : ta > tb ? -1 : 0;
             });
 
             var grid = null;
@@ -160,7 +164,19 @@ block content
                 } else {
                     grid = new gridjs.Grid({
                         columns: [
-                            { name: 'Time Stamp', width: '150px', sort: true },
+                            {
+                                name: 'Time Stamp',
+                                width: '150px',
+                                sort: {
+                                    compare: function(a, b) {
+                                        var ta = new Date(a).getTime();
+                                        var tb = new Date(b).getTime();
+                                        if (isNaN(ta)) ta = 0;
+                                        if (isNaN(tb)) tb = 0;
+                                        return ta - tb;
+                                    }
+                                }
+                            },
                             { name: 'Sender', width: '200px', sort: true },
                             { name: 'Recipient', width: '80px', sort: true },
                             { name: 'Subject', width: '280px', sort: true },

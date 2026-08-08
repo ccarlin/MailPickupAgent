@@ -486,9 +486,11 @@ block scripts
             thead.innerHTML = '<tr><th>Name</th><th>Recipient</th><th>Expression</th><th>Score</th><th>Scope</th><th>ExprType</th><th>MatchType</th><th>Case</th><th>Comment</th><th>Hits</th><th></th></tr>';
             table.appendChild(thead);
             const tbody = document.createElement('tbody');
-            arr.forEach((item, index) => {
+            arr.map((item, index) => ({ item, index, hits: hitCount(parent, key, item) }))
+                .sort((a, b) => b.hits - a.hits || Number(b.item.Score || 0) - Number(a.item.Score || 0))
+                .forEach(({ item, index, hits }) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td>' + (item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + expTypeLabel(item.FilterExpressionType) + '</td><td>' + matchTypeLabel(item.FilterMatchType) + '</td><td>' + (String(item.FilterCaseSensitive || '') === '1' ? 'Yes' : 'No') + '</td><td>' + (item.Comment || '') + '</td><td>' + hitCount(parent, key, item) + '</td>';
+                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td>' + (item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + expTypeLabel(item.FilterExpressionType) + '</td><td>' + matchTypeLabel(item.FilterMatchType) + '</td><td>' + (String(item.FilterCaseSensitive || '') === '1' ? 'Yes' : 'No') + '</td><td>' + (item.Comment || '') + '</td><td>' + hits + '</td>';
                 const tdActions = document.createElement('td');
                 tdActions.className = 'cell-actions';
                 const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editKeywordFilter(parent, key, index, item));
@@ -503,7 +505,7 @@ block scripts
                 tdActions.appendChild(delBtn);
                 tr.appendChild(tdActions);
                 tbody.appendChild(tr);
-            });
+                });
             table.appendChild(tbody);
             return table;
         }
