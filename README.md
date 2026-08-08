@@ -208,7 +208,7 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 |---|---|
 | ![Default Status Page](public/img/Screenshots/Default%20Status%20Page.png) | ![Configuration Editor](public/img/Screenshots/Configuration%20Editor.png) |
 | Default landing page with server dashboard | View and edit all settings |
-| ![Rules Editor](public/img/Screenshots/Rules%20Editor.png) | ![Quarantine Manager](public/img/Screenshots/Quarantine%20Log.png) |
+| ![Rules Editor](public/img/Screenshots/Rules%20Editor.png) | ![Quarantine Manager](public/img/Screenshots/Mail%20Quarantine.png) |
 | Manage whitelist, blacklist, and keyword filters | Review, release, or delete quarantined emails |
 | ![Deleted Emails Recovery](public/img/Screenshots/Deleted%20Emails%20Recovery.png) | ![Processing Log](public/img/Screenshots/Mail%20Log%20-%20Email%20Analyzer.png) |
 | Browse and recover deleted emails | View daily processing logs |
