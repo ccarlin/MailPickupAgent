@@ -113,6 +113,37 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
   }
 }
 
+// Mark the email as junk mail by adding appropriate headers
+async function markAsJunkMail(messagePath, spamScore, spamDetailInfo) {
+  try {
+    let message = fs.readFileSync(messagePath, 'utf8');
+    const headerEndIndex = message.indexOf(HEADER_SEPARATOR);
+    if (headerEndIndex === -1) {
+      tools.logError(`Invalid email format, no header-body separation found`);
+      return false;
+    }
+    let headers = message.substring(0, headerEndIndex);
+    let body = message.substring(headerEndIndex + HEADER_SEPARATOR.length);
+
+    const score = Number(spamScore) || 0;
+    const required = THRESHOLD_QUARANTINE;
+    const details = String(spamDetailInfo || '').replace(/[\r\n]+/g, ' ').trim();
+    const starCount = Math.max(0, Math.floor(score));
+
+    headers += `\r\nX-Spam-Flag: YES\r\n`;
+    headers += `X-Spam-Status: Yes, score=${score.toFixed(1)} required=${required}${details ? ` tests=${details}` : ''} autolearn=no version=3.4.2\r\n`;
+    headers += `X-Spam-Level: ${'*'.repeat(starCount)}\r\n`;
+    headers += `X-MailEnable-Spam: yes\r\n`;
+
+    fs.writeFileSync(messagePath, headers + HEADER_SEPARATOR + body, 'utf8');
+    tools.logData(`Marked email as junk mail with score ${score}`);
+    return true;
+  } catch (err) {
+    tools.logError(`Failed to mark email as junk mail: ${err.message}`);
+    return false;
+  }
+}
+
 async function processEmail(controlFilePath, messagePath, rules) {
   try {
     const processStartTime = performance.now();
@@ -547,6 +578,7 @@ module.exports = {
   loadRules,
   buildAllTestEmails,
   updateEmailHeaders,
+  markAsJunkMail,
   extractOriginatingIp,
   deleteEmail,
   quarantineEmail,
@@ -557,6 +589,7 @@ module.exports = {
   recentlyReleased
 };
 
+// Entry point for command-line execution
 if (require.main === module) {
   const args = process.argv.slice(2);
   const testArgIndex = args.findIndex(arg => arg === '--test' || arg.startsWith('--test='));
