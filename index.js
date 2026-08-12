@@ -458,6 +458,7 @@ function wipeall() {
   const dirs = [
     { dir: QUARANTINE_DIR, label: 'quarantine' },
     { dir: DELETED_DIR, label: 'deleted' },
+    { dir: ARCHIVE_DIR, label: 'archive' },
     { dir: PROCESSING_LOG_DIR, label: 'processing logs' },
     { dir: QUARANTINE_LOG_DIR, label: 'quarantine logs' },
   ];
@@ -513,6 +514,7 @@ function purgeOldFiles() {
 
   const emailDirs = [
     { dir: DELETED_DIR, label: 'deleted emails' },
+    { dir: ARCHIVE_DIR, label: 'archived emails' },
   ];
 
   const logDirs = [
