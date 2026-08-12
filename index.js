@@ -74,7 +74,7 @@ function captureLiveEmail(controlFilePath, messagePath) {
     if (!fs.existsSync(ARCHIVE_DIR)) {
       fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
     }
-    const controlName = path.basename(controlFilePath);
+    const controlName = path.basename(controlFilePath).replace(/\.MAI$/i, '.H00');
     const messageName = path.basename(messagePath);
     fs.copyFileSync(controlFilePath, path.join(ARCHIVE_DIR, controlName));
     fs.copyFileSync(messagePath, path.join(ARCHIVE_DIR, messageName));

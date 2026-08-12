@@ -7,9 +7,7 @@ yarn-error.log*
 package-lock.json
 pnpm-lock.yaml
 .vscode/
-deleted/
-quarantine/
-release/
+mail/
 config/rules.json
 config/sessions.sqlite*
 config/.vapid-keys.json
