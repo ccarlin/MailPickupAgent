@@ -18,6 +18,7 @@ const { recordHit } = require('./app/ruleHits');
 
 const QUARANTINE_DIR = config.QUARANTINE_DIR;
 const DELETED_DIR = config.DELETED_DIR;
+const ARCHIVE_DIR = config.ARCHIVE_DIR;
 const SMTP_HOST = config.SMTP_HOST;
 const SMTP_PORT = config.SMTP_PORT;
 const RULES_FILE = './config/rules.json';
@@ -41,6 +42,53 @@ function purgeExpiredCacheEntries() {
     if (timestamp < cutoff) recentlyReleased.delete(id);
   }
 }
+
+// Live email capture — archives a COPY of the next CAPTURE_LIMIT emails as they arrive
+const CAPTURE_LIMIT = 5;
+const captureState = { armed: false, captured: 0 };
+
+function getLiveCaptureState() {
+  return { armed: captureState.armed, captured: captureState.captured, limit: CAPTURE_LIMIT };
+}
+
+function armLiveCapture() {
+  captureState.armed = true;
+  captureState.captured = 0;
+  tools.logData(`Live email capture armed: next ${CAPTURE_LIMIT} emails will be archived to ${ARCHIVE_DIR}`);
+  return getLiveCaptureState();
+}
+
+function stopLiveCapture() {
+  captureState.armed = false;
+  tools.logData('Live email capture stopped');
+  return getLiveCaptureState();
+}
+
+function toggleLiveCapture() {
+  return captureState.armed ? stopLiveCapture() : armLiveCapture();
+}
+
+function captureLiveEmail(controlFilePath, messagePath) {
+  if (!captureState.armed || captureState.captured >= CAPTURE_LIMIT) return;
+  try {
+    if (!fs.existsSync(ARCHIVE_DIR)) {
+      fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
+    }
+    const controlName = path.basename(controlFilePath);
+    const messageName = path.basename(messagePath);
+    fs.copyFileSync(controlFilePath, path.join(ARCHIVE_DIR, controlName));
+    fs.copyFileSync(messagePath, path.join(ARCHIVE_DIR, messageName));
+    captureState.captured++;
+    tools.logData(`Captured live email ${messageName} to ${ARCHIVE_DIR} (${captureState.captured}/${CAPTURE_LIMIT})`);
+    if (captureState.captured >= CAPTURE_LIMIT) {
+      captureState.armed = false;
+      tools.logData(`Live email capture complete: ${CAPTURE_LIMIT} emails archived`);
+    }
+  } catch (err) {
+    tools.logError(`Failed to capture live email: ${err.message}`);
+  }
+}
+
 const processingLogPath = () => {
   const d = new Date();
   const y = d.getFullYear();
@@ -49,7 +97,7 @@ const processingLogPath = () => {
   return `${PROCESSING_LOG_DIR}/processing-${y}${m}${day}.log`;
 };
 
-[QUARANTINE_DIR, DELETED_DIR, PROCESSING_LOG_DIR, QUARANTINE_LOG_DIR].forEach(dir => {
+[QUARANTINE_DIR, DELETED_DIR, ARCHIVE_DIR, PROCESSING_LOG_DIR, QUARANTINE_LOG_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -147,6 +195,7 @@ async function markAsJunkMail(messagePath, spamScore, spamDetailInfo) {
 async function processEmail(controlFilePath, messagePath, rules) {
   try {
     const processStartTime = performance.now();
+    captureLiveEmail(controlFilePath, messagePath);
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
     const userMatch = commandData.match(/^User=(.*)$/m);
@@ -172,9 +221,23 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
     const fileStats = fs.statSync(messagePath);
     const sizeKb = fileStats.size / 1024;
-    const recipientAddresses = (parsed.to || []).map(v => v.address || '').filter(Boolean);
+    const recipientAddresses = [];
+    const recipientsMatch = commandData.match(/^Recipients=(.*)$/gm) || [];
+    for (const line of recipientsMatch) {
+      const value = line.replace(/^Recipients=/, '').trim();
+      const pieces = value.split(/[:;\],]/);
+      for (const piece of pieces) {
+        const address = piece.trim();
+        if (address.includes('@')) {
+          recipientAddresses.push(address);
+        }
+      }
+    }
+    if (recipientAddresses.length === 0) {
+      recipientAddresses.push(...(parsed.to || []).map(v => v.address || '').filter(Boolean));
+    }
     const recipientStr = recipientAddresses.join(', ');
-    const recipients = (parsed.to || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
+    const recipients = recipientAddresses.map(v => v.split('@')[0].toUpperCase()).filter(Boolean);
     const originatingIp = extractOriginatingIp(commandData);
     tools.logData(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`, "DEBUG");
 
@@ -586,6 +649,10 @@ module.exports = {
   purgeOldFiles,
   purgeOldBackups,
   wipeall,
+  getLiveCaptureState,
+  armLiveCapture,
+  stopLiveCapture,
+  toggleLiveCapture,
   recentlyReleased
 };
 

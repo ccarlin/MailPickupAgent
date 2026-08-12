@@ -4,6 +4,7 @@
 
   "QUARANTINE_DIR": "./mail/quarantine",
   "DELETED_DIR": "./mail/deleted",
+  "ARCHIVE_DIR": "./mail/archive",
   
   "SMTP_QUEUE_DIR": "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound/Messages",
   "SMTP_COMMAND_DIR": "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound",

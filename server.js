@@ -161,6 +161,7 @@ function initializeConfiguration() {
   config.settings = {
     quarantineDir: appConfig.QUARANTINE_DIR,
     deletedDir: appConfig.DELETED_DIR,
+    archiveDir: appConfig.ARCHIVE_DIR,
     smtpHost: appConfig.SMTP_HOST,
     smtpPort: appConfig.SMTP_PORT,
     spamAssassinEnabled: appConfig.SPAMASSASSIN_ENABLED,
@@ -168,7 +169,7 @@ function initializeConfiguration() {
   };
 
   // Ensure required directories exist
-  [appConfig.QUARANTINE_DIR, appConfig.DELETED_DIR, appConfig.PROCESSING_LOG, appConfig.QUARANTINE_LOG].forEach(dir => {
+  [appConfig.QUARANTINE_DIR, appConfig.DELETED_DIR, appConfig.ARCHIVE_DIR, appConfig.PROCESSING_LOG, appConfig.QUARANTINE_LOG].forEach(dir => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
       tools.logData(`Created directory: ${dir}`);

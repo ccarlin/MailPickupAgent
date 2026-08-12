@@ -83,7 +83,7 @@ function validateConfig() {
   }
 
   // --- Directory existence checks (warnings only — dirs may be created later) ---
-  const criticalDirs = ['QUARANTINE_DIR', 'DELETED_DIR', 'PROCESSING_LOG', 'QUARANTINE_LOG'];
+  const criticalDirs = ['QUARANTINE_DIR', 'DELETED_DIR', 'ARCHIVE_DIR', 'PROCESSING_LOG', 'QUARANTINE_LOG'];
   const mailEnableDirs = ['SMTP_QUEUE_DIR', 'SMTP_COMMAND_DIR', 'SMTP_LOG_DIR'];
   for (const name of [...criticalDirs, ...mailEnableDirs]) {
     const dir = config[name];

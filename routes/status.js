@@ -7,7 +7,7 @@ const tools = require('../app/tools');
 const metrics = require('../app/metrics');
 const config = require('../config');
 const notifications = require('../app/notifications');
-const { purgeOldFiles } = require('../index');
+const { purgeOldFiles, getLiveCaptureState, toggleLiveCapture } = require('../index');
 const { testAiCheck } = require('../test/testAI');
 const { testSpamAssassin } = require('../test/testSpamAssassin');
 const { testAbuseIPDB } = require('../test/testAbuseIPDB');
@@ -109,6 +109,7 @@ async function buildStatusData(req) {
     ]);
 
     const linkCount = tools.getStoredKeys().length;
+    const captureState = getLiveCaptureState();
 
     return {
       totalProcessed: data.totalProcessed,
@@ -119,6 +120,9 @@ async function buildStatusData(req) {
       deleted: data.deleted,
       pending: pendingCount,
       linkCount,
+      captureArmed: captureState.armed,
+      captureCount: captureState.captured,
+      captureLimit: captureState.limit,
       uptime: data.uptime,
       uptimeFormatted: metrics.formatUptime(data.uptime),
       serverStartTime: data.serverStartTime,
@@ -175,6 +179,7 @@ router.get('/events', function(req, res) {
   // Listen for metric updates
   const onMetricUpdate = () => {
     const data = metrics.getMetrics();
+    const captureState = getLiveCaptureState();
     let pendingCount = 0;
     try {
       const files = fs.readdirSync(config.QUARANTINE_DIR);
@@ -190,6 +195,9 @@ router.get('/events', function(req, res) {
       released: data.released,
       deleted: data.deleted,
       pending: pendingCount,
+      captureArmed: captureState.armed,
+      captureCount: captureState.captured,
+      captureLimit: captureState.limit,
       uptime: data.uptime,
       uptimeFormatted: metrics.formatUptime(data.uptime),
       aiAvgTime: data.aiAvgTime,
@@ -254,6 +262,20 @@ router.post('/api/reset-stats', function(req, res) {
     res.json({ success: true, message: 'Stats reset to zero' });
   } catch (err) {
     tools.logError(`Stats reset failed: ${err.message}`);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.post('/api/capture-live', function(req, res) {
+  try {
+    const state = toggleLiveCapture();
+    const message = state.armed
+      ? `Live email capture armed: next ${state.limit} emails will be archived`
+      : 'Live email capture stopped';
+    tools.logData(`Live capture toggled from status page: ${message}`);
+    res.json({ success: true, message, state });
+  } catch (err) {
+    tools.logError(`Live capture toggle failed: ${err.message}`);
     res.status(500).json({ success: false, message: err.message });
   }
 });
