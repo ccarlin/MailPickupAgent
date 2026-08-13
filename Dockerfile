@@ -28,9 +28,10 @@ EXPOSE 6245
 # Set the default environment variable
 ENV NODE_ENV=docker
 
-# Healthcheck to verify the app is running
+# Healthcheck to verify the app is running (uses Node's built-in fetch — the
+# slim base image does not reliably ship wget/curl)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:6245/health || exit 1
+    CMD node -e "fetch('http://localhost:6245/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # Command to run the application
 CMD [ "npm", "run", "server" ]

@@ -235,7 +235,12 @@ router.get('/', function(req, res) {
         res.clearCookie("MailQUserFilter");
     }
     else if (filterUser) {
-        res.cookie("MailQUserFilter", filterUser, { maxAge: 1000 * 60 * 1440 * 365 });
+        res.cookie("MailQUserFilter", filterUser, {
+            maxAge: 1000 * 60 * 1440 * 365,
+            httpOnly: true,
+            secure: !!(config.CERT_PATH && config.CERT_KEY_PATH),
+            sameSite: 'lax'
+        });
         tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO", req.socket.remoteAddress);
     }
     else if (req.cookies.MailQUserFilter) {

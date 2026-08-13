@@ -136,6 +136,21 @@ function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, 
   }
 }
 
+// Neutralize CR/LF and other control characters before embedding a value into
+// an email header, preventing header-injection from email-derived data
+// (e.g. AI-generated reasons, SpamAssassin reports, AbuseIPDB fields).
+function sanitizeHeaderValue(value) {
+  return String(value == null ? '' : value)
+    .replace(/[\r\n]+/g, ' ')
+    .split('')
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code >= 0x20 && code !== 0x7F; // printable (incl. non-ASCII); drop DEL
+    })
+    .join('')
+    .trim();
+}
+
 async function updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, country, spamDetailInfo) {
   try {
     let message = fs.readFileSync(messagePath, 'utf8');
@@ -146,13 +161,13 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     }
     let headers = message.substring(0, headerEndIndex);
     let body = message.substring(headerEndIndex + HEADER_SEPARATOR.length);
-    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${HOSTNAME}\r\n`;
-    headers += `X-MPA-Msgid: ${destMessageName}\r\n`;
-    headers += `X-MPA-SpamReason: ${quarantineReasons.join('; ')}\r\n`;
-    headers += `X-MPA-SpamScore: ${spamScore}\r\n`;
-    headers += `X-MPA-SpamDetail: ${spamDetailInfo.replace(/:/g, '-')}\r\n`;
+    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${sanitizeHeaderValue(HOSTNAME)}\r\n`;
+    headers += `X-MPA-Msgid: ${sanitizeHeaderValue(destMessageName)}\r\n`;
+    headers += `X-MPA-SpamReason: ${sanitizeHeaderValue(quarantineReasons.join('; '))}\r\n`;
+    headers += `X-MPA-SpamScore: ${sanitizeHeaderValue(spamScore)}\r\n`;
+    headers += `X-MPA-SpamDetail: ${sanitizeHeaderValue(spamDetailInfo.replace(/:/g, '-'))}\r\n`;
     if (country) {
-      headers += `X-MPA-Country: ${country}\r\n`;
+      headers += `X-MPA-Country: ${sanitizeHeaderValue(country)}\r\n`;
     }    
     fs.writeFileSync(messagePath, headers + HEADER_SEPARATOR + body, 'utf8');
     tools.logData(`Updated email headers with quarantine reasons`);
@@ -175,7 +190,7 @@ async function markAsJunkMail(messagePath, spamScore, spamDetailInfo) {
 
     const score = Number(spamScore) || 0;
     const required = THRESHOLD_QUARANTINE;
-    const details = String(spamDetailInfo || '').replace(/[\r\n]+/g, ' ').trim();
+    const details = sanitizeHeaderValue(spamDetailInfo);
     const starCount = Math.max(0, Math.floor(score));
 
     headers += `\r\nX-Spam-Flag: YES\r\n`;
