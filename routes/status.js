@@ -247,10 +247,10 @@ router.get('/events', function(req, res) {
 router.post('/api/purge', function(req, res) {
   try {
     purgeOldFiles();
-    tools.logData('Auto-purge triggered from status page');
+    tools.logData('Auto-purge triggered from status page', 'INFO', req.ip || req.socket.remoteAddress || '127.0.0.1');
     res.json({ success: true, message: 'Purge completed' });
   } catch (err) {
-    tools.logError(`Auto-purge failed: ${err.message}`);
+    tools.logError(`Auto-purge failed: ${err.message}`, req.ip || req.socket.remoteAddress || '127.0.0.1');
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -258,10 +258,10 @@ router.post('/api/purge', function(req, res) {
 router.post('/api/reset-stats', function(req, res) {
   try {
     metrics.resetMetrics();
-    tools.logData('Stats reset from status page');
+    tools.logData('Stats reset from status page', 'INFO', req.ip || req.socket.remoteAddress || '127.0.0.1');
     res.json({ success: true, message: 'Stats reset to zero' });
   } catch (err) {
-    tools.logError(`Stats reset failed: ${err.message}`);
+    tools.logError(`Stats reset failed: ${err.message}`, req.ip || req.socket.remoteAddress || '127.0.0.1');
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -272,10 +272,10 @@ router.post('/api/capture-live', function(req, res) {
     const message = state.armed
       ? `Live email capture armed: next ${state.limit} emails will be archived`
       : 'Live email capture stopped';
-    tools.logData(`Live capture toggled from status page: ${message}`);
+    tools.logData(`Live capture toggled from status page: ${message}`, 'INFO', req.ip || req.socket.remoteAddress || '127.0.0.1');
     res.json({ success: true, message, state });
   } catch (err) {
-    tools.logError(`Live capture toggle failed: ${err.message}`);
+    tools.logError(`Live capture toggle failed: ${err.message}`, req.ip || req.socket.remoteAddress || '127.0.0.1');
     res.status(500).json({ success: false, message: err.message });
   }
 });

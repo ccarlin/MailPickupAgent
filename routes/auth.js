@@ -49,15 +49,16 @@ router.get('/login', (req, res) => {
 
 router.post('/login', loginLimiter, (req, res) => {
   const { username, password, identifier } = req.body;
+  const clientIp = (req.ip || req.socket.remoteAddress || '127.0.0.1').replace(/^\[|\]$/g, '').split(',')[0].trim() || '127.0.0.1';
   if (username === validUser && verifyPassword(password, validPassHash)) {
     return req.session.regenerate((err) => {
       if (err) {
-        tools.logError('Error regenerating session on login: ' + err.message);
+        tools.logError('Error regenerating session on login: ' + err.message, clientIp);
         return res.status(500).render('login', { error: 'Login failed, please try again.' });
       }
       req.session.authenticated = true;
       req.session.loginMeta = {
-        ip: req.ip || req.socket.remoteAddress || 'unknown',
+        ip: clientIp,
         userAgent: (req.get('User-Agent') || 'unknown').slice(0, 250),
         loginTime: new Date().toISOString(),
         identifier: (identifier || '').trim() || undefined
@@ -65,6 +66,7 @@ router.post('/login', loginLimiter, (req, res) => {
       return res.redirect('/');
     });
   }
+  tools.logError(`Failed login attempt for username "${String(username || '').trim() || 'unknown'}" from IP ${clientIp}`, clientIp);
   res.render('login', { error: 'Invalid username or password' });
 });
 

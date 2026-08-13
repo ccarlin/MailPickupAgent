@@ -30,10 +30,10 @@ router.post('/:id/delete', function(req, res) {
   }
   try {
     notifications.deleteById(id);
-    tools.logData(`Notification subscription ${id} deleted by admin`);
+    tools.logData(`Notification subscription ${id} deleted by admin`, 'INFO', req.ip || req.socket.remoteAddress || '127.0.0.1');
     res.redirect('/notificationsAdmin');
   } catch (err) {
-    tools.logError(`Error deleting subscription ${id}: ${err.message}`);
+    tools.logError(`Error deleting subscription ${id}: ${err.message}`, req.ip || req.socket.remoteAddress || '127.0.0.1');
     res.status(500).json({ error: 'Failed to delete subscription' });
   }
 });
