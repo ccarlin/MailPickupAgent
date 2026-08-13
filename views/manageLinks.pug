@@ -226,6 +226,7 @@ block content
       .generate-section
         h2(style="margin:0 0 12px 0;font-size:1rem;color:#334155;") Generate New Link
         form(method="POST" action="/manageLinks")
+          input(type='hidden' name='_csrf' value=csrfToken)
           label(for="email") Email Address
           .input-row
             input#email(type="email" name="email" placeholder="user@example.com" value=email || '' required)
@@ -271,6 +272,7 @@ block content
                   td= k.usage_count || 0
                   td
                     form(method="POST" action=`/manageLinks/delete/${k.id}` onsubmit="return confirm('Revoke this key?')")
+                      input(type='hidden' name='_csrf' value=csrfToken)
                       button.btn-delete(type="submit") Revoke
         else
           .no-keys No access keys have been created yet.

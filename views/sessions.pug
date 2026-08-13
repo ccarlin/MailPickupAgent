@@ -127,6 +127,7 @@ block content
                                         html += '<a href="/logout" class="logout-link">Logout</a>';
                                     } else {
                                         html += '<form method="POST" action="/sessions/' + encodeURIComponent(sid) + '/destroy" onsubmit="return confirm(\'Force logout this user? Their session will be destroyed immediately.\')" style="margin:0;">';
+                                        html += '<input type="hidden" name="_csrf" value="' + (window.CSRF_TOKEN || '') + '">';
                                         html += '<button type="submit" class="action-btn">Force Logout</button>';
                                         html += '</form>';
                                     }

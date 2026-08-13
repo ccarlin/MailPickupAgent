@@ -93,6 +93,7 @@ html(lang='en')
       if error
         .error= error
       form(method='POST', action='/login')
+        input(type='hidden', name='_csrf', value=csrfToken)
         .form-group
           label(for='username') Username
           input#username(type='text', name='username', placeholder='Enter username', required, autofocus)

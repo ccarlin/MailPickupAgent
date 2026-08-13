@@ -65,6 +65,10 @@ app.use(session({
   }
 }));
 
+// CSRF protection — session-based synchronizer token. Protects all unsafe
+// methods (POST/PUT/PATCH/DELETE) including login. See middleware/csrf.js.
+app.use(require('./middleware/csrf'));
+
 // Make env info available to all views
 app.use((req, res, next) => {
   res.locals.envLabel = appConfig.NODE_ENV || 'production';

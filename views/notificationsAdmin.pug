@@ -116,6 +116,7 @@ block content
                                 formatter: function(cell, row) {
                                     var id = row.cells[0].data;
                                     var html = '<form method="POST" action="/notificationsAdmin/' + encodeURIComponent(id) + '/delete" onsubmit="return confirm(\'Remove this notification subscription? The browser will no longer receive push notifications.\')" style="margin:0;">';
+                                    html += '<input type="hidden" name="_csrf" value="' + (window.CSRF_TOKEN || '') + '">';
                                     html += '<button type="submit" class="action-btn">Remove</button>';
                                     html += '</form>';
                                     return gridjs.html(html);

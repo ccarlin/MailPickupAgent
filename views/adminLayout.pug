@@ -374,6 +374,77 @@ html(lang='en')
         }
       }
     
+    script!= "window.CSRF_TOKEN = " + JSON.stringify(csrfToken) + ";"
+    script.
+      // CSRF bootstrap: expose the per-session token and auto-inject it into
+      // same-origin unsafe requests (fetch, XHR/jQuery, dynamic form.submit()).
+      // The token value is set by the script!= line above.
+      (function () {
+        var csrfToken = window.CSRF_TOKEN;
+        if (!csrfToken) return;
+
+        function isUnsafeSameOrigin(url, method) {
+          try {
+            var u = new URL(url, window.location.href);
+            if (u.origin !== window.location.origin) return false;
+          } catch (e) { return false; }
+          var m = String(method || 'GET').toUpperCase();
+          return m !== 'GET' && m !== 'HEAD' && m !== 'OPTIONS';
+        }
+
+        // fetch()
+        var origFetch = window.fetch;
+        if (origFetch) {
+          window.fetch = function (input, init) {
+            init = init || {};
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var method = init.method || (input && input.method) || 'GET';
+            if (isUnsafeSameOrigin(url, method)) {
+              if (typeof Headers !== 'undefined' && init.headers instanceof Headers) {
+                init.headers.set('X-CSRF-Token', csrfToken);
+              } else {
+                init.headers = Object.assign({}, init.headers, { 'X-CSRF-Token': csrfToken });
+              }
+            }
+            return origFetch.call(this, input, init);
+          };
+        }
+
+        // XMLHttpRequest (covers jQuery $.post/$.ajax and any other XHR)
+        var origXhrOpen = XMLHttpRequest.prototype.open;
+        var origXhrSetHeader = XMLHttpRequest.prototype.setRequestHeader;
+        var origXhrSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function (method, url) {
+          this.__csrfUrl = url;
+          this.__csrfMethod = method;
+          return origXhrOpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+          if (String(name).toLowerCase() === 'x-csrf-token') this.__csrfHeaderSet = true;
+          return origXhrSetHeader.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function () {
+          if (!this.__csrfHeaderSet && isUnsafeSameOrigin(this.__csrfUrl, this.__csrfMethod)) {
+            origXhrSetHeader.call(this, 'X-CSRF-Token', csrfToken);
+          }
+          return origXhrSend.apply(this, arguments);
+        };
+
+        // form.submit() — covers forms built dynamically (createElement / string)
+        var origFormSubmit = HTMLFormElement.prototype.submit;
+        HTMLFormElement.prototype.submit = function () {
+          var m = String(this.method || 'get').toUpperCase();
+          if (m !== 'GET' && m !== 'HEAD' && m !== 'OPTIONS' &&
+              this.querySelector && !this.querySelector('input[name="_csrf"]')) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '_csrf';
+            input.value = csrfToken;
+            this.appendChild(input);
+          }
+          return origFormSubmit.call(this);
+        };
+      })();
     script(src='/scripts/notifications.js')
     script.
       function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
