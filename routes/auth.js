@@ -63,6 +63,7 @@ router.post('/login', loginLimiter, (req, res) => {
         loginTime: new Date().toISOString(),
         identifier: (identifier || '').trim() || undefined
       };
+      tools.logData(`Successful login for username "${String(username || '').trim() || 'unknown'}" from IP ${clientIp}`, 'INFO', clientIp);
       return res.redirect('/');
     });
   }
