@@ -331,7 +331,7 @@ block content
                             statusEl.textContent = 'Email found in ' + result.type + ' directory';
                             statusEl.className = 'info-email-status found';
                             if (result.reason) {
-                                reasonEl.innerHTML = '<div class="info-reason-box"><strong>Spam Reason:</strong> ' + result.reason.replace(/</g, '&lt;') + '</div>';
+                                reasonEl.innerHTML = '<div class="info-reason-box"><strong>Spam Reason:</strong> ' + escHtml(result.reason) + '</div>';
                             } else {
                                 reasonEl.innerHTML = '<div class="info-reason-box"><strong>Spam Reason:</strong> Not available</div>';
                             }

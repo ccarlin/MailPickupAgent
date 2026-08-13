@@ -66,7 +66,7 @@ block content
             var allData = subscriptions.map(function(s) {
                 var sub = JSON.parse(s.subscription);
                 var endpoint = sub.endpoint || 'unknown';
-                var filterDisplay = s.email_filter ? '<span class="badge-filter">' + String(s.email_filter).replace(/</g, '&lt;') + '</span>' : '<span class="badge-all">All</span>';
+                var filterDisplay = s.email_filter ? '<span class="badge-filter">' + escHtml(s.email_filter) + '</span>' : '<span class="badge-all">All</span>';
                 var ip = s.ip_address || '—';
                 return [s.id, endpoint, filterDisplay, ip, s.created_at];
             });

@@ -50,14 +50,20 @@ router.get('/login', (req, res) => {
 router.post('/login', loginLimiter, (req, res) => {
   const { username, password, identifier } = req.body;
   if (username === validUser && verifyPassword(password, validPassHash)) {
-    req.session.authenticated = true;
-    req.session.loginMeta = {
-      ip: req.ip || req.socket.remoteAddress || 'unknown',
-      userAgent: (req.get('User-Agent') || 'unknown').slice(0, 250),
-      loginTime: new Date().toISOString(),
-      identifier: (identifier || '').trim() || undefined
-    };
-    return res.redirect('/');
+    req.session.regenerate((err) => {
+      if (err) {
+        tools.logError('Error regenerating session on login: ' + err.message);
+        return res.status(500).render('login', { error: 'Login failed, please try again.' });
+      }
+      req.session.authenticated = true;
+      req.session.loginMeta = {
+        ip: req.ip || req.socket.remoteAddress || 'unknown',
+        userAgent: (req.get('User-Agent') || 'unknown').slice(0, 250),
+        loginTime: new Date().toISOString(),
+        identifier: (identifier || '').trim() || undefined
+      };
+      return res.redirect('/');
+    });
   }
   res.render('login', { error: 'Invalid username or password' });
 });

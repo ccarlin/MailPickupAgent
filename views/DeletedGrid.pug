@@ -262,7 +262,7 @@ block content
                     .then(function(r) { return r.json(); })
                     .then(function(result) {
                         var reason = result.reason || 'Not available';
-                        document.getElementById('infoModalReason').innerHTML = '<strong>Spam Reason:</strong> ' + reason.replace(/</g, '&lt;');
+                        document.getElementById('infoModalReason').innerHTML = '<strong>Spam Reason:</strong> ' + escHtml(reason);
                     })
                     .catch(function() {
                         document.getElementById('infoModalReason').innerHTML = '<strong>Spam Reason:</strong> <em>Not available</em>';
