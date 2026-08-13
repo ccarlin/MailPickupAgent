@@ -50,7 +50,7 @@ router.get('/login', (req, res) => {
 router.post('/login', loginLimiter, (req, res) => {
   const { username, password, identifier } = req.body;
   if (username === validUser && verifyPassword(password, validPassHash)) {
-    req.session.regenerate((err) => {
+    return req.session.regenerate((err) => {
       if (err) {
         tools.logError('Error regenerating session on login: ' + err.message);
         return res.status(500).render('login', { error: 'Login failed, please try again.' });
