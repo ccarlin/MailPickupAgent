@@ -37,6 +37,7 @@
 
   "PROCESSING_LOG": "./logs",
   "QUARANTINE_LOG": "./logs",
+  "CURRENT_LOG_FILE": "./mailpickup.log",
 
   "PURGE_EMAIL_AFTER_DAYS": 30,
   "PURGE_LOG_AFTER_DAYS": 30,

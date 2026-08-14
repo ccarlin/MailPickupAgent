@@ -109,6 +109,14 @@ function validateConfig() {
     warnings.push('AUTH_SECRET is still set to the default value — generate a random secret if enabling remote authentication');
   }
 
+  // --- Current log file check (warnings only) ---
+  const currentLogFile = config.CURRENT_LOG_FILE;
+  if (!currentLogFile) {
+    warnings.push('CURRENT_LOG_FILE is not set — the Current Log popup will not be available');
+  } else if (!fs.existsSync(currentLogFile)) {
+    warnings.push(`CURRENT_LOG_FILE "${currentLogFile}" does not exist — the Current Log popup will be empty until the pickup script runs`);
+  }
+
   // --- Cert + default password check ---
   if (config.CERT_PATH) {
     const pwHash = config.AUTH_PASSWORD_HASH;
