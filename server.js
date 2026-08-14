@@ -394,23 +394,12 @@ initializeConfiguration();
 
 // Start the server
 function startServer(protocol) {
-  tools.logData(`Server is running on ${protocol}://localhost:${PORT}`);
-  tools.logData(`Configuration loaded at startup`);
-  tools.logData(`Open ${protocol}://localhost:${PORT}/ to access the admin interface.`);
+  tools.logData(`Mail Pickup Agent server [v${version}] started on ${protocol}://localhost:${PORT}`);
   if (appConfig.CERT_PATH) {
     tools.logData(`Authentication is enabled. Log in with the configured credentials.`);
   } else {
     tools.logData(`Authentication is disabled for local connections.`);
   }
-  tools.logData(`API endpoints available:`);
-  tools.logData(`  GET  /health`);
-  tools.logData(`  GET  /api/help`);
-  tools.logData(`  GET  /api/config`);
-  tools.logData(`  GET  /api/test-emails`);
-  tools.logData(`  POST /api/process`);
-  tools.logData(`  GET  /api/spam-reason/:type/:id`);
-  tools.logData(`  GET  /api/email-lookup/:id`);
-  tools.logData(`  POST /api/wipeall`);
 }
 
 if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
