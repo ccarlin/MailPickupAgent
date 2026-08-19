@@ -8,11 +8,11 @@ block css
         .endpoint-cell {
             font-size: 12px;
             color: #64748b;
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: inline-block;
+            display: block;
+            width: 100%;
+            white-space: normal;
+            overflow: visible;
+            word-break: break-word;
             vertical-align: middle;
         }
         .badge-filter {
@@ -66,9 +66,9 @@ block content
             var allData = subscriptions.map(function(s) {
                 var sub = JSON.parse(s.subscription);
                 var endpoint = sub.endpoint || 'unknown';
-                var filterDisplay = s.email_filter ? '<span class="badge-filter">' + String(s.email_filter).replace(/</g, '&lt;') + '</span>' : '<span class="badge-all">All</span>';
+                var filterValue = s.email_filter || 'All';
                 var ip = s.ip_address || '—';
-                return [s.id, endpoint, filterDisplay, ip, s.created_at];
+                return [s.id, endpoint, filterValue, ip, s.created_at];
             });
 
             var grid = null;
@@ -96,7 +96,8 @@ block content
                                 width: '140px',
                                 sort: true,
                                 formatter: function(cell) {
-                                    return gridjs.html('<span>' + escHtml(cell) + '</span>');
+                                    var display = (!cell || cell === 'All') ? '<span class="badge-all">All</span>' : '<span class="badge-filter">' + escHtml(cell) + '</span>';
+                                    return gridjs.html(display);
                                 }
                             },
                             {
@@ -116,6 +117,7 @@ block content
                                 formatter: function(cell, row) {
                                     var id = row.cells[0].data;
                                     var html = '<form method="POST" action="/notificationsAdmin/' + encodeURIComponent(id) + '/delete" onsubmit="return confirm(\'Remove this notification subscription? The browser will no longer receive push notifications.\')" style="margin:0;">';
+                                    html += '<input type="hidden" name="_csrf" value="' + (window.CSRF_TOKEN || '') + '">';
                                     html += '<button type="submit" class="action-btn">Remove</button>';
                                     html += '</form>';
                                     return gridjs.html(html);

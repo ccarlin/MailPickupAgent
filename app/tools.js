@@ -66,13 +66,13 @@ module.exports = {
       let newText = text.charAt(0).toUpperCase() + text.slice(1);
       return newText;
     },
-    logError: function(data) {
-        this.logData(data, "ERROR");
+    logError: function(data, ipAddress) {
+        this.logData(data, "ERROR", ipAddress);
     },
-    logWarn: function(data) {
-      this.logData(data, "WARN");
+    logWarn: function(data, ipAddress) {
+      this.logData(data, "WARN", ipAddress);
     },
-    logData: function(data, level) {
+    logData: function(data, level, ipAddress) {
       let message;
 
       if (!level)
@@ -81,8 +81,18 @@ module.exports = {
       if (data == null)
         data = "";
 
+      const normalizedIp = (() => {
+        let candidate = (ipAddress == null ? "127.0.0.1" : String(ipAddress)).trim();
+        if (!candidate) return "127.0.0.1";
+        candidate = candidate.replace(/^\[|\]$/g, '').split(',')[0].trim();
+        if (!candidate) return "127.0.0.1";
+        if (candidate === "::1" || candidate === "::") return "127.0.0.1";
+        if (candidate.startsWith('::ffff:') && candidate.includes('.')) return candidate.replace(/^::ffff:/, '');
+        return candidate;
+      })();
+
       let timestamp = new Date().toLocaleString();
-      message = `${timestamp}\t[${level}]\tPID: ${process.pid}, IP: N/A\t${data}`;
+      message = `${timestamp}\t[${level}]\tPID: ${process.pid}, IP: ${normalizedIp}\t${data}`;
 
       //Don't log debug messages unless debugging..
       if (level == "ERROR") {

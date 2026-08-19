@@ -114,7 +114,7 @@ router.post('/action', async function(req, res) {
     let mailLog = quarentineLogPath();
 
     let data = Object.entries(bodyPostBack);
-    tools.logData(`Received action ${action} data_dump: ${data.join(', ')}`, "INFO");
+    tools.logData(`Received action ${action} data_dump: ${data.join(', ')}`, "INFO", req.ip || req.socket.remoteAddress || '127.0.0.1');
     let email = {};
     
     email.reason = reasonText(action);
@@ -235,8 +235,13 @@ router.get('/', function(req, res) {
         res.clearCookie("MailQUserFilter");
     }
     else if (filterUser) {
-        res.cookie("MailQUserFilter", filterUser, { maxAge: 1000 * 60 * 1440 * 365 });
-        tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO", req.socket.remoteAddress);
+        res.cookie("MailQUserFilter", filterUser, {
+            maxAge: 1000 * 60 * 1440 * 365,
+            httpOnly: true,
+            secure: !!(config.CERT_PATH && config.CERT_KEY_PATH),
+            sameSite: 'lax'
+        });
+        tools.logData(`Mail Queue applying filter for user: ${filterUser}`, "INFO", req.ip || req.socket.remoteAddress || '127.0.0.1');
     }
     else if (req.cookies.MailQUserFilter) {
         // Use existing cookie value if no filter provided in query

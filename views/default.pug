@@ -6,4 +6,5 @@ block css
 block content
               
     form(action='/SMTPLog', method="POST")
+        input(type='hidden', name='_csrf', value=csrfToken)
         div Select a menu item on the left.

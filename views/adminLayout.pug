@@ -373,7 +373,135 @@ html(lang='en')
           transform: none; /* Reset icon rotation */
         }
       }
+
+      /* Current Log popup modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-overlay.show {
+        display: flex;
+      }
+      .modal-box {
+        background: #fff;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 1100px;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      .modal-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        font-size: 15px;
+        color: #1e293b;
+      }
+      .modal-header button {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #666;
+      }
+      .modal-header button:hover {
+        color: #111;
+      }
+      .modal-body {
+        padding: 18px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #334155;
+      }
     
+    script!= "window.CSRF_TOKEN = " + JSON.stringify(csrfToken) + ";"
+    script.
+      // CSRF bootstrap: expose the per-session token and auto-inject it into
+      // same-origin unsafe requests (fetch, XHR/jQuery, dynamic form.submit()).
+      // The token value is set by the script!= line above.
+      (function () {
+        var csrfToken = window.CSRF_TOKEN;
+        if (!csrfToken) return;
+
+        function isUnsafeSameOrigin(url, method) {
+          try {
+            var u = new URL(url, window.location.href);
+            if (u.origin !== window.location.origin) return false;
+          } catch (e) { return false; }
+          var m = String(method || 'GET').toUpperCase();
+          return m !== 'GET' && m !== 'HEAD' && m !== 'OPTIONS';
+        }
+
+        // fetch()
+        var origFetch = window.fetch;
+        if (origFetch) {
+          window.fetch = function (input, init) {
+            init = init || {};
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var method = init.method || (input && input.method) || 'GET';
+            if (isUnsafeSameOrigin(url, method)) {
+              if (typeof Headers !== 'undefined' && init.headers instanceof Headers) {
+                init.headers.set('X-CSRF-Token', csrfToken);
+              } else {
+                init.headers = Object.assign({}, init.headers, { 'X-CSRF-Token': csrfToken });
+              }
+            }
+            return origFetch.call(this, input, init);
+          };
+        }
+
+        // XMLHttpRequest (covers jQuery $.post/$.ajax and any other XHR)
+        var origXhrOpen = XMLHttpRequest.prototype.open;
+        var origXhrSetHeader = XMLHttpRequest.prototype.setRequestHeader;
+        var origXhrSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function (method, url) {
+          this.__csrfUrl = url;
+          this.__csrfMethod = method;
+          return origXhrOpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+          if (String(name).toLowerCase() === 'x-csrf-token') this.__csrfHeaderSet = true;
+          return origXhrSetHeader.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function () {
+          if (!this.__csrfHeaderSet && isUnsafeSameOrigin(this.__csrfUrl, this.__csrfMethod)) {
+            origXhrSetHeader.call(this, 'X-CSRF-Token', csrfToken);
+          }
+          return origXhrSend.apply(this, arguments);
+        };
+
+        // form.submit() — covers forms built dynamically (createElement / string)
+        var origFormSubmit = HTMLFormElement.prototype.submit;
+        HTMLFormElement.prototype.submit = function () {
+          var m = String(this.method || 'get').toUpperCase();
+          if (m !== 'GET' && m !== 'HEAD' && m !== 'OPTIONS' &&
+              this.querySelector && !this.querySelector('input[name="_csrf"]')) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '_csrf';
+            input.value = csrfToken;
+            this.appendChild(input);
+          }
+          return origFormSubmit.call(this);
+        };
+      })();
     script(src='/scripts/notifications.js')
     script.
       function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -413,6 +541,47 @@ html(lang='en')
         leftColumnToggleContainer.addEventListener('click', function() {
           leftColumn.classList.toggle('collapsed');
           localStorage.setItem('leftColumnCollapsed', leftColumn.classList.contains('collapsed'));
+        });
+      });
+    script.
+      // Current Log popup — fetch the log file (entries reversed, multi-line
+      // entries kept in order) and show it in a modal when a [data-log-popup]
+      // link is clicked.
+      document.addEventListener('DOMContentLoaded', function() {
+        const logPopupModal = document.getElementById('logPopupModal');
+        const logPopupContent = document.getElementById('logPopupContent');
+        const logPopupCloseBtn = document.getElementById('logPopupCloseBtn');
+        if (!logPopupModal || !logPopupContent || !logPopupCloseBtn) return;
+
+        function closeLogPopup() {
+          logPopupModal.classList.remove('show');
+        }
+
+        logPopupCloseBtn.addEventListener('click', closeLogPopup);
+        logPopupModal.addEventListener('click', function(e) {
+          if (e.target === logPopupModal) closeLogPopup();
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') closeLogPopup();
+        });
+
+        document.addEventListener('click', function(e) {
+          const link = e.target.closest('[data-log-popup]');
+          if (!link) return;
+          e.preventDefault();
+          logPopupContent.textContent = 'Loading...';
+          logPopupModal.classList.add('show');
+          fetch(link.getAttribute('href'))
+            .then(function(r) {
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              return r.text();
+            })
+            .then(function(text) {
+              logPopupContent.textContent = text || '(log is empty)';
+            })
+            .catch(function(err) {
+              logPopupContent.textContent = 'Failed to load log: ' + err.message;
+            });
         });
       });
   
@@ -481,6 +650,10 @@ html(lang='en')
                 onclick="window.open('/smtplog?today=true', '_blank'); return false;"
               )
               span SMTP Log       
+          li.menu-item
+            a(href='/currentLog' data-log-popup title="Current Log")
+              i.fas.fa-file-lines(title="Current Log" style="width:22px; height:22px; vertical-align:middle; margin-right:8px; font-size:20px; cursor:pointer;")
+              span Current Log
           li.menu-separator
             hr
           li.menu-item
@@ -532,4 +705,10 @@ html(lang='en')
         block content
     footer.footer
       | Mail Pickup Agent &middot; v<span id="footer-version">#{version}</span> &middot; Designed by Chuck Carlin 
+    #logPopupModal.modal-overlay
+      .modal-box
+        .modal-header
+          span Current Log File
+          button#logPopupCloseBtn(type="button" aria-label="Close") &times;
+        .modal-body#logPopupContent Loading...
       

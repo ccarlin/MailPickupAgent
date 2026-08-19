@@ -58,10 +58,10 @@ router.post('/:sid/destroy', async (req, res) => {
   await new Promise((resolve) => {
     store.destroy(targetSid, (err) => {
       if (err) {
-        tools.logError(`Error destroying session ${targetSid}: ${err.message}`);
+        tools.logError(`Error destroying session ${targetSid}: ${err.message}`, req.ip || req.socket.remoteAddress || '127.0.0.1');
         resolve(false);
       } else {
-        tools.logData(`Session ${targetSid} destroyed by ${req.sessionID}`);
+        tools.logData(`Session ${targetSid} destroyed by ${req.sessionID}`, 'INFO', req.ip || req.socket.remoteAddress || '127.0.0.1');
         resolve(true);
       }
     });

@@ -65,6 +65,10 @@ app.use(session({
   }
 }));
 
+// CSRF protection — session-based synchronizer token. Protects all unsafe
+// methods (POST/PUT/PATCH/DELETE) including login. See middleware/csrf.js.
+app.use(require('./middleware/csrf'));
+
 // Make env info available to all views
 app.use((req, res, next) => {
   res.locals.envLabel = appConfig.NODE_ENV || 'production';
@@ -131,6 +135,7 @@ app.use('/sessions', require('./routes/sessions'));
 app.use('/notifications', require('./routes/notifications'));
 app.use('/notificationsAdmin', require('./routes/notificationsAdmin'));
 app.use('/configHistory', require('./routes/configHistory'));
+app.use('/currentLog', require('./routes/currentLog'));
 
 // Configuration loaded at startup
 let config = {
@@ -161,6 +166,7 @@ function initializeConfiguration() {
   config.settings = {
     quarantineDir: appConfig.QUARANTINE_DIR,
     deletedDir: appConfig.DELETED_DIR,
+    archiveDir: appConfig.ARCHIVE_DIR,
     smtpHost: appConfig.SMTP_HOST,
     smtpPort: appConfig.SMTP_PORT,
     spamAssassinEnabled: appConfig.SPAMASSASSIN_ENABLED,
@@ -168,7 +174,7 @@ function initializeConfiguration() {
   };
 
   // Ensure required directories exist
-  [appConfig.QUARANTINE_DIR, appConfig.DELETED_DIR, appConfig.PROCESSING_LOG, appConfig.QUARANTINE_LOG].forEach(dir => {
+  [appConfig.QUARANTINE_DIR, appConfig.DELETED_DIR, appConfig.ARCHIVE_DIR, appConfig.PROCESSING_LOG, appConfig.QUARANTINE_LOG].forEach(dir => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
       tools.logData(`Created directory: ${dir}`);
@@ -389,23 +395,12 @@ initializeConfiguration();
 
 // Start the server
 function startServer(protocol) {
-  tools.logData(`Server is running on ${protocol}://localhost:${PORT}`);
-  tools.logData(`Configuration loaded at startup`);
-  tools.logData(`Open ${protocol}://localhost:${PORT}/ to access the admin interface.`);
+  tools.logData(`Mail Pickup Agent server [v${version}] started on ${protocol}://localhost:${PORT}`);
   if (appConfig.CERT_PATH) {
     tools.logData(`Authentication is enabled. Log in with the configured credentials.`);
   } else {
     tools.logData(`Authentication is disabled for local connections.`);
   }
-  tools.logData(`API endpoints available:`);
-  tools.logData(`  GET  /health`);
-  tools.logData(`  GET  /api/help`);
-  tools.logData(`  GET  /api/config`);
-  tools.logData(`  GET  /api/test-emails`);
-  tools.logData(`  POST /api/process`);
-  tools.logData(`  GET  /api/spam-reason/:type/:id`);
-  tools.logData(`  GET  /api/email-lookup/:id`);
-  tools.logData(`  POST /api/wipeall`);
 }
 
 if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {

@@ -194,7 +194,7 @@ block content
             function fmtCell(cell, row) {
                 var isDanger = row.cells[11].data;
                 if (isDanger) {
-                    return gridjs.html('<span style="color:#dc2626;">' + String(cell).replace(/</g, '&lt;') + '</span>');
+                    return gridjs.html('<span style="color:#dc2626;">' + escHtml(cell) + '</span>');
                 }
                 return String(cell);
             }
@@ -228,7 +228,7 @@ block content
                                     if (blocked) cls += 'blocked-ip ';
                                     if (isDanger) cls += 'danger-row ';
                                     if (cls) {
-                                        return gridjs.html('<span class="' + cls.trim() + '">' + String(cell).replace(/</g, '&lt;') + '</span>');
+                                        return gridjs.html('<span class="' + cls.trim() + '">' + escHtml(cell) + '</span>');
                                     }
                                     return String(cell);
                                 }

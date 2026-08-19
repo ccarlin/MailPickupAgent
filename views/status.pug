@@ -227,6 +227,34 @@ block css
       background: #fef2f2;
       border-color: #fca5a5;
     }
+    .capture-btn {
+      background: none;
+      border: 1px solid #e2e8f0;
+      color: #3b82f6;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .capture-btn:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+    }
+    .capture-btn.capturing {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+    }
+    #status-header .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
 
     #ai-test-modal,
     #sa-test-modal,
@@ -316,9 +344,13 @@ block content
           span#connection-text Connecting...
         .last-update
           | Last updated: <span id="last-update-time">--</span>
-      button.reset-stats-btn#btn-reset-stats(title="Reset all metrics to zero")
-        i.fas.fa-undo-alt
-        | Reset Stats
+      .header-right
+        button.capture-btn#btn-capture-live(title="Toggle archiving copies of the next 5 emails as they arrive")
+          i.fas.fa-camera
+          span#capture-btn-label Capture Live Email (5)
+        button.reset-stats-btn#btn-reset-stats(title="Reset all metrics to zero")
+          i.fas.fa-undo-alt
+          | Reset Stats
     .status-grid
       .status-card.total.clickable#card-total
         .icon
@@ -520,9 +552,22 @@ block scripts
       }
       $('#last-update-time').text(new Date().toLocaleTimeString());
       if (data.version) $('#footer-version').text(data.version);
+      if (data.captureLimit !== undefined) {
+        updateCaptureUI({ armed: data.captureArmed, captured: data.captureCount, limit: data.captureLimit });
+      }
       $('#server-offline').hide();
       $('#status-content').show();
       changeIcon(data.pending);
+    }
+
+    function updateCaptureUI(state) {
+      if (state.armed) {
+        $('#btn-capture-live').addClass('capturing');
+        $('#capture-btn-label').text('Capturing Live (' + state.captured + '/' + state.limit + ')');
+      } else {
+        $('#btn-capture-live').removeClass('capturing');
+        $('#capture-btn-label').text('Capture Live Email (' + state.limit + ')');
+      }
     }
 
     function updateMetricUI(data) {
@@ -551,6 +596,9 @@ block scripts
       if (data.avgProcessTime !== undefined) {
         $('#count-process-time').text(formatMs(data.avgProcessTime));
         $('#sub-process-time').text('(' + data.processCount + ' emails)');
+      }
+      if (data.captureLimit !== undefined) {
+        updateCaptureUI({ armed: data.captureArmed, captured: data.captureCount, limit: data.captureLimit });
       }
       $('#last-update-time').text(new Date().toLocaleTimeString());
 
@@ -800,6 +848,13 @@ block scripts
             alert('Failed to reset stats.');
           });
         }
+      });
+      $('#btn-capture-live').on('click', function() {
+        $.post('/status/api/capture-live').done(function(data) {
+          if (data.state) updateCaptureUI(data.state);
+        }).fail(function() {
+          alert('Failed to toggle live email capture.');
+        });
       });
       if (localStorage.getItem('autoPurge') === 'true') {
         updatePurgeCard(true);

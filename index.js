@@ -18,6 +18,7 @@ const { recordHit } = require('./app/ruleHits');
 
 const QUARANTINE_DIR = config.QUARANTINE_DIR;
 const DELETED_DIR = config.DELETED_DIR;
+const ARCHIVE_DIR = config.ARCHIVE_DIR;
 const SMTP_HOST = config.SMTP_HOST;
 const SMTP_PORT = config.SMTP_PORT;
 const RULES_FILE = './config/rules.json';
@@ -41,6 +42,53 @@ function purgeExpiredCacheEntries() {
     if (timestamp < cutoff) recentlyReleased.delete(id);
   }
 }
+
+// Live email capture — archives a COPY of the next CAPTURE_LIMIT emails as they arrive
+const CAPTURE_LIMIT = 5;
+const captureState = { armed: false, captured: 0 };
+
+function getLiveCaptureState() {
+  return { armed: captureState.armed, captured: captureState.captured, limit: CAPTURE_LIMIT };
+}
+
+function armLiveCapture() {
+  captureState.armed = true;
+  captureState.captured = 0;
+  tools.logData(`Live email capture armed: next ${CAPTURE_LIMIT} emails will be archived to ${ARCHIVE_DIR}`);
+  return getLiveCaptureState();
+}
+
+function stopLiveCapture() {
+  captureState.armed = false;
+  tools.logData('Live email capture stopped');
+  return getLiveCaptureState();
+}
+
+function toggleLiveCapture() {
+  return captureState.armed ? stopLiveCapture() : armLiveCapture();
+}
+
+function captureLiveEmail(controlFilePath, messagePath) {
+  if (!captureState.armed || captureState.captured >= CAPTURE_LIMIT) return;
+  try {
+    if (!fs.existsSync(ARCHIVE_DIR)) {
+      fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
+    }
+    const controlName = path.basename(controlFilePath).replace(/\.MAI$/i, '.H00');
+    const messageName = path.basename(messagePath);
+    fs.copyFileSync(controlFilePath, path.join(ARCHIVE_DIR, controlName));
+    fs.copyFileSync(messagePath, path.join(ARCHIVE_DIR, messageName));
+    captureState.captured++;
+    tools.logData(`Captured live email ${messageName} to ${ARCHIVE_DIR} (${captureState.captured}/${CAPTURE_LIMIT})`);
+    if (captureState.captured >= CAPTURE_LIMIT) {
+      captureState.armed = false;
+      tools.logData(`Live email capture complete: ${CAPTURE_LIMIT} emails archived`);
+    }
+  } catch (err) {
+    tools.logError(`Failed to capture live email: ${err.message}`);
+  }
+}
+
 const processingLogPath = () => {
   const d = new Date();
   const y = d.getFullYear();
@@ -49,7 +97,7 @@ const processingLogPath = () => {
   return `${PROCESSING_LOG_DIR}/processing-${y}${m}${day}.log`;
 };
 
-[QUARANTINE_DIR, DELETED_DIR, PROCESSING_LOG_DIR, QUARANTINE_LOG_DIR].forEach(dir => {
+[QUARANTINE_DIR, DELETED_DIR, ARCHIVE_DIR, PROCESSING_LOG_DIR, QUARANTINE_LOG_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -88,6 +136,21 @@ function logProcessingEntry(messageId, sizeKb, ip, sender, recipients, subject, 
   }
 }
 
+// Neutralize CR/LF and other control characters before embedding a value into
+// an email header, preventing header-injection from email-derived data
+// (e.g. AI-generated reasons, SpamAssassin reports, AbuseIPDB fields).
+function sanitizeHeaderValue(value) {
+  return String(value == null ? '' : value)
+    .replace(/[\r\n]+/g, ' ')
+    .split('')
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code >= 0x20 && code !== 0x7F; // printable (incl. non-ASCII); drop DEL
+    })
+    .join('')
+    .trim();
+}
+
 async function updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, country, spamDetailInfo) {
   try {
     let message = fs.readFileSync(messagePath, 'utf8');
@@ -98,13 +161,13 @@ async function updateEmailHeaders(messagePath, destMessageName, quarantineReason
     }
     let headers = message.substring(0, headerEndIndex);
     let body = message.substring(headerEndIndex + HEADER_SEPARATOR.length);
-    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${HOSTNAME}\r\n`;
-    headers += `X-MPA-Msgid: ${destMessageName}\r\n`;
-    headers += `X-MPA-SpamReason: ${quarantineReasons.join('; ')}\r\n`;
-    headers += `X-MPA-SpamScore: ${spamScore}\r\n`;
-    headers += `X-MPA-SpamDetail: ${spamDetailInfo.replace(/:/g, '-')}\r\n`;
+    headers += `\r\nX-MPA-Scan: Scanned by MailPickupAgent 1.0 for ${sanitizeHeaderValue(HOSTNAME)}\r\n`;
+    headers += `X-MPA-Msgid: ${sanitizeHeaderValue(destMessageName)}\r\n`;
+    headers += `X-MPA-SpamReason: ${sanitizeHeaderValue(quarantineReasons.join('; '))}\r\n`;
+    headers += `X-MPA-SpamScore: ${sanitizeHeaderValue(spamScore)}\r\n`;
+    headers += `X-MPA-SpamDetail: ${sanitizeHeaderValue(spamDetailInfo.replace(/:/g, '-'))}\r\n`;
     if (country) {
-      headers += `X-MPA-Country: ${country}\r\n`;
+      headers += `X-MPA-Country: ${sanitizeHeaderValue(country)}\r\n`;
     }    
     fs.writeFileSync(messagePath, headers + HEADER_SEPARATOR + body, 'utf8');
     tools.logData(`Updated email headers with quarantine reasons`);
@@ -127,7 +190,7 @@ async function markAsJunkMail(messagePath, spamScore, spamDetailInfo) {
 
     const score = Number(spamScore) || 0;
     const required = THRESHOLD_QUARANTINE;
-    const details = String(spamDetailInfo || '').replace(/[\r\n]+/g, ' ').trim();
+    const details = sanitizeHeaderValue(spamDetailInfo);
     const starCount = Math.max(0, Math.floor(score));
 
     headers += `\r\nX-Spam-Flag: YES\r\n`;
@@ -147,6 +210,7 @@ async function markAsJunkMail(messagePath, spamScore, spamDetailInfo) {
 async function processEmail(controlFilePath, messagePath, rules) {
   try {
     const processStartTime = performance.now();
+    captureLiveEmail(controlFilePath, messagePath);
     const message = fs.readFileSync(messagePath, 'utf8');
     const commandData = fs.readFileSync(controlFilePath, 'utf8');
     const userMatch = commandData.match(/^User=(.*)$/m);
@@ -172,9 +236,23 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
     const fileStats = fs.statSync(messagePath);
     const sizeKb = fileStats.size / 1024;
-    const recipientAddresses = (parsed.to || []).map(v => v.address || '').filter(Boolean);
+    const recipientAddresses = [];
+    const recipientsMatch = commandData.match(/^Recipients=(.*)$/gm) || [];
+    for (const line of recipientsMatch) {
+      const value = line.replace(/^Recipients=/, '').trim();
+      const pieces = value.split(/[:;\],]/);
+      for (const piece of pieces) {
+        const address = piece.trim();
+        if (address.includes('@')) {
+          recipientAddresses.push(address);
+        }
+      }
+    }
+    if (recipientAddresses.length === 0) {
+      recipientAddresses.push(...(parsed.to || []).map(v => v.address || '').filter(Boolean));
+    }
     const recipientStr = recipientAddresses.join(', ');
-    const recipients = (parsed.to || []).map(v => (v.address || '').split('@')[0].toUpperCase()).filter(Boolean);
+    const recipients = recipientAddresses.map(v => v.split('@')[0].toUpperCase()).filter(Boolean);
     const originatingIp = extractOriginatingIp(commandData);
     tools.logData(`Extracted originating IP: ${originatingIp}, Recipients: ${recipients.join(', ')}`, "DEBUG");
 
@@ -395,6 +473,7 @@ function wipeall() {
   const dirs = [
     { dir: QUARANTINE_DIR, label: 'quarantine' },
     { dir: DELETED_DIR, label: 'deleted' },
+    { dir: ARCHIVE_DIR, label: 'archive' },
     { dir: PROCESSING_LOG_DIR, label: 'processing logs' },
     { dir: QUARANTINE_LOG_DIR, label: 'quarantine logs' },
   ];
@@ -450,6 +529,7 @@ function purgeOldFiles() {
 
   const emailDirs = [
     { dir: DELETED_DIR, label: 'deleted emails' },
+    { dir: ARCHIVE_DIR, label: 'archived emails' },
   ];
 
   const logDirs = [
@@ -586,6 +666,10 @@ module.exports = {
   purgeOldFiles,
   purgeOldBackups,
   wipeall,
+  getLiveCaptureState,
+  armLiveCapture,
+  stopLiveCapture,
+  toggleLiveCapture,
   recentlyReleased
 };
 

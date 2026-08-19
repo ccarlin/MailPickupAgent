@@ -102,15 +102,15 @@ block scripts
                 const fullWidthClass = f.fullWidth ? ' full-width' : '';
                 html += '<div class="field' + fullWidthClass + '"><label>' + f.label + '</label>';
                 if (f.type === 'textarea') {
-                html += '<textarea name="' + f.name + '">' + (f.value || '') + '</textarea>';
+                html += '<textarea name="' + f.name + '">' + escHtml(f.value || '') + '</textarea>';
                 } else if (f.type === 'select') {
                 html += '<select name="' + f.name + '">';
                 (f.options || []).forEach(o => {
-                    html += '<option value="' + o.value + '"' + (o.value === f.value ? ' selected' : '') + '>' + o.label + '</option>';
+                    html += '<option value="' + escHtml(o.value) + '"' + (o.value === f.value ? ' selected' : '') + '>' + escHtml(o.label) + '</option>';
                 });
                 html += '</select>';
                 } else {
-                html += '<input type="' + (f.type || 'text') + '" name="' + f.name + '" value="' + (f.value || '') + '" placeholder="' + (f.placeholder || '') + '">';
+                html += '<input type="' + (f.type || 'text') + '" name="' + f.name + '" value="' + escHtml(f.value || '') + '" placeholder="' + escHtml(f.placeholder || '') + '">';
                 }
                 html += '</div>';
             });
@@ -422,7 +422,7 @@ block scripts
             const tbody = document.createElement('tbody');
             arr.forEach((item, index) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (item.recipient || '') + '</td><td>' + (item.sender || '') + '</td><td>' + (item.ipAddress || '') + '</td><td>' + hitCount(parent, key, item) + '</td>';
+                tr.innerHTML = '<td>' + escHtml(item.recipient || '') + '</td><td>' + escHtml(item.sender || '') + '</td><td>' + escHtml(item.ipAddress || '') + '</td><td>' + escHtml(hitCount(parent, key, item)) + '</td>';
                 const tdActions = document.createElement('td');
                 tdActions.className = 'cell-actions';
                 const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editComboItem(parent, key, index, item));
@@ -490,7 +490,7 @@ block scripts
                 .sort((a, b) => b.hits - a.hits || Number(b.item.Score || 0) - Number(a.item.Score || 0))
                 .forEach(({ item, index, hits }) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + (item.FilterName || '') + '</td><td>' + (item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + (item.FilterExpression || '') + '</td><td>' + (item.Score || '') + '</td><td>' + scopeLabel(item.SearchScope) + '</td><td>' + expTypeLabel(item.FilterExpressionType) + '</td><td>' + matchTypeLabel(item.FilterMatchType) + '</td><td>' + (String(item.FilterCaseSensitive || '') === '1' ? 'Yes' : 'No') + '</td><td>' + (item.Comment || '') + '</td><td>' + hits + '</td>';
+                tr.innerHTML = '<td>' + escHtml(item.FilterName || '') + '</td><td>' + escHtml(item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + escHtml(item.FilterExpression || '') + '</td><td>' + escHtml(item.Score || '') + '</td><td>' + escHtml(scopeLabel(item.SearchScope)) + '</td><td>' + escHtml(expTypeLabel(item.FilterExpressionType)) + '</td><td>' + escHtml(matchTypeLabel(item.FilterMatchType)) + '</td><td>' + (String(item.FilterCaseSensitive || '') === '1' ? 'Yes' : 'No') + '</td><td>' + escHtml(item.Comment || '') + '</td><td>' + escHtml(hits) + '</td>';
                 const tdActions = document.createElement('td');
                 tdActions.className = 'cell-actions';
                 const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editKeywordFilter(parent, key, index, item));

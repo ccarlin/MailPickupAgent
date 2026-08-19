@@ -7,6 +7,15 @@ const tools = require('../app/tools');
 const router = express.Router();
 const CONFIG_DIR = path.resolve(__dirname, '..', 'config');
 
+function resolveConfigPath(filename) {
+  const resolvedPath = path.resolve(CONFIG_DIR, filename);
+  const relative = path.relative(CONFIG_DIR, resolvedPath);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return null;
+  }
+  return resolvedPath;
+}
+
 router.get('/', (req, res) => {
   res.render('configHistory', { title: 'Config History' });
 });
@@ -56,8 +65,8 @@ router.get('/api/backup/content', (req, res) => {
     const filename = req.query.file;
     if (!filename) return res.status(400).json({ message: 'Missing file parameter' });
 
-    const filePath = path.resolve(CONFIG_DIR, filename);
-    if (!filePath.startsWith(CONFIG_DIR)) {
+    const filePath = resolveConfigPath(filename);
+    if (!filePath) {
       return res.status(403).json({ message: 'Invalid file path' });
     }
     if (!fs.existsSync(filePath)) {
@@ -107,8 +116,8 @@ router.post('/api/restore', (req, res) => {
     }
     if (!file) return res.status(400).json({ message: 'Missing file parameter' });
 
-    const backupPath = path.resolve(CONFIG_DIR, file);
-    if (!backupPath.startsWith(CONFIG_DIR)) {
+    const backupPath = resolveConfigPath(file);
+    if (!backupPath) {
       return res.status(403).json({ message: 'Invalid file path' });
     }
     if (!fs.existsSync(backupPath)) {
@@ -150,8 +159,8 @@ router.delete('/api/backup', (req, res) => {
     const { file } = req.body;
     if (!file) return res.status(400).json({ message: 'Missing file parameter' });
 
-    const filePath = path.resolve(CONFIG_DIR, file);
-    if (!filePath.startsWith(CONFIG_DIR)) {
+    const filePath = resolveConfigPath(file);
+    if (!filePath) {
       return res.status(403).json({ message: 'Invalid file path' });
     }
     if (!fs.existsSync(filePath)) {
