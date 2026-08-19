@@ -174,7 +174,7 @@ block scripts
 
         function showAiPromptModal(onResult) {
             const promptOverlay = document.createElement('div');
-            promptOverlay.className = 'modal-overlay';
+            promptOverlay.className = 'modal-overlay show';
 
             promptOverlay.innerHTML = '<div class="modal" style="min-width:500px;"><h3>Generate Keyword Filter with AI</h3><div class="modal-fields single-column"><div class="field full-width"><label>Describe the rule you want to create</label><textarea id="aiPromptText" rows="4" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:Consolas,Courier New,monospace;" placeholder="e.g. Block emails mentioning free crypto giveaways in the subject with score 8"></textarea></div></div><div class="modal-actions"><button class="btn btn-outline" id="aiPromptCancelBtn">Cancel</button><button class="btn btn-primary" id="aiPromptGenerateBtn">Generate</button></div></div>';
             document.body.appendChild(promptOverlay);

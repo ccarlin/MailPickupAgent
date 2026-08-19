@@ -85,7 +85,7 @@ block scripts
         function showConfirm(message) {
             return new Promise(resolve => {
                 const overlay = document.createElement('div');
-                overlay.className = 'modal-overlay';
+                overlay.className = 'modal-overlay show';
                 overlay.innerHTML = '<div class="modal"><h3>Confirm</h3><p>' + escapeHtml(message) + '</p><div class="modal-actions"><button class="btn btn-outline" id="confirmNoBtn">No</button><button class="btn btn-danger" id="confirmYesBtn">Yes</button></div></div>';
                 document.body.appendChild(overlay);
 
