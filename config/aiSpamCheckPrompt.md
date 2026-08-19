@@ -4,6 +4,7 @@ Analyze the email for common spam indicators:
 - Urgency, threats, or high-pressure tactics.
 - Suspicious links, mismatched domains, or strange email senders.
 - Poor grammar, generic greetings (e.g., "Dear Customer"), or vague requests.
+- Non english language.
 - Too-good-to-be-true offers (lotteries, crypto scams, inheritance).
 - Lack of links (a href) but a phone number to call.
 - Payment statement for suspect services like BTC (bitcoin) or anti-virus without any links to the payment processor.

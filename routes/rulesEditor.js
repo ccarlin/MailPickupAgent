@@ -44,6 +44,11 @@ function ensureRuleStructure(rulesObj) {
   if (!Array.isArray(rulesObj.blacklist.keywordFilters)) rulesObj.blacklist.keywordFilters = [];
 
   if (!Array.isArray(rulesObj.allowedTLDs)) rulesObj.allowedTLDs = [];
+
+  if (!rulesObj.allowedCountries || typeof rulesObj.allowedCountries !== 'object') rulesObj.allowedCountries = {};
+  if (!Array.isArray(rulesObj.allowedCountries.countries)) rulesObj.allowedCountries.countries = [];
+  if (rulesObj.allowedCountries.score === undefined || rulesObj.allowedCountries.score === null) rulesObj.allowedCountries.score = 5;
+
   return rulesObj;
 }
 
@@ -81,6 +86,7 @@ function normalizeRules(rulesObj) {
     }
   }
   if (rulesObj.allowedTLDs) lowerStrings(rulesObj.allowedTLDs);
+  if (rulesObj.allowedCountries && rulesObj.allowedCountries.countries) lowerStrings(rulesObj.allowedCountries.countries);
   return rulesObj;
 }
 

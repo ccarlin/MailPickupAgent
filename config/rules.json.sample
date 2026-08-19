@@ -678,5 +678,12 @@
     "uk",
     "au",
     "us"
-  ]
+  ],
+  "allowedCountries": {
+    "countries": [
+      "us",
+      "ca"
+    ],
+    "score": 5
+  }
 }
