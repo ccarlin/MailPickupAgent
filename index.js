@@ -346,6 +346,23 @@ async function processEmail(controlFilePath, messagePath, rules) {
     let quarantineReasons = [];
     let spamInfoParts = [];
     let spamScore = 0;
+
+    // 3.0.1 Allowed countries check - Assign score when sender country is not in allowed list
+    const allowedCountries = rules.allowedCountries || {};
+    const allowedCountriesList = allowedCountries.countries || [];
+    const allowedCountriesScore = Number(allowedCountries.score) || 0;
+    if (allowedCountriesList.length > 0 && allowedCountriesScore > 0) {
+      const isAllowedCountry = countryResult.country && allowedCountriesList.some(c => c.toUpperCase() === countryResult.country);
+      if (!isAllowedCountry) {
+        const countryDetail = countryResult.country ? `Country ${countryResult.country} not in allowed list` : 'Originating country unknown';
+        spamScore += allowedCountriesScore;
+        const acInfo = `AllowedCountries(${allowedCountriesScore})`;
+        spamInfoParts.push(acInfo);
+        quarantineReasons.push(`${acInfo} - ${countryDetail}`);
+        tools.logData(`Allowed countries penalty: ${allowedCountriesScore} points - ${countryDetail}`);
+      }
+    }
+
     const keywordResult = scoreKeywordFilters(parsed, bl.keywordFilters, recipients);
     keywordResult.matchedFilters.forEach(filter => recordHit('blacklist.keywordFilters', filter));
     if (keywordResult.score > 0) {

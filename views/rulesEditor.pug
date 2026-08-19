@@ -55,8 +55,8 @@ block scripts
     script.
         let rulesData = null;
         let ruleHits = {};
-        let collapsedSections = { whitelist: true, blacklist: true, allowedTLDs: true, scoredRules: true };
-        let collapsedSubsections = { 'whitelist.senders': true, 'whitelist.ipRanges': true, 'blacklist.senders': true, 'blacklist.ipRanges': true, 'blacklist.countries': true, 'blacklist.combos': true, 'scoredRules.keywordFilters': true, 'allowedTLDs.allowedTLDs': true };
+        let collapsedSections = { whitelist: true, blacklist: true, allowedTLDs: true, allowedCountries: true, scoredRules: true };
+        let collapsedSubsections = { 'whitelist.senders': true, 'whitelist.ipRanges': true, 'blacklist.senders': true, 'blacklist.ipRanges': true, 'blacklist.countries': true, 'blacklist.combos': true, 'scoredRules.keywordFilters': true, 'allowedTLDs.allowedTLDs': true, 'allowedCountries.countries': true };
 
         function showToast(message, type) {
             const existing = document.querySelector('.toast');
@@ -92,7 +92,7 @@ block scripts
         // --- Modal helpers ---
         function showModal(title, fields, onSave, twoColumn, extraButtons) {
             const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
+            overlay.className = 'modal-overlay show';
 
             const modal = document.createElement('div');
             modal.className = 'modal';
@@ -218,6 +218,11 @@ block scripts
             if (!Array.isArray(rulesData.blacklist.keywordFilters)) rulesData.blacklist.keywordFilters = [];
 
             if (!Array.isArray(rulesData.allowedTLDs)) rulesData.allowedTLDs = [];
+
+            if (!rulesData.allowedCountries || typeof rulesData.allowedCountries !== 'object') rulesData.allowedCountries = {};
+            if (!Array.isArray(rulesData.allowedCountries.countries)) rulesData.allowedCountries.countries = [];
+            if (rulesData.allowedCountries.score === undefined || rulesData.allowedCountries.score === null) rulesData.allowedCountries.score = 5;
+
             return rulesData;
         }
 
@@ -265,6 +270,8 @@ block scripts
             renderSection(container, 'Allowed TLDs', 'allowedTLDs', [
                 { key: 'allowedTLDs', label: 'TLDs', type: 'string-array', parent: null }
             ]);
+
+            renderAllowedCountriesSection(container);
         }
 
         function renderSection(container, title, sectionKey, subsections) {
@@ -341,6 +348,102 @@ block scripts
                 body.appendChild(subDiv);
             });
 
+            section.appendChild(header);
+            section.appendChild(body);
+            container.appendChild(section);
+        }
+
+        // --- Allowed Countries section (countries list + score) ---
+        function renderAllowedCountriesSection(container) {
+            const section = document.createElement('div');
+            section.className = 'section';
+
+            const isCollapsed = collapsedSections.allowedCountries;
+            const countries = rulesData.allowedCountries?.countries || [];
+            const score = rulesData.allowedCountries?.score ?? 5;
+            const totalCount = countries.length;
+
+            const header = document.createElement('div');
+            header.className = 'section-header';
+            header.innerHTML = '<h2><span class="toggle-icon">' + (isCollapsed ? '&#9654;' : '&#9660;') + '</span>Allowed Countries <span class="count">(' + totalCount + ' entries)</span></h2>';
+            header.addEventListener('click', (e) => {
+                if (e.target.closest('.actions')) return;
+                collapsedSections.allowedCountries = !collapsedSections.allowedCountries;
+                renderAllSections();
+            });
+
+            const body = document.createElement('div');
+            body.className = 'section-body' + (isCollapsed ? ' collapsed' : '');
+
+            // Score field
+            const scoreRow = document.createElement('div');
+            scoreRow.className = 'inline-form';
+            scoreRow.style.marginBottom = '12px';
+            const scoreLabel = document.createElement('label');
+            scoreLabel.textContent = 'Miss Score: ';
+            scoreLabel.style.fontWeight = '600';
+            scoreLabel.style.fontSize = '13px';
+            scoreLabel.style.marginRight = '8px';
+            scoreLabel.style.alignSelf = 'center';
+            scoreRow.appendChild(scoreLabel);
+            const scoreInput = document.createElement('input');
+            scoreInput.type = 'number';
+            scoreInput.value = score;
+            scoreInput.style.width = '80px';
+            scoreInput.id = 'allowedCountriesScore';
+            scoreInput.addEventListener('change', () => {
+                if (!rulesData.allowedCountries) rulesData.allowedCountries = {};
+                rulesData.allowedCountries.score = Number(scoreInput.value) || 0;
+                markUnsaved();
+            });
+            scoreRow.appendChild(scoreInput);
+            const scoreHint = document.createElement('span');
+            scoreHint.style.fontSize = '12px';
+            scoreHint.style.color = '#666';
+            scoreHint.style.marginLeft = '8px';
+            scoreHint.textContent = 'Points added when sender country is NOT in the allowed list';
+            scoreRow.appendChild(scoreHint);
+            body.appendChild(scoreRow);
+
+            // Countries sub-section
+            const subDiv = document.createElement('div');
+            subDiv.className = 'subsection';
+            const subKey = 'allowedCountries.countries';
+            const subCollapsed = collapsedSubsections[subKey];
+
+            const subTitle = document.createElement('div');
+            subTitle.className = 'subsection-title';
+            subTitle.style.cursor = 'pointer';
+            subTitle.innerHTML = '<span><span class="toggle-icon">' + (subCollapsed ? '&#9654;' : '&#9660;') + '</span>Countries (' + countries.length + ')</span>';
+
+            const addBtn = createButton('+ Add', 'btn-success btn-sm', (e) => {
+                e.stopPropagation();
+                addStringItem('allowedCountries', 'countries');
+            });
+            const actionsDiv = document.createElement('div');
+            actionsDiv.appendChild(addBtn);
+            subTitle.appendChild(actionsDiv);
+
+            subTitle.addEventListener('click', (e) => {
+                if (e.target.closest('.btn')) return;
+                collapsedSubsections[subKey] = !collapsedSubsections[subKey];
+                renderAllSections();
+            });
+
+            subDiv.appendChild(subTitle);
+
+            if (!subCollapsed) {
+                if (!Array.isArray(countries) || countries.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-state';
+                    empty.textContent = 'No entries';
+                    subDiv.appendChild(empty);
+                } else {
+                    subDiv.appendChild(renderStringList(countries, 'allowedCountries', 'countries'));
+                }
+            }
+
+            body.appendChild(subDiv);
             section.appendChild(header);
             section.appendChild(body);
             container.appendChild(section);
