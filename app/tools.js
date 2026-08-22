@@ -158,13 +158,15 @@ module.exports = {
       }
     },
     // Retrieve X-MPA-SpamReason header from an email by its ID and directory path.
+    // Accepts either a bare hex ID ("ABC123") or a full filename ("ABC123.MAI").
     // Returns the spam reason string, or null if not found or on error.
     getSpamReason: async function(emailId, emailPath) {
         try {
-            if (!module.exports.MESSAGE_ID_PATTERN.test(emailId)) {
+            const id = String(emailId || '').replace(/\.MAI$/i, '');
+            if (!/^[A-Fa-f0-9]+$/.test(id)) {
                 return null;
             }
-            const mailFile = path.join(emailPath, emailId + '.MAI');
+            const mailFile = path.join(emailPath, id + '.MAI');
             if (!fs.existsSync(mailFile)) {
                 return null;
             }
