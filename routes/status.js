@@ -177,38 +177,45 @@ router.get('/events', function(req, res) {
   sendFullStatus();
 
   // Listen for metric updates
+  // Debounce: when multiple metrics fire rapidly (e.g. bulk delete),
+  // coalesce into a single SSE update so the client always gets the final count
+  let updatePending = null;
   const onMetricUpdate = () => {
-    const data = metrics.getMetrics();
-    const captureState = getLiveCaptureState();
-    let pendingCount = 0;
-    try {
-      const files = fs.readdirSync(config.QUARANTINE_DIR);
-      pendingCount = files.filter(f => path.extname(f).toLowerCase() === '.h00').length;
-    } catch {
-      // ignore
-    }
-    sendEvent('update', {
-      totalProcessed: data.totalProcessed,
-      whitelisted: data.whitelisted,
-      blacklisted: data.blacklisted,
-      quarantined: data.quarantined,
-      released: data.released,
-      deleted: data.deleted,
-      pending: pendingCount,
-      captureArmed: captureState.armed,
-      captureCount: captureState.captured,
-      captureLimit: captureState.limit,
-      uptime: data.uptime,
-      uptimeFormatted: metrics.formatUptime(data.uptime),
-      aiAvgTime: data.aiAvgTime,
-      aiCheckCount: data.aiCheckCount,
-      saAvgTime: data.saAvgTime,
-      saCheckCount: data.saCheckCount,
-      abuseipdbAvgTime: data.abuseipdbAvgTime,
-      abuseipdbCheckCount: data.abuseipdbCheckCount,
-      avgProcessTime: data.avgProcessTime,
-      processCount: data.processCount
-    });
+    if (updatePending) clearTimeout(updatePending);
+    updatePending = setTimeout(() => {
+      updatePending = null;
+      const data = metrics.getMetrics();
+      const captureState = getLiveCaptureState();
+      let pendingCount = 0;
+      try {
+        const files = fs.readdirSync(config.QUARANTINE_DIR);
+        pendingCount = files.filter(f => path.extname(f).toLowerCase() === '.h00').length;
+      } catch {
+        // ignore
+      }
+      sendEvent('update', {
+        totalProcessed: data.totalProcessed,
+        whitelisted: data.whitelisted,
+        blacklisted: data.blacklisted,
+        quarantined: data.quarantined,
+        released: data.released,
+        deleted: data.deleted,
+        pending: pendingCount,
+        captureArmed: captureState.armed,
+        captureCount: captureState.captured,
+        captureLimit: captureState.limit,
+        uptime: data.uptime,
+        uptimeFormatted: metrics.formatUptime(data.uptime),
+        aiAvgTime: data.aiAvgTime,
+        aiCheckCount: data.aiCheckCount,
+        saAvgTime: data.saAvgTime,
+        saCheckCount: data.saCheckCount,
+        abuseipdbAvgTime: data.abuseipdbAvgTime,
+        abuseipdbCheckCount: data.abuseipdbCheckCount,
+        avgProcessTime: data.avgProcessTime,
+        processCount: data.processCount
+      });
+    }, 50);
   };
 
   metrics.eventBus.on('metricUpdate', onMetricUpdate);
@@ -235,6 +242,7 @@ router.get('/events', function(req, res) {
 
   function cleanup() {
     metrics.eventBus.off('metricUpdate', onMetricUpdate);
+    if (updatePending) { clearTimeout(updatePending); updatePending = null; }
     clearInterval(refreshInterval);
     clearInterval(heartbeat);
     clearInterval(authCheck);
