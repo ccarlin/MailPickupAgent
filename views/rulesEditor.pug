@@ -596,6 +596,10 @@ block scripts
                 tr.innerHTML = '<td>' + escHtml(item.FilterName || '') + '</td><td>' + escHtml(item.Recipient || '') + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + escHtml(item.FilterExpression || '') + '</td><td>' + escHtml(item.Score || '') + '</td><td>' + escHtml(scopeLabel(item.SearchScope)) + '</td><td>' + escHtml(expTypeLabel(item.FilterExpressionType)) + '</td><td>' + escHtml(matchTypeLabel(item.FilterMatchType)) + '</td><td>' + (String(item.FilterCaseSensitive || '') === '1' ? 'Yes' : 'No') + '</td><td>' + escHtml(item.Comment || '') + '</td><td>' + escHtml(hits) + '</td>';
                 const tdActions = document.createElement('td');
                 tdActions.className = 'cell-actions';
+                const testBtn = createButton('Test', 'btn-warning btn-sm', (e) => {
+                e.stopPropagation();
+                runKeywordFilterTest(item);
+                });
                 const editBtn = createButton('Edit', 'btn-outline btn-sm', () => editKeywordFilter(parent, key, index, item));
                 const delBtn = createButton('Del', 'btn-danger btn-sm', () => {
                 if (confirmDelete(item.FilterName || 'filter')) {
@@ -604,6 +608,7 @@ block scripts
                     markUnsaved();
                 }
                 });
+                tdActions.appendChild(testBtn);
                 tdActions.appendChild(editBtn);
                 tdActions.appendChild(delBtn);
                 tr.appendChild(tdActions);
@@ -706,6 +711,142 @@ block scripts
                 });
                 } }
             ]);
+        }
+
+        // --- Test a single keyword filter against an email file ---
+        function runKeywordFilterTest(rule) {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay show';
+
+            overlay.innerHTML = '<div class="modal" style="max-width:560px;"><h3>Test Rule: ' + escHtml(rule.FilterName || '') + '</h3>'
+                + '<div class="modal-fields single-column">'
+                + '<div class="field full-width"><label>Email file (.eml or .mai)</label>'
+                + '<input type="file" id="testEmailFile" accept=".eml,.mai" multiple style="padding:6px;">'
+                + '<div style="font-size:12px;color:#666;margin-top:4px;">Optionally select multiple files to test this rule against each one.</div>'
+                + '</div>'
+                + '</div>'
+                + '<div class="modal-actions"><button class="btn btn-outline" id="testCancelBtn">Cancel</button>'
+                + '<button class="btn btn-primary" id="testRunBtn">Run Test</button></div>'
+                + '<div id="testResults" style="margin-top:16px;"></div></div>';
+
+            document.body.appendChild(overlay);
+
+            overlay.querySelector('#testCancelBtn').addEventListener('click', () => overlay.remove());
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+            overlay.querySelector('#testRunBtn').addEventListener('click', async () => {
+                const files = overlay.querySelector('#testEmailFile').files;
+                if (!files.length) { showToast('Please select an email file', 'error'); return; }
+                const runBtn = overlay.querySelector('#testRunBtn');
+                runBtn.disabled = true;
+                runBtn.textContent = 'Testing...';
+                const resultsDiv = overlay.querySelector('#testResults');
+                resultsDiv.innerHTML = '';
+                let firstError = null;
+                for (const file of Array.from(files)) {
+                    const block = document.createElement('div');
+                    block.style.marginBottom = '12px';
+                    block.innerHTML = '<div style="font-weight:600;margin-bottom:4px;">' + escHtml(file.name) + '</div><div style="font-size:12px;color:#888;">Testing…</div>';
+                    resultsDiv.appendChild(block);
+                    try {
+                        const result = await sendKeywordFilterTest(rule, file);
+                        renderTestResult(block, result);
+                    } catch (err) {
+                        block.innerHTML = '<div style="font-weight:600;margin-bottom:4px;">' + escHtml(file.name) + '</div><div style="color:#d93025;">' + escHtml(err.message) + '</div>';
+                        if (!firstError) firstError = err;
+                    }
+                }
+                runBtn.disabled = false;
+                runBtn.textContent = 'Run Test';
+                if (firstError) showToast('One or more tests failed', 'error');
+                else showToast('Rule test complete', 'success');
+            });
+        }
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = String(reader.result).split(',')[1] || '';
+                    resolve(base64);
+                };
+                reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function sendKeywordFilterTest(rule, file) {
+            const emailBase64 = await readFileAsBase64(file);
+            const resp = await fetch('/rulesEditor/api/rules/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rule, emailBase64, emailName: file.name })
+            });
+            if (!resp.ok) {
+                let msg = 'HTTP ' + resp.status;
+                try { const err = await resp.json(); if (err.message) msg = err.message; } catch (e) {}
+                throw new Error(msg);
+            }
+            return await resp.json();
+        }
+
+        function renderTestResult(container, data) {
+            const result = data.result;
+            const email = data.email;
+            const scope = scopeLabel(result.scope);
+
+            let html = '';
+            html += '<div style="font-weight:600;margin-bottom:4px;">' + escHtml(email.name) + '</div>';
+
+            html += '<div style="font-size:12px;color:#555;margin-bottom:6px;line-height:1.5;">';
+            html += 'From: <b>' + escHtml(email.from) + '</b><br>';
+            html += 'To: <b>' + escHtml(email.to) + '</b><br>';
+            html += 'Subject: <b>' + escHtml(email.subject) + '</b>';
+            if (email.recipients && email.recipients.length) {
+                html += '<br>Local recipients (for recipient-scoped rules): <b>' + escHtml(email.recipients.join(', ')) + '</b>';
+            }
+            html += '</div>';
+
+            // Summary banner
+            if (result.disabled) {
+                html += '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:8px;font-size:13px;">'
+                    + '<b>Not applicable:</b> This rule is disabled (<code>Enabled</code> is set to <code>0</code>), so it is skipped entirely.</div>';
+            } else if (result.recipientFiltered) {
+                html += '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:8px;font-size:13px;">'
+                    + '<b>Not matched:</b> This rule only applies to recipient <code>' + escHtml(result.recipientFilter) + '</code>, '
+                    + 'but the email is addressed to: <code>' + escHtml((result.recipients || []).join(', ') || '(none)') + '</code>.</div>';
+            } else if (result.scopeTextEmpty) {
+                html += '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:8px;font-size:13px;">'
+                    + '<b>Not matched:</b> There is no ' + escHtml(scope.toLowerCase()) + ' text in this email to search.</div>';
+            } else if (result.emptyExpression) {
+                html += '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:8px;font-size:13px;">'
+                    + '<b>Not matched:</b> This rule has an empty filter expression.</div>';
+            } else if (result.matched) {
+                html += '<div style="background:#dcfce7;border:1px solid #16a34a;border-radius:4px;padding:8px;font-size:13px;">'
+                    + '<b>MATCH:</b> Rule matched in the ' + escHtml(scope.toLowerCase()) + '. Score contributed: <b>' + result.score + '</b></div>';
+            } else {
+                html += '<div style="background:#fee2e2;border:1px solid #dc2626;border-radius:4px;padding:8px;font-size:13px;">'
+                    + '<b>NO MATCH:</b> Rule did not match in the ' + escHtml(scope.toLowerCase()) + '. Score contributed: 0</div>';
+            }
+
+            // Detail of each expression
+            if (result.reasons && result.reasons.length) {
+                html += '<div style="margin-top:8px;font-size:13px;">';
+                html += '<div style="font-weight:600;margin-bottom:4px;">Expression details <span style="font-weight:400;color:#666;">(' + (result.requireAll ? 'AND &mdash; all must match' : 'OR &mdash; any can match') + ')</span>:</div>';
+                result.reasons.forEach(r => {
+                    const icon = r.matched ? '&#10003;' : '&#10007;';
+                    const color = r.matched ? '#16a34a' : '#dc2626';
+                    html += '<div style="border:1px solid #eee;border-radius:4px;padding:6px 8px;margin-bottom:4px;">';
+                    html += '<div style="color:' + color + ';"><b>' + icon + '</b> <code>' + escHtml(r.expression) + '</code> &mdash; <b>' + (r.matched ? 'Matched' : 'Did not match') + '</b></div>';
+                    if (r.detail) html += '<div style="color:#555;font-size:12px;margin-top:2px;">' + escHtml(r.detail) + '</div>';
+                    if (r.matchText) html += '<div style="color:#888;font-size:12px;margin-top:2px;">Context: <i>&hellip;' + escHtml(r.matchText) + '&hellip;</i></div>';
+                    if (r.error) html += '<div style="color:#d93025;font-size:12px;margin-top:2px;">Error: ' + escHtml(r.error) + '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
         }
 
         // --- Save / Load ---
