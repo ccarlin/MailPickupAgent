@@ -280,18 +280,22 @@ block content
     script.
       function copyKey(inputId, btn) {
         const input = document.getElementById(inputId);
-        input.select();
-        input.setSelectionRange(0, 99999);
-        try {
-          navigator.clipboard.writeText(input.value);
+        const fullLink = window.location.origin + '/mailq?Key=' + input.value;
+        navigator.clipboard.writeText(fullLink).then(() => {
           btn.textContent = 'Copied!';
           btn.classList.add('copied');
           setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-        } catch {
+        }).catch(() => {
+          const tmp = document.createElement('textarea');
+          tmp.value = fullLink;
+          document.body.appendChild(tmp);
+          tmp.select();
           document.execCommand('copy');
+          document.body.removeChild(tmp);
           btn.textContent = 'Copied!';
-          setTimeout(() => btn.textContent = 'Copy', 2000);
-        }
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+        });
       }
       function copyLink() {
         const input = document.getElementById('shareLink');
