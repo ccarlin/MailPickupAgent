@@ -2,8 +2,10 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const PostalMime = require('postal-mime');
 const config = require('../config');
 const tools = require('../app/tools');
+const { testKeywordFilter } = require('../app/keyword');
 const { purgeOldBackups } = require('../index');
 const { getAllHits } = require('../app/ruleHits');
 
@@ -27,6 +29,49 @@ router.get('/api/rules', (req, res) => {
 
 router.get('/api/rule-hits', (req, res) => {
   res.json(getAllHits());
+});
+
+// Test an individual scored keyword rule against an email file (.eml or .mai).
+// Accepts the rule object plus the email file contents (base64) and name.
+// Returns detailed, human-readable diagnostics for the match / no-match.
+router.post('/api/rules/test', async (req, res) => {
+  const { rule, emailBase64, emailName } = req.body || {};
+  if (!rule || typeof rule !== 'object') {
+    return res.status(400).json({ message: 'A rule is required' });
+  }
+  if (!emailBase64) {
+    return res.status(400).json({ message: 'An email file is required' });
+  }
+
+  const name = String(emailName || 'email.eml').toLowerCase();
+  if (!name.endsWith('.eml') && !name.endsWith('.mai')) {
+    return res.status(400).json({ message: 'Email file must be a .eml or .mai file' });
+  }
+
+  try {
+    const raw = Buffer.from(emailBase64, 'base64');
+    const parsed = await PostalMime.parse(raw);
+    const recipients = (parsed.to || [])
+      .map(v => (v.address || '').split('@')[0].toUpperCase())
+      .filter(Boolean);
+
+    const result = testKeywordFilter(parsed, rule, recipients);
+
+    res.json({
+      rule,
+      email: {
+        name,
+        from: parsed.from?.address || 'unknown',
+        to: (parsed.to || []).map(v => v.address).filter(Boolean).join(', ') || 'unknown',
+        subject: parsed.subject || '(no subject)',
+        recipients,
+      },
+      result,
+    });
+  } catch (error) {
+    tools.logError('Error testing keyword filter: ' + error.message);
+    res.status(500).json({ message: 'Failed to test rule against email: ' + (error.message || 'unknown error') });
+  }
 });
 
 function ensureRuleStructure(rulesObj) {

@@ -113,7 +113,7 @@ function validateConfig() {
   const currentLogFile = config.CURRENT_LOG_FILE;
   if (!currentLogFile) {
     warnings.push('CURRENT_LOG_FILE is not set — the Current Log popup will not be available');
-  } else if (!fs.existsSync(currentLogFile)) {
+  } else if (!fs.existsSync(currentLogFile) && getEnv() !== 'development') {
     warnings.push(`CURRENT_LOG_FILE "${currentLogFile}" does not exist — the Current Log popup will be empty until the pickup script runs`);
   }
 
