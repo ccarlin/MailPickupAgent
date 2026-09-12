@@ -1,0 +1,883 @@
+/* ============================================================
+   dark.css — System dark mode overrides for Mail Pickup Agent
+   Active only when the OS/browser prefers dark color schemes.
+   Loaded last in <head> so it wins over per-page <style> blocks.
+   !important overrides beat element-level style="" attributes. */
+/* eslint-disable css/no-important */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+
+  /* --- Base --- */
+  html, body {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+
+  /* --- Layout shell (adminLayout.pug) --- */
+  .top-banner {
+    background-color: #1e293b;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+  }
+
+  .left-column {
+    background-color: #111827;
+  }
+
+  .right-column {
+    background-color: #1e293b;
+  }
+
+  .left-column h2,
+  .right-column h2 {
+    color: #f1f5f9;
+    border-bottom-color: #334155;
+  }
+
+  .left-column-toggle-container {
+    background-color: #334155;
+  }
+
+  .left-column-toggle-container:hover {
+    background-color: #475569;
+  }
+
+  .collapsible-header {
+    background-color: #1f2937;
+    color: #e2e8f0;
+  }
+
+  .collapsible-header:hover {
+    background-color: #334155;
+  }
+
+  .menu-separator hr {
+    border-top-color: #334155;
+  }
+
+  .left-column li.menu-item {
+    color: #cbd5e1;
+  }
+
+  .left-column li.menu-item:hover {
+    background-color: #1e3a5f;
+    color: #7dd3fc;
+  }
+
+  .left-column a,
+  .left-column a:visited,
+  .left-column a:active,
+  .left-column a:hover,
+  .left-column a:focus {
+    color: #e2e8f0 !important;
+  }
+
+  .right-column p {
+    color: #cbd5e1;
+  }
+
+  .footer {
+    color: #64748b;
+  }
+
+  .modal-box {
+    background: #1f2937;
+  }
+
+  .modal-header {
+    border-bottom-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .modal-header button {
+    color: #94a3b8;
+  }
+
+  .modal-header button:hover {
+    color: #e2e8f0;
+  }
+
+  .modal-body {
+    color: #cbd5e1;
+  }
+
+  /* --- Grid.js tables (admin.css) --- */
+  div[class*="-grid-wrapper"] .gridjs-container {
+    color: #e2e8f0;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-th {
+    background: #1565c0;
+    color: #e8f0fe;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-th:hover {
+    background: #0d47a1;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-td {
+    border-bottom-color: #334155;
+    color: #cbd5e1;
+  }
+
+  div[class*="-grid-wrapper"] tbody tr:hover,
+  div[class*="-grid-wrapper"] tbody tr:nth-child(even):hover {
+    background-color: #1e3a5f;
+  }
+
+  div[class*="-grid-wrapper"] tbody tr:nth-child(even) {
+    background-color: #18202f;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-footer {
+    background: #1f2937;
+    border-top-color: #334155;
+    color: #94a3b8;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-pagination button {
+    background: #1f2937;
+    border-color: #334155;
+    color: #cbd5e1;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-pagination button:hover:not(:disabled) {
+    background: #1e3a5f;
+    border-color: #7dd3fc;
+    color: #7dd3fc;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-pagination button.gridjs-currentPage {
+    background: #1976d2;
+    border-color: #1976d2;
+    color: #fff;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-summary {
+    color: #94a3b8;
+  }
+
+  div[class*="-grid-wrapper"] .gridjs-td a {
+    color: #7dd3fc;
+  }
+
+  /* --- MUI card & shared components --- */
+  .mui-card {
+    background: #1e293b;
+  }
+
+  .mui-divider {
+    background: #334155;
+  }
+
+  .mui-empty {
+    color: #64748b;
+  }
+
+  .mui-empty i {
+    color: #475569;
+  }
+
+  .mui-last-update {
+    color: #64748b;
+  }
+
+  .mui-btn {
+    background: #1f2937;
+    border-color: #334155;
+    color: #cbd5e1;
+  }
+
+  .mui-btn:hover {
+    background: #1976d2;
+    border-color: #1976d2;
+    color: #fff;
+  }
+
+  .action-btn {
+    background: transparent;
+    border-color: #f87171;
+    color: #f87171;
+  }
+
+  .action-btn:hover {
+    background: #ef4444;
+    color: #fff;
+  }
+
+  .mui-filters-row .mui-filters-right input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .mui-date-input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .mui-multiselect-toggle {
+    background: #1f2937;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .mui-multiselect-toggle .mui-chevron {
+    color: #64748b;
+  }
+
+  .mui-multiselect-dropdown {
+    background: #1f2937;
+    border-color: #334155;
+  }
+
+  .mui-multiselect-dropdown label {
+    color: #e2e8f0;
+  }
+
+  .mui-multiselect-dropdown label:hover {
+    background: #1e3a5f;
+  }
+
+  .mui-filter-clear {
+    color: #7dd3fc;
+  }
+
+  .mui-filter-clear:hover {
+    background: #1e3a5f;
+  }
+
+  .mui-btn-separator {
+    background: #334155;
+  }
+
+  .mui-filter-banner {
+    background: #17263c;
+    border-bottom-color: #1e3a5f;
+    color: #93c5fd;
+  }
+
+  .mui-filter-banner-clear a {
+    color: #93c5fd;
+  }
+
+  /* --- Modals --- */
+  .preview-modal-content,
+  .info-modal-content,
+  .listing-modal-content {
+    background: #1f2937;
+    color: #e2e8f0;
+  }
+
+  .info-field {
+    border-bottom-color: #334155;
+  }
+
+  .info-field-label {
+    color: #94a3b8;
+  }
+
+  .info-field-value {
+    color: #e2e8f0;
+  }
+
+  .info-reason-box {
+    background: #111827;
+    border-color: #334155;
+    color: #cbd5e1;
+  }
+
+  .info-reason-box strong {
+    color: #e2e8f0;
+  }
+
+  /* --- Editor pages (configEditor, rulesEditor, configHistory) --- */
+  .header-bar {
+    background: #1e293b;
+  }
+
+  .header-bar.scrolled {
+    border-bottom-color: #334155;
+  }
+
+  .section {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .section-header {
+    background: #1f2937;
+    border-bottom-color: #334155;
+  }
+
+  .section-header .count {
+    color: #94a3b8;
+  }
+
+  .empty-state {
+    color: #64748b;
+  }
+
+  .subsection-title {
+    color: #cbd5e1;
+  }
+
+  .list-item {
+    border-bottom-color: #2a3346;
+  }
+
+  .list-item:hover {
+    background: #243042;
+  }
+
+  .hit-count {
+    color: #94a3b8;
+  }
+
+  .combo-grid th {
+    background: #1f2937;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+  }
+
+  .combo-grid td {
+    border-bottom-color: #2a3346;
+  }
+
+  .combo-grid tr:hover td {
+    background: #243042;
+  }
+
+  .inline-form input,
+  .inline-form select,
+  .inline-form textarea {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .field input,
+  .field select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .field input:focus,
+  .field select:focus {
+    background: #111827;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+  }
+
+  .field label {
+    color: #94a3b8;
+  }
+
+  .field .hint {
+    color: #64748b;
+  }
+
+  .btn-outline {
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .btn-outline:hover {
+    background: #334155;
+  }
+
+  .btn-outline-secondary {
+    background: #1f2937;
+    border-color: #475569;
+    color: #cbd5e1;
+  }
+
+  .btn-outline-secondary:hover {
+    background: #334155;
+  }
+
+  .modal {
+    background: #1f2937;
+    color: #e2e8f0;
+  }
+
+  .modal h3 {
+    color: #f1f5f9;
+  }
+
+  .modal p {
+    color: #cbd5e1;
+  }
+
+  .modal .field label {
+    color: #94a3b8;
+  }
+
+  .modal .field input,
+  .modal .field select,
+  .modal .field textarea {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  /* --- Config history --- */
+  .tabs {
+    border-bottom-color: #334155;
+  }
+
+  .tab {
+    color: #94a3b8;
+  }
+
+  .tab:hover {
+    color: #e2e8f0;
+  }
+
+  .tab.active {
+    color: #7dd3fc;
+    border-bottom-color: #7dd3fc;
+    background: #17263c;
+  }
+
+  .tab .count {
+    background: #334155;
+    color: #94a3b8;
+  }
+
+  .tab.active .count {
+    background: #1e3a5f;
+    color: #7dd3fc;
+  }
+
+  .backup-list {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .backup-list-header {
+    background: #1f2937;
+    border-bottom-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .backup-item {
+    border-bottom-color: #2a3346;
+  }
+
+  .backup-item:hover {
+    background: #243042;
+  }
+
+  .backup-item.selected {
+    background: #17263c;
+  }
+
+  .backup-item .backup-date {
+    color: #e2e8f0;
+  }
+
+  .viewer-toolbar {
+    background: #1f2937;
+    border-color: #334155;
+  }
+
+  .viewer-toolbar .info {
+    color: #cbd5e1;
+  }
+
+  .viewer-toolbar .info strong {
+    color: #e2e8f0;
+  }
+
+  .viewer-tabs {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .viewer-tab {
+    color: #94a3b8;
+  }
+
+  .viewer-tab.active {
+    color: #7dd3fc;
+    border-bottom-color: #7dd3fc;
+    background: #17263c;
+  }
+
+  .viewer-tab:hover:not(.active) {
+    color: #e2e8f0;
+  }
+
+  .viewer-content {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .diff-line.added {
+    background: #0b2a1a;
+  }
+
+  .diff-line.added .code {
+    color: #4ade80;
+  }
+
+  .diff-line.removed {
+    background: #3b1216;
+  }
+
+  .diff-line.removed .code {
+    color: #f87171;
+  }
+
+  .diff-line.unchanged {
+    background: #1e293b;
+  }
+
+  .diff-line.unchanged .code {
+    color: #cbd5e1;
+  }
+
+  .raw-viewer {
+    color: #cbd5e1;
+  }
+
+  /* --- Status page --- */
+  .status-card {
+    background: #1e293b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .status-card .count {
+    color: #e2e8f0;
+  }
+
+  .status-card.pending.alert {
+    background: #2a1d0e;
+  }
+
+  .status-card .icon-badge {
+    box-shadow: 0 0 0 2px #1e293b;
+  }
+
+  .status-card .test-badge {
+    background: #17263c;
+    color: #7dd3fc;
+  }
+
+  #server-offline {
+    background: #2a1216;
+  }
+
+  #server-offline p {
+    color: #f87171;
+  }
+
+  .highlight-flash {
+    animation: highlight-flash-dark 1s ease-out;
+  }
+
+  @keyframes highlight-flash-dark {
+    0% { background: #1e3a5f; }
+    100% { background: #1e293b; }
+  }
+
+  .reset-stats-btn {
+    border-color: #334155;
+  }
+
+  .reset-stats-btn:hover {
+    background: #3b1216;
+    border-color: #7f1d1d;
+  }
+
+  .capture-btn {
+    border-color: #334155;
+    color: #7dd3fc;
+  }
+
+  .capture-btn:hover {
+    background: #17263c;
+    border-color: #1e3a5f;
+  }
+
+  .capture-btn.capturing {
+    background: #17263c;
+    border-color: #7dd3fc;
+    color: #7dd3fc;
+  }
+
+  #ai-test-modal .modal-box,
+  #sa-test-modal .modal-box,
+  #abuseipdb-test-modal .modal-box {
+    background: #1f2937;
+  }
+
+  /* --- Mail queue card view (mailqCard.pug) --- */
+  .email-card {
+    background: #1e293b;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .email-header h3 {
+    color: #f1f5f9;
+  }
+
+  .email-body p {
+    color: #cbd5e1;
+  }
+
+  .email-footer {
+    border-top-color: #475569;
+    border-bottom-color: #475569;
+  }
+
+  .email-footer p {
+    color: #cbd5e1;
+  }
+
+  .btn-show-reason {
+    border-color: #64748b;
+    color: #94a3b8;
+  }
+
+  .last-updated {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+  }
+
+  #listingAddressList {
+    background: #111827 !important;
+    border-color: #334155 !important;
+    color: #cbd5e1;
+  }
+
+  #aiCheckModal > div {
+    background: #1f2937 !important;
+    color: #e2e8f0;
+  }
+
+  #listingModal .listing-modal-content h2 {
+    color: #e2e8f0;
+  }
+
+  .no-emails-message {
+    color: #94a3b8 !important;
+  }
+
+  /* --- Manage links --- */
+  .summary-bar {
+    background: #1f2937;
+    border-color: #334155;
+  }
+
+  .summary-bar .count-label {
+    color: #cbd5e1;
+  }
+
+  .generate-section {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .generate-section input[type="email"] {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .generated-link {
+    background: #0b2a1a;
+    border-color: #166534;
+  }
+
+  .generated-link .link-row input {
+    background: #111827;
+    border-color: #166534;
+    color: #86efac;
+  }
+
+  .error-msg {
+    background: #3b1216;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+  }
+
+  .keys-table-section h2 {
+    color: #e2e8f0;
+  }
+
+  .keys-table th {
+    background: #1f2937;
+    color: #e2e8f0;
+  }
+
+  .keys-table td {
+    border-bottom-color: #334155;
+  }
+
+  .keys-table tr:hover {
+    background: #243042;
+  }
+
+  .keys-table .key-cell input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #cbd5e1;
+  }
+
+  .keys-table .key-cell .btn-copy {
+    background: #334155;
+    color: #cbd5e1;
+  }
+
+  .keys-table .key-cell .btn-copy:hover {
+    background: #475569;
+  }
+
+  /* --- Sessions / notifications badges --- */
+  .badge-current,
+  .badge-filter {
+    background: #17263c;
+    color: #93c5fd;
+  }
+
+  .badge-all {
+    background: #0b2a1a;
+    color: #6ee7a0;
+  }
+
+  .user-agent-cell,
+  .endpoint-cell {
+    color: #94a3b8;
+  }
+
+  .logout-link {
+    color: #f87171;
+  }
+
+  /* --- Rule hits report --- */
+  .summary-card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .summary-card .sc-value {
+    color: #e2e8f0;
+  }
+
+  .type-badge.whitelist { background: #0b2a1a; color: #6ee7a0; }
+  .type-badge.blacklist { background: #3b1216; color: #fca5a5; }
+  .type-badge.scored   { background: #2a1d0e; color: #fdba74; }
+  .type-badge.tld      { background: #3b1226; color: #f9a8d4; }
+  .type-badge.country  { background: #241334; color: #d8b4fe; }
+  .type-badge.combo    { background: #0e2f2b; color: #5eead4; }
+  .type-badge.keyword  { background: #2a2410; color: #fcd34d; }
+
+  .btn-delete-row {
+    border-color: #334155;
+    color: #94a3b8;
+  }
+
+  .btn-delete-row:hover {
+    color: #f87171;
+    border-color: #f87171;
+    background: #3b1216;
+  }
+
+  .mui-btn-clear-all {
+    background: #1f2937;
+    border-color: #f87171;
+    color: #f87171;
+  }
+
+  /* --- SMTP log --- */
+  .smtp-totals-row {
+    background: #1f2937;
+    border-top-color: #334155;
+    color: #cbd5e1;
+  }
+
+  .smtp-totals-row .total-value {
+    color: #e2e8f0;
+  }
+
+  .smtp-grid-wrapper td a {
+    color: #7dd3fc;
+  }
+
+  /* --- Mail queue grid reason subrows --- */
+  .reason-subrow td {
+    background: #111827;
+    border-bottom-color: #334155;
+    color: #94a3b8;
+  }
+
+  /* --- Quarantine log card header --- */
+  .mui-card-header h3 {
+    color: #e2e8f0;
+  }
+
+  .mui-card-header .mui-badge {
+    background: #17263c;
+    color: #7dd3fc;
+  }
+
+  /* --- style.css leftovers --- */
+  .panel {
+    background-color: #1e293b;
+  }
+
+  .SumoSelect > .CaptionCont,
+  .SumoSelect > .optWrapper {
+    background-color: #1f2937;
+    border-color: #334155;
+  }
+
+  .SumoSelect > .optWrapper > .options li.opt {
+    color: #e2e8f0;
+  }
+
+  .SumoSelect > .optWrapper > .options li.opt:hover {
+    background-color: #1e3a5f;
+  }
+
+  /* --- Toast --- */
+  .toast {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+
+  /* --- Login page --- */
+  .login-card {
+    background: #1f2937;
+  }
+
+  .login-card h1 {
+    color: #f1f5f9;
+  }
+
+  .login-card label {
+    color: #cbd5e1;
+  }
+
+  .login-card input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .login-card input:focus {
+    border-color: #3b82f6;
+  }
+
+  .login-card .error {
+    background: #3b1216;
+    color: #fca5a5;
+  }
+}

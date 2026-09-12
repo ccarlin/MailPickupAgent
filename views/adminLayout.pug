@@ -433,6 +433,7 @@ html(lang='en')
         color: #334155;
       }
     
+    link(rel='stylesheet' href='/css/dark.css')
     script!= "window.CSRF_TOKEN = " + JSON.stringify(csrfToken) + ";"
     script.
       // CSRF bootstrap: expose the per-session token and auto-inject it into
