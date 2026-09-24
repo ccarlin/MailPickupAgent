@@ -187,12 +187,19 @@ block css
             gap: 8px;
             margin-bottom: 12px;
         }
-        .chart-toolbar label {
+        .chart-toolbar label,
+        .chart-toolbar-title {
             font-size: 0.75rem;
             font-weight: 500;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.04em;
+        }
+        .chart-toolbar-title {
+            line-height: 1;
+        }
+        .chart-toolbar-spacer {
+            flex: 1;
         }
         .top-select {
             border: 1px solid #cbd5e1;
@@ -216,22 +223,25 @@ block css
             flex-wrap: wrap;
         }
         .chart-pane {
-            flex: 1 1 340px;
             min-width: 0;
             display: flex;
             flex-direction: column;
         }
-        .chart-pane-title {
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin: 0 0 8px;
+        .chart-pane.type-pane {
+            flex: 4 4 0;
+        }
+        .chart-pane.rules-pane {
+            flex: 6 6 0;
         }
         .chart-wrapper {
             position: relative;
             height: 380px;
+        }
+        @media (max-width: 900px) {
+            .chart-pane.type-pane,
+            .chart-pane.rules-pane {
+                flex: 1 1 100%;
+            }
         }
         .chart-empty {
             padding: 48px 16px;
@@ -905,7 +915,9 @@ block content
             #chart-section(style="display:none")
                 .chart-container
                     .chart-toolbar
-                        label Top Rules
+                        span.chart-toolbar-title Hits by Type
+                        span.chart-toolbar-spacer
+                        span.chart-toolbar-title Top Rules
                         select.top-select#top-rules-select
                             option(value="5") 5
                             option(value="10") 10
@@ -917,12 +929,10 @@ block content
                         i.fas.fa-chart-pie
                         | No rule hit data to chart.
                     #chart-split.chart-split(style="display:none")
-                        .chart-pane
-                            .chart-pane-title Hits by Type
+                        .chart-pane.type-pane
                             .chart-wrapper
                                 canvas#type-chart
-                        .chart-pane
-                            .chart-pane-title Top Rules
+                        .chart-pane.rules-pane
                             .chart-wrapper
                                 canvas#hits-chart
             #hits-grid
