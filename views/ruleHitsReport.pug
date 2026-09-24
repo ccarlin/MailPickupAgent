@@ -209,11 +209,29 @@ block css
             border-color: #1976d2;
             box-shadow: 0 0 0 2px rgba(25,118,210,0.15);
         }
+        .chart-split {
+            display: flex;
+            gap: 24px;
+            align-items: stretch;
+            flex-wrap: wrap;
+        }
+        .chart-pane {
+            flex: 1 1 340px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .chart-pane-title {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin: 0 0 8px;
+        }
         .chart-wrapper {
             position: relative;
-            max-width: 720px;
-            height: 420px;
-            margin: 0 auto;
+            height: 380px;
         }
         .chart-empty {
             padding: 48px 16px;
@@ -243,6 +261,8 @@ block content
             var typeSummary = {};
             var chart = null;
             var chartFullLabels = [];
+            var typeChart = null;
+            var typeChartFullLabels = [];
             var viewMode = 'table';
 
             document.getElementById('last-update').textContent = 'Loading...';
@@ -517,14 +537,16 @@ block content
                 filteredData.forEach(function(r) { total += r[3]; });
 
                 var empty = document.getElementById('chart-empty');
-                var wrapper = document.getElementById('chart-wrapper');
+                var split = document.getElementById('chart-split');
                 if (total <= 0) {
                     empty.style.display = 'block';
-                    wrapper.style.display = 'none';
+                    split.style.display = 'none';
                     return;
                 }
                 empty.style.display = 'none';
-                wrapper.style.display = '';
+                split.style.display = '';
+
+                renderTypeChart(total);
 
                 var sorted = filteredData.slice().sort(function(a, b) { return b[3] - a[3]; });
                 var top = sorted.slice(0, topN).filter(function(r) { return r[3] > 0; });
@@ -607,6 +629,97 @@ block content
                     }
                 });
                 chart._total = total;
+            }
+
+            function typeColor(ruleType) {
+                var map = {
+                    'whitelist.senders': '#2e7d32',
+                    'whitelist.ipRanges': '#4caf50',
+                    'whitelist.countries': '#66bb6a',
+                    'blacklist.senders': '#c62828',
+                    'blacklist.ipRanges': '#ef6c00',
+                    'blacklist.countries': '#7b1fa2',
+                    'blacklist.combos': '#00695c',
+                    'blacklist.keywordFilters': '#f57f17'
+                };
+                if (map[ruleType]) return map[ruleType];
+                var clsMap = { whitelist: '#2e7d32', keyword: '#f57f17', country: '#7b1fa2', combo: '#00695c', blacklist: '#c62828' };
+                return clsMap[getTypeBadgeClass(ruleType)] || '#37474f';
+            }
+
+            function renderTypeChart(total) {
+                var sums = {};
+                var order = [];
+                filteredData.forEach(function(r) {
+                    if (r[3] <= 0) return;
+                    if (!sums.hasOwnProperty(r[0])) {
+                        sums[r[0]] = 0;
+                        order.push(r[0]);
+                    }
+                    sums[r[0]] += r[3];
+                });
+
+                var labels = [];
+                var values = [];
+                var bg = [];
+                typeChartFullLabels = [];
+
+                order.forEach(function(key) {
+                    var label = getTypeLabel(key);
+                    labels.push(label);
+                    typeChartFullLabels.push(label);
+                    values.push(sums[key]);
+                    bg.push(typeColor(key));
+                });
+
+                if (typeChart) {
+                    typeChart.data.labels = labels;
+                    typeChart.data.datasets[0].data = values;
+                    typeChart.data.datasets[0].backgroundColor = bg;
+                    typeChart._total = total;
+                    typeChart.update();
+                    return;
+                }
+
+                typeChart = new Chart(document.getElementById('type-chart'), {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: bg,
+                            borderColor: '#ffffff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { family: 'Roboto', size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var idx = context.dataIndex;
+                                        var val = context.parsed || 0;
+                                        var chartTotal = context.chart._total || 0;
+                                        var pct = chartTotal > 0 ? (val / chartTotal * 100).toFixed(1) : '0.0';
+                                        var full = (typeChartFullLabels && typeChartFullLabels[idx]) || context.label;
+                                        return ' ' + full + ': ' + val.toLocaleString() + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                typeChart._total = total;
             }
 
             function setView(mode) {
@@ -803,6 +916,13 @@ block content
                     #chart-empty.chart-empty(style="display:none")
                         i.fas.fa-chart-pie
                         | No rule hit data to chart.
-                    #chart-wrapper.chart-wrapper(style="display:none")
-                        canvas#hits-chart
+                    #chart-split.chart-split(style="display:none")
+                        .chart-pane
+                            .chart-pane-title Hits by Type
+                            .chart-wrapper
+                                canvas#type-chart
+                        .chart-pane
+                            .chart-pane-title Top Rules
+                            .chart-wrapper
+                                canvas#hits-chart
             #hits-grid
