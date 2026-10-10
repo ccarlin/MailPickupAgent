@@ -46,6 +46,25 @@ run('missing or non-numeric fields default to zero', function () {
   assert.strictEqual(r.blacklisted, 0);
 });
 
+run('deleted passes through unchanged', function () {
+  const r = computeFlow({ totalProcessed: 100, whitelisted: 40, blacklisted: 20, quarantined: 10, released: 25, deleted: 7 });
+  assert.strictEqual(r.deleted, 7);
+});
+
+run('no-argument call returns all zeros', function () {
+  const r = computeFlow();
+  assert.strictEqual(r.inbound, 0);
+  assert.strictEqual(r.whitelistReached, 0);
+  assert.strictEqual(r.blacklistReached, 0);
+  assert.strictEqual(r.scoringReached, 0);
+  assert.strictEqual(r.thresholdReached, 0);
+  assert.strictEqual(r.whitelisted, 0);
+  assert.strictEqual(r.blacklisted, 0);
+  assert.strictEqual(r.quarantined, 0);
+  assert.strictEqual(r.released, 0);
+  assert.strictEqual(r.deleted, 0);
+});
+
 if (failures > 0) {
   console.error('\n' + failures + ' test(s) failed');
   process.exit(1);

@@ -190,9 +190,9 @@ block scripts
         var flow = window.MessageFlow.computeFlow(data);
         setText('fc-inbound', fmt(flow.inbound));
         setText('fc-wl-reached', fmt(flow.whitelistReached));
-        setText('fc-bl-reached', fmt(flow.blacklistReached));
-        setText('fc-scoring', fmt(flow.scoringReached));
-        setText('fc-threshold', fmt(flow.thresholdReached));
+        setText('fc-bl-reached', '~' + fmt(flow.blacklistReached));
+        setText('fc-scoring', '~' + fmt(flow.scoringReached));
+        setText('fc-threshold', '~' + fmt(flow.thresholdReached));
         setText('fc-wl', fmt(flow.whitelisted));
         setText('fc-bl', fmt(flow.blacklisted));
         setText('fc-released', fmt(flow.released));
