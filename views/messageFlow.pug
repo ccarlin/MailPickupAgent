@@ -1,0 +1,179 @@
+extends adminLayout
+
+block css
+  link(id="favicon" rel="icon" href="/img/MailPickupAgent.png" type="image/png")
+  style.
+    .mf-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .mf-connection { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: #64748b; }
+    .mf-connection .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .mf-connection .dot.connected { background: #22c55e; }
+    .mf-connection .dot.disconnected { background: #ef4444; }
+    .mf-connection .dot.connecting { background: #f59e0b; }
+    .mf-pill { background: #eef2ff; color: #4338ca; border-radius: 10px; padding: 2px 10px; font-size: 0.68rem; font-weight: 600; }
+    .mf-updated { font-size: 0.8rem; color: #94a3b8; }
+
+    .mf-grid { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+    .mf-chart { flex: 1 1 420px; min-width: 320px; }
+    .mf-chart svg { width: 100%; height: auto; }
+
+    .mf-statcol { flex: 0 0 200px; min-width: 180px; }
+    .mf-stat { border-left: 3px solid #6366f1; padding: 2px 0 8px 10px; margin-bottom: 10px; }
+    .mf-stat .n { font-size: 1.15rem; font-weight: 700; color: #1e293b; }
+    .mf-stat .l { font-size: 0.66rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+    .mf-stat.whitelisted { border-color: #16a34a; }
+    .mf-stat.released { border-color: #2563eb; }
+    .mf-stat.quarantined { border-color: #d97706; }
+    .mf-stat.blacklisted { border-color: #dc2626; }
+    .mf-stat.deleted { border-color: #64748b; }
+
+    .mf-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 0.72rem; color: #475569; }
+    .mf-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .mf-legend .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    .mf-legend code, .mf-footnote code { background: #f1f5f9; border-radius: 4px; padding: 0 4px; }
+    .mf-footnote { font-size: 0.72rem; color: #94a3b8; margin-top: 10px; line-height: 1.5; }
+    .mf-empty { display: none; text-align: center; color: #94a3b8; font-size: 0.85rem; margin-top: 8px; }
+
+    .fc-stage { fill: #eef2ff; stroke: #6366f1; stroke-width: 1.5; }
+    .fc-stage-title { font: 700 10px Roboto, sans-serif; text-anchor: middle; fill: #312e81; }
+    .fc-stage-count { font: 700 12px Roboto, sans-serif; text-anchor: middle; fill: #1e293b; }
+    .fc-edge { stroke: #94a3b8; stroke-width: 1.6; fill: none; marker-end: url(#mf-arrow); }
+    .fc-outcome { stroke-width: 1.5; }
+    .fc-outcome-title { font: 600 9px Roboto, sans-serif; text-anchor: middle; }
+    .fc-outcome-count { font: 700 11px Roboto, sans-serif; text-anchor: middle; }
+    .fc-outcome.wl { fill: #dcfce7; stroke: #16a34a; }
+    .fc-outcome.wl .fc-outcome-title, .fc-outcome.wl .fc-outcome-count { fill: #166534; }
+    .fc-outcome.bl { fill: #fee2e2; stroke: #dc2626; }
+    .fc-outcome.bl .fc-outcome-title, .fc-outcome.bl .fc-outcome-count { fill: #991b1b; }
+    .fc-outcome.released { fill: #dbeafe; stroke: #2563eb; }
+    .fc-outcome.released .fc-outcome-title, .fc-outcome.released .fc-outcome-count { fill: #1e40af; }
+    .fc-outcome.quarantined { fill: #fef3c7; stroke: #d97706; }
+    .fc-outcome.quarantined .fc-outcome-title, .fc-outcome.quarantined .fc-outcome-count { fill: #92400e; }
+
+block content
+  .mf-header
+    .mf-connection
+      span.dot.connecting#mf-connection-dot
+      span#mf-connection-text Connecting...
+    span.mf-updated
+      | Last updated: #[span#mf-last-update --]
+    span.mf-pill since last restart
+
+  .mf-grid
+    .mf-chart
+      svg(viewBox="0 0 470 350" role="img" aria-label="Email processing pipeline flow")
+        defs
+          marker#mf-arrow(viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse")
+            path(d="M0,0 L10,5 L0,10 z" fill="#94a3b8")
+
+        path.fc-edge(d="M235,44 V74")
+        path.fc-edge(d="M235,108 V138")
+        path.fc-edge(d="M235,172 V202")
+        path.fc-edge(d="M235,236 V266")
+
+        rect.fc-stage(x="175" y="10" width="120" height="34" rx="8")
+        text.fc-stage-title(x="235" y="26") INBOUND
+        text.fc-stage-count(id="fc-inbound" x="235" y="40") 0
+
+        rect.fc-stage(x="175" y="74" width="120" height="34" rx="8")
+        text.fc-stage-title(x="235" y="90") WHITELIST
+        text.fc-stage-count(id="fc-wl-reached" x="235" y="104") 0
+
+        rect.fc-stage(x="175" y="138" width="120" height="34" rx="8")
+        text.fc-stage-title(x="235" y="154") BLACKLIST
+        text.fc-stage-count(id="fc-bl-reached" x="235" y="168") 0
+
+        rect.fc-stage(x="175" y="202" width="120" height="34" rx="8")
+        text.fc-stage-title(x="235" y="218") SCORING
+        text.fc-stage-count(id="fc-scoring" x="235" y="232") 0
+
+        rect.fc-stage(x="175" y="266" width="120" height="34" rx="8")
+        text.fc-stage-title(x="235" y="282") THRESHOLD
+        text.fc-stage-count(id="fc-threshold" x="235" y="296") 0
+
+        path.fc-edge(d="M175,91 H95")
+        rect.fc-outcome.wl(x="15" y="77" width="80" height="28" rx="7")
+        text.fc-outcome-title(x="55" y="89") Whitelisted
+        text.fc-outcome-count(id="fc-wl" x="55" y="100") 0
+
+        path.fc-edge(d="M175,155 H95")
+        rect.fc-outcome.bl(x="15" y="141" width="80" height="28" rx="7")
+        text.fc-outcome-title(x="55" y="153") Blacklisted*
+        text.fc-outcome-count(id="fc-bl" x="55" y="164") 0
+
+        path.fc-edge(d="M295,279 C320,279 320,267 345,267")
+        rect.fc-outcome.released(x="345" y="252" width="90" height="30" rx="7")
+        text.fc-outcome-title(x="390" y="266") Released
+        text.fc-outcome-count(id="fc-released" x="390" y="277") 0
+
+        path.fc-edge(d="M295,287 C320,287 320,301 345,301")
+        rect.fc-outcome.quarantined(x="345" y="286" width="90" height="30" rx="7")
+        text.fc-outcome-title(x="390" y="300") Quarantined
+        text.fc-outcome-count(id="fc-quarantined" x="390" y="311") 0
+
+        rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#6366f1")
+          animateMotion(dur="1.6s" repeatCount="indefinite" path="M235,44 V74")
+        rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#6366f1")
+          animateMotion(dur="2.0s" repeatCount="indefinite" path="M235,172 V202")
+        rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#16a34a")
+          animateMotion(dur="2.4s" repeatCount="indefinite" path="M175,91 H95")
+        rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#dc2626")
+          animateMotion(dur="2.8s" repeatCount="indefinite" path="M175,155 H95")
+        rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#2563eb")
+          animateMotion(dur="2.6s" repeatCount="indefinite" path="M295,279 C320,279 320,267 345,267")
+        rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#d97706")
+          animateMotion(dur="3.0s" repeatCount="indefinite" path="M295,287 C320,287 320,301 345,301")
+
+    .mf-statcol
+      .mf-stat.whitelisted
+        .n#stat-wl 0
+        .l Whitelisted
+      .mf-stat.released
+        .n#stat-released 0
+        .l Released
+      .mf-stat.quarantined
+        .n#stat-quarantined 0
+        .l Quarantined
+      .mf-stat.blacklisted
+        .n#stat-bl 0
+        .l Blacklisted / Deleted*
+      .mf-stat.deleted
+        .n#stat-deleted 0
+        .l Deleted from queue
+
+  .mf-legend
+    span
+      i.sw(style="background:#16a34a")
+      | Whitelisted
+    span
+      i.sw(style="background:#2563eb")
+      | Released
+    span
+      i.sw(style="background:#d97706")
+      | Quarantined
+    span
+      i.sw(style="background:#dc2626")
+      | Blacklisted / Deleted
+    span
+      code= '~'
+      | estimated
+    span
+      code= '*'
+      | combined counter
+
+  .mf-footnote
+    | Counts are live since the last server restart and update automatically. 
+    strong= '~'
+    | marks pass-through values derived from outcome counters (the agent does not record per-stage tallies). 
+    strong= '*'
+    | Blacklisted / Deleted combines emails stopped by blacklist rules with emails deleted for scoring ≥ THRESHOLD_DELETE.
+
+  #mf-empty.mf-empty No emails processed yet since the last restart.
+
+block scripts
+  script(src='/scripts/messageFlow.js')
