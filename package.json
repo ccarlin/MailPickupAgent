@@ -22,7 +22,8 @@
     "abuseipdbTest": "node test/testAbuseIPDB.js",
     "abuseipdbTest:dev": "set NODE_ENV=development&& node test/testAbuseIPDB.js",
     "keywordTest": "node test/testKeywordScore.js",
-    "keywordTest:dev": "set NODE_ENV=development&& node test/testKeywordScore.js"
+    "keywordTest:dev": "set NODE_ENV=development&& node test/testKeywordScore.js",
+    "messageflowTest": "node test/testMessageFlow.js"
   },
   "keywords": [
     "mail",
