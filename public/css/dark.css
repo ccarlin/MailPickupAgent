@@ -880,4 +880,29 @@
     background: #3b1216;
     color: #fca5a5;
   }
+
+  /* --- Message Flow page --- */
+  .mf-connection { color: #94a3b8; }
+  .mf-updated { color: #64748b; }
+  .mf-pill { background: #17263c; color: #93c5fd; }
+  .mf-stat .n { color: #e2e8f0; }
+  .mf-stat .l { color: #94a3b8; }
+  .mf-legend { color: #94a3b8; }
+  .mf-legend code, .mf-footnote code { background: #1f2937; color: #cbd5e1; }
+  .mf-footnote { color: #64748b; }
+  .mf-empty { color: #64748b; }
+
+  .fc-stage { fill: #1e293b; stroke: #818cf8; }
+  .fc-stage-title { fill: #c7d2fe; }
+  .fc-stage-count { fill: #f1f5f9; }
+  .fc-edge { stroke: #64748b; }
+
+  .fc-outcome.wl { fill: #0b2a1a; stroke: #16a34a; }
+  .fc-outcome.wl .fc-outcome-title, .fc-outcome.wl .fc-outcome-count { fill: #6ee7a0; }
+  .fc-outcome.bl { fill: #3b1216; stroke: #dc2626; }
+  .fc-outcome.bl .fc-outcome-title, .fc-outcome.bl .fc-outcome-count { fill: #fca5a5; }
+  .fc-outcome.released { fill: #17263c; stroke: #2563eb; }
+  .fc-outcome.released .fc-outcome-title, .fc-outcome.released .fc-outcome-count { fill: #93c5fd; }
+  .fc-outcome.quarantined { fill: #2a1d0e; stroke: #d97706; }
+  .fc-outcome.quarantined .fc-outcome-title, .fc-outcome.quarantined .fc-outcome-count { fill: #fdba74; }
 }
