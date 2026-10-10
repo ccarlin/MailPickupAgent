@@ -177,3 +177,60 @@ block content
 
 block scripts
   script(src='/scripts/messageFlow.js')
+  script.
+    document.addEventListener('DOMContentLoaded', function () {
+      function fmt(n) { return (n || 0).toLocaleString(); }
+
+      function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function applyFlow(data) {
+        var flow = window.MessageFlow.computeFlow(data);
+        setText('fc-inbound', fmt(flow.inbound));
+        setText('fc-wl-reached', fmt(flow.whitelistReached));
+        setText('fc-bl-reached', fmt(flow.blacklistReached));
+        setText('fc-scoring', fmt(flow.scoringReached));
+        setText('fc-threshold', fmt(flow.thresholdReached));
+        setText('fc-wl', fmt(flow.whitelisted));
+        setText('fc-bl', fmt(flow.blacklisted));
+        setText('fc-released', fmt(flow.released));
+        setText('fc-quarantined', fmt(flow.quarantined));
+        setText('stat-wl', fmt(flow.whitelisted));
+        setText('stat-released', fmt(flow.released));
+        setText('stat-quarantined', fmt(flow.quarantined));
+        setText('stat-bl', fmt(flow.blacklisted));
+        setText('stat-deleted', fmt(flow.deleted));
+        var empty = document.getElementById('mf-empty');
+        if (empty) empty.style.display = flow.inbound === 0 ? 'block' : 'none';
+        setText('mf-last-update', new Date().toLocaleTimeString());
+      }
+
+      function setConnection(state) {
+        var dot = document.getElementById('mf-connection-dot');
+        var text = document.getElementById('mf-connection-text');
+        if (!dot || !text) return;
+        dot.className = 'dot ' + state;
+        text.textContent = state === 'connected' ? 'Live' : (state === 'connecting' ? 'Reconnecting…' : 'Disconnected');
+      }
+
+      setConnection('connecting');
+
+      var es = new EventSource('/status/events');
+      es.addEventListener('full', function (e) {
+        try { applyFlow(JSON.parse(e.data)); } catch (err) { /* ignore malformed frame */ }
+        setConnection('connected');
+      });
+      es.addEventListener('update', function (e) {
+        try { applyFlow(JSON.parse(e.data)); } catch (err) { /* ignore malformed frame */ }
+        setConnection('connected');
+      });
+      es.addEventListener('auth-error', function () {
+        es.close();
+        window.location.href = '/login';
+      });
+      es.onerror = function () {
+        setConnection(es.readyState === EventSource.CONNECTING ? 'connecting' : 'disconnected');
+      };
+    });
