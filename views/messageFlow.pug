@@ -31,6 +31,8 @@ block css
     .mf-stat.quarantined { border-color: #d97706; }
     .mf-stat.blacklisted { border-color: #dc2626; }
     .mf-stat.deleted { border-color: #64748b; }
+    .mf-stat[data-href], .fc-outcome[data-href] { cursor: pointer; }
+    .mf-stat[data-href]:hover { background-color: #f1f5f9; }
 
     .mf-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; font-size: 0.72rem; color: #475569; }
     .mf-legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -100,26 +102,30 @@ block content
         text.fc-stage-count(id="fc-threshold" x="235" y="260") 0
 
         path.fc-edge(d="M175,80 H95")
-        g.fc-outcome.wl
+        g.fc-outcome.wl(data-href='/MailLog?result=Whitelisted')
+          title View whitelisted emails
           rect(x="15" y="67" width="80" height="26" rx="7")
           text.fc-outcome-title(x="55" y="79") Whitelisted
           text.fc-outcome-count(id="fc-wl" x="55" y="90") 0
 
         path.fc-edge(d="M175,136 H95")
-        g.fc-outcome.bl
+        g.fc-outcome.bl(data-href='/MailLog?result=Blacklisted')
+          title View blacklisted / deleted emails
           rect(x="15" y="123" width="80" height="26" rx="7")
             title Combines emails stopped by blacklist rules with emails deleted for scoring ≥ THRESHOLD_DELETE.
           text.fc-outcome-title(x="55" y="135") Blacklisted*
           text.fc-outcome-count(id="fc-bl" x="55" y="146") 0
 
         path.fc-edge(d="M295,242 C320,242 320,248 345,248")
-        g.fc-outcome.released
+        g.fc-outcome.released(data-href='/MailLog?result=Released')
+          title View released emails
           rect(x="345" y="234" width="90" height="28" rx="7")
           text.fc-outcome-title(x="390" y="248") Released
           text.fc-outcome-count(id="fc-released" x="390" y="259") 0
 
         path.fc-edge(d="M295,256 C320,256 320,282 345,282")
-        g.fc-outcome.quarantined
+        g.fc-outcome.quarantined(data-href='/QuarantineLog')
+          title View quarantine log
           rect(x="345" y="268" width="90" height="28" rx="7")
           text.fc-outcome-title(x="390" y="282") Quarantined
           text.fc-outcome-count(id="fc-quarantined" x="390" y="293") 0
@@ -138,16 +144,16 @@ block content
           animateMotion(dur="3.0s" repeatCount="indefinite" path="M295,256 C320,256 320,282 345,282")
 
     .mf-statcol
-      .mf-stat.whitelisted
+      .mf-stat.whitelisted(data-href='/MailLog?result=Whitelisted' title="View whitelisted emails")
         .n#stat-wl 0
         .l Whitelisted
-      .mf-stat.released
+      .mf-stat.released(data-href='/MailLog?result=Released' title="View released emails")
         .n#stat-released 0
         .l Released
-      .mf-stat.quarantined
+      .mf-stat.quarantined(data-href='/QuarantineLog' title="View quarantine log")
         .n#stat-quarantined 0
         .l Quarantined
-      .mf-stat.blacklisted(title="Combines emails stopped by blacklist rules with emails deleted for scoring ≥ THRESHOLD_DELETE.")
+      .mf-stat.blacklisted(data-href='/MailLog?result=Blacklisted' title="Combines emails stopped by blacklist rules with emails deleted for scoring ≥ THRESHOLD_DELETE.")
         .n#stat-bl 0
         .l Blacklisted / Deleted*
       .mf-stat.deleted
@@ -217,6 +223,13 @@ block scripts
       }
 
       setConnection('connecting');
+
+      Array.prototype.forEach.call(document.querySelectorAll('[data-href]'), function (el) {
+        el.addEventListener('click', function () {
+          var href = this.getAttribute('data-href');
+          if (href) window.open(href, '_blank');
+        });
+      });
 
       var es = new EventSource('/status/events');
       es.addEventListener('full', function (e) {
