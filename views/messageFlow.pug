@@ -7,7 +7,7 @@ block css
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
       flex-wrap: wrap;
     }
     .mf-connection { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: #64748b; }
@@ -18,13 +18,13 @@ block css
     .mf-pill { background: #eef2ff; color: #4338ca; border-radius: 10px; padding: 2px 10px; font-size: 0.68rem; font-weight: 600; }
     .mf-updated { font-size: 0.8rem; color: #94a3b8; }
 
-    .mf-grid { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
-    .mf-chart { flex: 1 1 420px; min-width: 320px; }
+    .mf-grid { display: flex; gap: 24px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+    .mf-chart { flex: 1 1 420px; min-width: 320px; max-width: 520px; }
     .mf-chart svg { width: 100%; height: auto; }
 
     .mf-statcol { flex: 0 0 200px; min-width: 180px; }
-    .mf-stat { border-left: 3px solid #6366f1; padding: 2px 0 8px 10px; margin-bottom: 10px; }
-    .mf-stat .n { font-size: 1.15rem; font-weight: 700; color: #1e293b; }
+    .mf-stat { border-left: 3px solid #6366f1; padding: 2px 0 6px 10px; margin-bottom: 6px; }
+    .mf-stat .n { font-size: 1rem; font-weight: 700; color: #1e293b; }
     .mf-stat .l { font-size: 0.66rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
     .mf-stat.whitelisted { border-color: #16a34a; }
     .mf-stat.released { border-color: #2563eb; }
@@ -32,20 +32,20 @@ block css
     .mf-stat.blacklisted { border-color: #dc2626; }
     .mf-stat.deleted { border-color: #64748b; }
 
-    .mf-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 0.72rem; color: #475569; }
+    .mf-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; font-size: 0.72rem; color: #475569; }
     .mf-legend span { display: inline-flex; align-items: center; gap: 6px; }
     .mf-legend .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-    .mf-legend code, .mf-footnote code { background: #f1f5f9; border-radius: 4px; padding: 0 4px; }
-    .mf-footnote { font-size: 0.72rem; color: #94a3b8; margin-top: 10px; line-height: 1.5; }
+    .mf-legend code { background: #f1f5f9; border-radius: 4px; padding: 0 4px; }
     .mf-empty { display: none; text-align: center; color: #94a3b8; font-size: 0.85rem; margin-top: 8px; }
 
     .fc-stage { fill: #eef2ff; stroke: #6366f1; stroke-width: 1.5; }
     .fc-stage-title { font: 700 10px Roboto, sans-serif; text-anchor: middle; fill: #312e81; }
     .fc-stage-count { font: 700 12px Roboto, sans-serif; text-anchor: middle; fill: #1e293b; }
     .fc-edge { stroke: #94a3b8; stroke-width: 1.6; fill: none; marker-end: url(#mf-arrow); }
+    .fc-envelope, .fc-edge, .fc-stage-title, .fc-stage-count, .fc-outcome-title, .fc-outcome-count { pointer-events: none; }
     .fc-outcome { stroke-width: 1.5; }
-    .fc-outcome-title { font: 600 9px Roboto, sans-serif; text-anchor: middle; }
-    .fc-outcome-count { font: 700 11px Roboto, sans-serif; text-anchor: middle; }
+    .fc-outcome-title { font: 600 9px Roboto, sans-serif; text-anchor: middle; stroke: none; }
+    .fc-outcome-count { font: 700 11px Roboto, sans-serif; text-anchor: middle; stroke: none; }
     .fc-outcome.wl { fill: #dcfce7; stroke: #16a34a; }
     .fc-outcome.wl .fc-outcome-title, .fc-outcome.wl .fc-outcome-count { fill: #166534; }
     .fc-outcome.bl { fill: #fee2e2; stroke: #dc2626; }
@@ -60,74 +60,82 @@ block content
     .mf-connection
       span.dot.connecting#mf-connection-dot
       span#mf-connection-text Connecting...
-    span.mf-updated
+    span.mf-updated(title="Counts are live since the last server restart and update automatically.")
       | Last updated: #[span#mf-last-update --]
-    span.mf-pill since last restart
+    span.mf-pill(title="Counts are live since the last server restart and update automatically.") since last restart
 
   .mf-grid
     .mf-chart
-      svg(viewBox="0 0 470 350" role="img" aria-label="Email processing pipeline flow")
+      svg(viewBox="0 0 470 302" role="img" aria-label="Email processing pipeline flow")
         defs
           marker#mf-arrow(viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse")
             path(d="M0,0 L10,5 L0,10 z" fill="#94a3b8")
 
-        path.fc-edge(d="M235,44 V74")
-        path.fc-edge(d="M235,108 V138")
-        path.fc-edge(d="M235,172 V202")
-        path.fc-edge(d="M235,236 V266")
+        path.fc-edge(d="M235,40 V64")
+        path.fc-edge(d="M235,96 V120")
+        path.fc-edge(d="M235,152 V176")
+        path.fc-edge(d="M235,208 V232")
 
-        rect.fc-stage(x="175" y="10" width="120" height="34" rx="8")
-        text.fc-stage-title(x="235" y="26") INBOUND
-        text.fc-stage-count(id="fc-inbound" x="235" y="40") 0
+        rect.fc-stage(x="175" y="8" width="120" height="32" rx="8")
+        text.fc-stage-title(x="235" y="24") INBOUND
+        text.fc-stage-count(id="fc-inbound" x="235" y="36") 0
 
-        rect.fc-stage(x="175" y="74" width="120" height="34" rx="8")
-        text.fc-stage-title(x="235" y="90") WHITELIST
-        text.fc-stage-count(id="fc-wl-reached" x="235" y="104") 0
+        rect.fc-stage(x="175" y="64" width="120" height="32" rx="8")
+        text.fc-stage-title(x="235" y="80") WHITELIST
+        text.fc-stage-count(id="fc-wl-reached" x="235" y="92") 0
 
-        rect.fc-stage(x="175" y="138" width="120" height="34" rx="8")
-        text.fc-stage-title(x="235" y="154") BLACKLIST
-        text.fc-stage-count(id="fc-bl-reached" x="235" y="168") 0
+        rect.fc-stage(x="175" y="120" width="120" height="32" rx="8")
+          title Estimated count — derived from outcome counters; the agent does not record per-stage tallies.
+        text.fc-stage-title(x="235" y="136") BLACKLIST
+        text.fc-stage-count(id="fc-bl-reached" x="235" y="148") 0
 
-        rect.fc-stage(x="175" y="202" width="120" height="34" rx="8")
-        text.fc-stage-title(x="235" y="218") SCORING
-        text.fc-stage-count(id="fc-scoring" x="235" y="232") 0
+        rect.fc-stage(x="175" y="176" width="120" height="32" rx="8")
+          title Estimated count — derived from outcome counters; the agent does not record per-stage tallies.
+        text.fc-stage-title(x="235" y="192") SCORING
+        text.fc-stage-count(id="fc-scoring" x="235" y="204") 0
 
-        rect.fc-stage(x="175" y="266" width="120" height="34" rx="8")
-        text.fc-stage-title(x="235" y="282") THRESHOLD
-        text.fc-stage-count(id="fc-threshold" x="235" y="296") 0
+        rect.fc-stage(x="175" y="232" width="120" height="32" rx="8")
+          title Estimated count — derived from outcome counters; the agent does not record per-stage tallies.
+        text.fc-stage-title(x="235" y="248") THRESHOLD
+        text.fc-stage-count(id="fc-threshold" x="235" y="260") 0
 
-        path.fc-edge(d="M175,91 H95")
-        rect.fc-outcome.wl(x="15" y="77" width="80" height="28" rx="7")
-        text.fc-outcome-title(x="55" y="89") Whitelisted
-        text.fc-outcome-count(id="fc-wl" x="55" y="100") 0
+        path.fc-edge(d="M175,80 H95")
+        g.fc-outcome.wl
+          rect(x="15" y="67" width="80" height="26" rx="7")
+          text.fc-outcome-title(x="55" y="79") Whitelisted
+          text.fc-outcome-count(id="fc-wl" x="55" y="90") 0
 
-        path.fc-edge(d="M175,155 H95")
-        rect.fc-outcome.bl(x="15" y="141" width="80" height="28" rx="7")
-        text.fc-outcome-title(x="55" y="153") Blacklisted*
-        text.fc-outcome-count(id="fc-bl" x="55" y="164") 0
+        path.fc-edge(d="M175,136 H95")
+        g.fc-outcome.bl
+          rect(x="15" y="123" width="80" height="26" rx="7")
+            title Combines emails stopped by blacklist rules with emails deleted for scoring ≥ THRESHOLD_DELETE.
+          text.fc-outcome-title(x="55" y="135") Blacklisted*
+          text.fc-outcome-count(id="fc-bl" x="55" y="146") 0
 
-        path.fc-edge(d="M295,279 C320,279 320,267 345,267")
-        rect.fc-outcome.released(x="345" y="252" width="90" height="30" rx="7")
-        text.fc-outcome-title(x="390" y="266") Released
-        text.fc-outcome-count(id="fc-released" x="390" y="277") 0
+        path.fc-edge(d="M295,242 C320,242 320,248 345,248")
+        g.fc-outcome.released
+          rect(x="345" y="234" width="90" height="28" rx="7")
+          text.fc-outcome-title(x="390" y="248") Released
+          text.fc-outcome-count(id="fc-released" x="390" y="259") 0
 
-        path.fc-edge(d="M295,287 C320,287 320,301 345,301")
-        rect.fc-outcome.quarantined(x="345" y="286" width="90" height="30" rx="7")
-        text.fc-outcome-title(x="390" y="300") Quarantined
-        text.fc-outcome-count(id="fc-quarantined" x="390" y="311") 0
+        path.fc-edge(d="M295,256 C320,256 320,282 345,282")
+        g.fc-outcome.quarantined
+          rect(x="345" y="268" width="90" height="28" rx="7")
+          text.fc-outcome-title(x="390" y="282") Quarantined
+          text.fc-outcome-count(id="fc-quarantined" x="390" y="293") 0
 
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#6366f1")
-          animateMotion(dur="1.6s" repeatCount="indefinite" path="M235,44 V74")
+          animateMotion(dur="1.6s" repeatCount="indefinite" path="M235,40 V64")
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#6366f1")
-          animateMotion(dur="2.0s" repeatCount="indefinite" path="M235,172 V202")
+          animateMotion(dur="2.0s" repeatCount="indefinite" path="M235,152 V176")
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#16a34a")
-          animateMotion(dur="2.4s" repeatCount="indefinite" path="M175,91 H95")
+          animateMotion(dur="2.4s" repeatCount="indefinite" path="M175,80 H95")
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#dc2626")
-          animateMotion(dur="2.8s" repeatCount="indefinite" path="M175,155 H95")
+          animateMotion(dur="2.8s" repeatCount="indefinite" path="M175,136 H95")
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#2563eb")
-          animateMotion(dur="2.6s" repeatCount="indefinite" path="M295,279 C320,279 320,267 345,267")
+          animateMotion(dur="2.6s" repeatCount="indefinite" path="M295,242 C320,242 320,248 345,248")
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#d97706")
-          animateMotion(dur="3.0s" repeatCount="indefinite" path="M295,287 C320,287 320,301 345,301")
+          animateMotion(dur="3.0s" repeatCount="indefinite" path="M295,256 C320,256 320,282 345,282")
 
     .mf-statcol
       .mf-stat.whitelisted
@@ -139,7 +147,7 @@ block content
       .mf-stat.quarantined
         .n#stat-quarantined 0
         .l Quarantined
-      .mf-stat.blacklisted
+      .mf-stat.blacklisted(title="Combines emails stopped by blacklist rules with emails deleted for scoring ≥ THRESHOLD_DELETE.")
         .n#stat-bl 0
         .l Blacklisted / Deleted*
       .mf-stat.deleted
@@ -159,19 +167,12 @@ block content
     span
       i.sw(style="background:#dc2626")
       | Blacklisted / Deleted
-    span
+    span(title="Estimated count — derived from outcome counters; the agent does not record per-stage tallies.")
       code= '~'
       | estimated
-    span
+    span(title="Combines emails stopped by blacklist rules with emails deleted for scoring ≥ THRESHOLD_DELETE.")
       code= '*'
       | combined counter
-
-  .mf-footnote
-    | Counts are live since the last server restart and update automatically. 
-    strong= '~'
-    | marks pass-through values derived from outcome counters (the agent does not record per-stage tallies). 
-    strong= '*'
-    | Blacklisted / Deleted combines emails stopped by blacklist rules with emails deleted for scoring ≥ THRESHOLD_DELETE.
 
   #mf-empty.mf-empty No emails processed yet since the last restart.
 

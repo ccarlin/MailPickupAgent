@@ -888,8 +888,7 @@
   .mf-stat .n { color: #e2e8f0; }
   .mf-stat .l { color: #94a3b8; }
   .mf-legend { color: #94a3b8; }
-  .mf-legend code, .mf-footnote code { background: #1f2937; color: #cbd5e1; }
-  .mf-footnote { color: #94a3b8; }
+  .mf-legend code { background: #1f2937; color: #cbd5e1; }
   .mf-empty { color: #94a3b8; }
 
   .fc-stage { fill: #1e293b; stroke: #818cf8; }
