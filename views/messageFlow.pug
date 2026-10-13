@@ -56,6 +56,8 @@ block css
     .fc-outcome.released .fc-outcome-title, .fc-outcome.released .fc-outcome-count { fill: #1e40af; }
     .fc-outcome.quarantined { fill: #fef3c7; stroke: #d97706; }
     .fc-outcome.quarantined .fc-outcome-title, .fc-outcome.quarantined .fc-outcome-count { fill: #92400e; }
+    .fc-outcome.deleted { fill: #e2e8f0; stroke: #64748b; }
+    .fc-outcome.deleted .fc-outcome-title, .fc-outcome.deleted .fc-outcome-count { fill: #334155; }
 
 block content
   .mf-header
@@ -68,7 +70,7 @@ block content
 
   .mf-grid
     .mf-chart
-      svg(viewBox="0 0 470 302" role="img" aria-label="Email processing pipeline flow")
+      svg(viewBox="0 0 470 336" role="img" aria-label="Email processing pipeline flow")
         defs
           marker#mf-arrow(viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse")
             path(d="M0,0 L10,5 L0,10 z" fill="#94a3b8")
@@ -130,6 +132,13 @@ block content
           text.fc-outcome-title(x="390" y="282") Quarantined
           text.fc-outcome-count(id="fc-quarantined" x="390" y="293") 0
 
+        path.fc-edge(d="M295,264 C320,264 320,316 345,316")
+        g.fc-outcome.deleted(data-href='/deleted')
+          title View deleted messages
+          rect(x="345" y="302" width="90" height="28" rx="7")
+          text.fc-outcome-title(x="390" y="316") Deleted
+          text.fc-outcome-count(id="fc-deleted" x="390" y="327") 0
+
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#6366f1")
           animateMotion(dur="1.6s" repeatCount="indefinite" path="M235,40 V64")
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#6366f1")
@@ -142,6 +151,8 @@ block content
           animateMotion(dur="2.6s" repeatCount="indefinite" path="M295,242 C320,242 320,248 345,248")
         rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#d97706")
           animateMotion(dur="3.0s" repeatCount="indefinite" path="M295,256 C320,256 320,282 345,282")
+        rect.fc-envelope(x="-5" y="-3.5" width="10" height="7" rx="1" fill="#64748b")
+          animateMotion(dur="3.2s" repeatCount="indefinite" path="M295,264 C320,264 320,316 345,316")
 
     .mf-statcol
       .mf-stat.whitelisted(data-href='/MailLog?result=Whitelisted' title="View whitelisted emails")
@@ -170,6 +181,9 @@ block content
     span
       i.sw(style="background:#d97706")
       | Quarantined
+    span
+      i.sw(style="background:#64748b")
+      | Deleted from queue
     span
       i.sw(style="background:#dc2626")
       | Blacklisted / Deleted
@@ -204,6 +218,7 @@ block scripts
         setText('fc-bl', fmt(flow.blacklisted));
         setText('fc-released', fmt(flow.released));
         setText('fc-quarantined', fmt(flow.quarantined));
+        setText('fc-deleted', fmt(flow.deleted));
         setText('stat-wl', fmt(flow.whitelisted));
         setText('stat-released', fmt(flow.released));
         setText('stat-quarantined', fmt(flow.quarantined));
