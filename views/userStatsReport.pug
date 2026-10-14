@@ -326,17 +326,27 @@ block content
 
                 var labels = [];
                 chartFullLabels = [];
-                top.forEach(function(r) {
-                    chartFullLabels.push(r[0]);
-                    labels.push(shortLabel(r[0]));
-                });
-                var values = top.map(function(r) { return r[1]; });
-
                 var colors = [
                     '#1976d2', '#ef6c00', '#2e7d32', '#c62828', '#7b1fa2',
                     '#ad1457', '#00695c', '#f57f17', '#0288d1', '#37474f'
                 ];
-                var bg = top.map(function(_, i) { return colors[i % colors.length]; });
+                var bg = [];
+                top.forEach(function(r) {
+                    chartFullLabels.push(r[0]);
+                    labels.push(shortLabel(r[0]));
+                    bg.push(colors[bg.length % colors.length]);
+                });
+                var values = top.map(function(r) { return r[1]; });
+
+                var topSum = values.reduce(function(a, b) { return a + b; }, 0);
+                var othersSum = total - topSum;
+                if (othersSum > 0) {
+                    var otherCount = filteredData.length - top.length;
+                    chartFullLabels.push('Others (' + otherCount + ' users)');
+                    labels.push('Others');
+                    values.push(othersSum);
+                    bg.push('#94a3b8');
+                }
 
                 if (chart) {
                     chart.data.labels = labels;
@@ -347,32 +357,38 @@ block content
                 }
 
                 chart = new Chart(document.getElementById('user-stats-chart'), {
-                    type: 'bar',
+                    type: 'pie',
                     data: {
                         labels: labels,
                         datasets: [{
                             label: 'Processed',
                             data: values,
                             backgroundColor: bg,
-                            borderRadius: 4
+                            borderColor: '#fff',
+                            borderWidth: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { display: false },
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: { boxWidth: 12, padding: 8, font: { size: 11 } }
+                            },
                             tooltip: {
                                 callbacks: {
-                                    title: function(items) {
-                                        var idx = items[0].dataIndex;
-                                        return (chartFullLabels && chartFullLabels[idx]) || items[0].label;
+                                    label: function(item) {
+                                        var idx = item.dataIndex;
+                                        var full = (chartFullLabels && chartFullLabels[idx]) || item.label;
+                                        var val = item.parsed || 0;
+                                        var sum = item.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                        var pct = sum ? ((val / sum) * 100).toFixed(1) : '0.0';
+                                        return full + ': ' + val.toLocaleString() + ' (' + pct + '%)';
                                     }
                                 }
                             }
-                        },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { precision: 0 } }
                         }
                     }
                 });
@@ -552,7 +568,7 @@ block content
                             i.fas.fa-table
                             | Table
                         button#btn-view-chart(type="button")
-                            i.fas.fa-chart-bar
+                            i.fas.fa-chart-pie
                             | Chart
                     .mui-btn-clear-all#btn-clear-all
                         i.fas.fa-trash-alt
@@ -574,7 +590,7 @@ block content
                             option(value="20") 20
                             option(value="30") 30
                     #chart-empty.chart-empty(style="display:none")
-                        i.fas.fa-chart-bar
+                        i.fas.fa-chart-pie
                         | No user stats to chart.
                     #chart-wrapper.chart-wrapper(style="display:none")
                         canvas#user-stats-chart
