@@ -8,6 +8,7 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - **Admin Web Server** — UI for configuration, log viewing, quarantine/deleted email management, session management, notification subscriptions, and config history
 - **Multi-Layer Filtering** — whitelist/blacklist by sender, subject, IP, country, combo rules, keyword filters (regex/plain text), and allowed TLDs
 - **Rule Hits Report** — track, view, and clear hit counts for whitelist, blacklist, country, combo, and keyword filter rules to see which rules are most active
+- **Per-User Stats Report** — track whitelisted, blacklisted, quarantined, released, and deleted counts per local mailbox recipient, with a sortable table, summary cards, chart, CSV/copy export, and clear controls
 - **SpamAssassin Integration** — optional spamd scoring with configurable enable/disable
 - **AI Classification** — Ollama- or llama.cpp-powered spam classification with configurable backend, model, server, timeout, and scoring points
 - **AbuseIPDB Integration** — optional IP reputation checking via AbuseIPDB API with configurable base/max scoring (runs automatically when API key is set)
@@ -198,6 +199,8 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 - **SMTP Log Analyzer** (`/SMTPLog`) — analyze MailEnable SMTP logs
 - **Rules Editor** (`/rulesEditor`) — manage whitelist, blacklist, keyword, combo, TLD, and country filters; generate keyword filters via AI
 - **Rule Hits Report** (`/ruleHits`) — track, view, and clear hit counts for whitelist, blacklist, country, combo, and keyword filters to observe rule efficacy
+- **User Stats Report** (`/userStats`) — per-mailbox breakdown of processed, whitelisted, blacklisted, quarantined, released, and deleted message counts with table/chart views and CSV/copy export
+- **Message Flow** (`/messageflow`) — live email pipeline funnel visualization showing inbound, filtered, scored, and released/quarantined counts streamed over SSE
 - **Manage Access Links** (`/manageLinks`) — generate, view, and delete shareable access links for the mail queue
 - **Notifications** (`/notificationsAdmin`) — view and manage browser push notification subscriptions
 - **Session Manager** (`/sessions`) — view active admin sessions with login metadata (IP, user agent, identifier) and terminate sessions
@@ -218,8 +221,10 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 | Browse, diff, and restore configuration backups | Track and view rule hit counts |
 | ![Rule Hits Chart](public/img/Screenshots/Rule%20Hits%20Chart.png) | ![Notifications Admin](public/img/Screenshots/Notifications%20Admin.png) |
 | Visualize rule hit activity | Manage notification subscriptions |
-| ![Session Manager](public/img/Screenshots/Session%20Manager.png) | | ![Manage Access Links](public/img/Screenshots/Mailq%20Link%20Generator.png)
-| Manage active sessions | Manage Access Links to Mailq page per user | 
+| ![Session Manager](public/img/Screenshots/Session%20Manager.png) | ![Manage Access Links](public/img/Screenshots/Mailq%20Link%20Generator.png) |
+| Manage active sessions | Manage Access Links to Mailq page per user |
+| ![User Stats](public/img/Screenshots/User%20Stats.png) | ![Message Flow](public/img/Screenshots/Message%20Flow.png) |
+| Per-mailbox processing counts with table/chart views | Live email pipeline funnel visualization |
 
 It is recommended that you use PM2 or a similar tool to ensure that the server is always running.  
 Make sure to exclude logging directories and quarantine/deleted directories from any watch settings to avoid unnecessary restarts.
@@ -380,6 +385,9 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 | `GET` | `/ruleHits/api/rule-hits` | Get detailed list of rule hits with resolved display labels and scores |
 | `DELETE` | `/ruleHits/api/rule-hits/clear` | Clear all recorded rule hits from database |
 | `DELETE` | `/ruleHits/api/rule-hits/:ruleType/:ruleValue` | Delete a specific rule hit count from database |
+| `GET` | `/userStats/api/stats` | Get per-mailbox processing counts (processed, whitelisted, blacklisted, quarantined, released, deleted) |
+| `DELETE` | `/userStats/api/stats/clear` | Clear all recorded per-user stats from database |
+| `DELETE` | `/userStats/api/stats/:user` | Delete a specific user's stats from database |
 
 ## GeoIP Database
 

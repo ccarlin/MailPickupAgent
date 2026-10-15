@@ -6,6 +6,7 @@ const axios = require("axios");
 const dns = require('dns');
 const tools = require("../app/tools");
 const metrics = require('../app/metrics');
+const userStats = require('../app/userStats');
 const config = require('../config');
 const { recentlyReleased } = require('../index.js');
 const dnsPromises = dns.promises;
@@ -493,6 +494,7 @@ function DeleteMessages(emails, sourcePath)
             fs.renameSync(headerFile, destHeader);
             fs.renameSync(emailFile, destMessage);
             metrics.increment('deleted');
+            userStats.recordOutcomes(email.recipients, 'deleted');
         }
         catch(err) {
             tools.logError(`Unable to move email to the delete directory: ${err}`);
@@ -528,6 +530,7 @@ function ReleaseMessages(emails)
             fs.renameSync(headerFile, commandFile);
             recentlyReleased.set(email.filepath, Date.now());
             metrics.increment('released');
+            userStats.recordOutcomes(email.recipients, 'released');
         }
         catch (err)
         {

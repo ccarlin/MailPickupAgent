@@ -122,6 +122,8 @@ app.get('/', (req, res) => {
 
 app.use('/rulesEditor', require('./routes/rulesEditor'));
 app.use('/ruleHits', require('./routes/ruleHitsReport'));
+app.use('/userStats', require('./routes/userStatsReport'));
+app.use('/messageflow', require('./routes/messageFlow'));
 app.use('/configEditor', require('./routes/configEditor'));
 app.use('/mailq', require('./routes/mailqRoute'));
 app.use('/manageLinks', require('./routes/manageLinks'));

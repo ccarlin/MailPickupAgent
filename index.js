@@ -15,6 +15,7 @@ const { checkSpamAssassin } = require('./app/spamassassin');
 const { check: checkAbuseIpdb } = require('./app/abuseipdb');
 const { extractOriginatingIp } = require('./app/shared');
 const { recordHit } = require('./app/ruleHits');
+const userStats = require('./app/userStats');
 
 const QUARANTINE_DIR = config.QUARANTINE_DIR;
 const DELETED_DIR = config.DELETED_DIR;
@@ -262,6 +263,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (wlResult.whitelisted) {
       recordHit(wlResult.ruleType, wlResult.rule);
       metrics.increment('whitelisted');
+      userStats.recordOutcomes(recipients, 'whitelisted');
       const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Whitelisted', wlResult.reason, 0);
       tools.logData(`Sender ${fromAddr} is whitelisted, releasing`);
@@ -276,6 +278,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     // 2.0 Blacklist check - Allowed TLDs enforcement
     if (blResult.matched && blResult.type === 'tld') {
       metrics.increment('blacklisted');
+      userStats.recordOutcomes(recipients, 'blacklisted');
       tools.logData(`From address TLD not in allowedTLDs, deleting`);
       const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'TLD not allowed', 99);
@@ -289,6 +292,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (blResult.matched && blResult.type === 'sender') {
       recordHit(blResult.ruleType, blResult.rule);
       metrics.increment('blacklisted');
+      userStats.recordOutcomes(recipients, 'blacklisted');
       tools.logData(`Sender ${fromAddr} is blacklisted, deleting`);
       const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted sender', 99);
@@ -302,6 +306,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     if (blResult.matched && blResult.type === 'ip') {
       recordHit(blResult.ruleType, blResult.rule);
       metrics.increment('blacklisted');
+      userStats.recordOutcomes(recipients, 'blacklisted');
       tools.logData(`Originating IP ${originatingIp} is blacklisted, deleting`);
       const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted IP', 99);
@@ -316,6 +321,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       const countryRule = (bl.countries || []).find(country => String(country).toUpperCase() === countryResult.country);
       recordHit('blacklist.countries', countryRule);
       metrics.increment('blacklisted');
+      userStats.recordOutcomes(recipients, 'blacklisted');
       tools.logData(`Originating country ${countryResult.country} is blacklisted, deleting`);
       const elapsed = (performance.now() - processStartTime) / 1000;
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Blacklisted country', 99);
@@ -332,6 +338,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       if (matchedCombo) {
         recordHit('blacklist.combos', matchedCombo);
         metrics.increment('blacklisted');
+        userStats.recordOutcomes(recipients, 'blacklisted');
         tools.logData(`Combo rule matched, deleting`);
         const elapsed = (performance.now() - processStartTime) / 1000;
         logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, elapsed, 'Blacklisted', 'Combo rule matched', 99);
@@ -423,12 +430,14 @@ async function processEmail(controlFilePath, messagePath, rules) {
     tools.logData(`Final spam score: ${spamScore} (Thresholds: Quarantine ${THRESHOLD_QUARANTINE}, Delete ${THRESHOLD_DELETE})`);
     if (spamScore >= THRESHOLD_DELETE) {
       metrics.increment('blacklisted');
+      userStats.recordOutcomes(recipients, 'blacklisted');
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Blacklisted', spamDetailInfo, spamScore);
       tools.logData(`Deleting email due to score ${spamScore} >= ${THRESHOLD_DELETE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
       await deleteEmail(controlFilePath, messagePath, destMessageName, fromAddr);
     } else if (spamScore >= THRESHOLD_QUARANTINE) {
       metrics.increment('quarantined');
+      userStats.recordOutcomes(recipients, 'quarantined');
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Quarantined', spamDetailInfo, spamScore);
       tools.logData(`Quarantining email due to score ${spamScore} >= ${THRESHOLD_QUARANTINE}. Reasons: ${quarantineReasons.join('; ')}`);
       await updateEmailHeaders(messagePath, destMessageName, quarantineReasons, spamScore, countryResult.country, spamDetailInfo);
@@ -453,6 +462,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
       }).catch(err => tools.logError(`Push notification failed: ${err.message}`));
     } else {
       metrics.increment('released');
+      userStats.recordOutcomes(recipients, 'released');
       if (spamDetailInfo.length == 0) spamDetailInfo = 'No significant spam indicators';
       logProcessingEntry(messageId, sizeKb, originatingIp, fromAddr, recipientStr, subjectText, processElapsed, 'Released', spamDetailInfo, spamScore);
       tools.logData(`Releasing email with score ${spamScore}.`);
