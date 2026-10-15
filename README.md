@@ -200,6 +200,7 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 - **Rules Editor** (`/rulesEditor`) — manage whitelist, blacklist, keyword, combo, TLD, and country filters; generate keyword filters via AI
 - **Rule Hits Report** (`/ruleHits`) — track, view, and clear hit counts for whitelist, blacklist, country, combo, and keyword filters to observe rule efficacy
 - **User Stats Report** (`/userStats`) — per-mailbox breakdown of processed, whitelisted, blacklisted, quarantined, released, and deleted message counts with table/chart views and CSV/copy export
+- **Message Flow** (`/messageflow`) — live email pipeline funnel visualization showing inbound, filtered, scored, and released/quarantined counts streamed over SSE
 - **Manage Access Links** (`/manageLinks`) — generate, view, and delete shareable access links for the mail queue
 - **Notifications** (`/notificationsAdmin`) — view and manage browser push notification subscriptions
 - **Session Manager** (`/sessions`) — view active admin sessions with login metadata (IP, user agent, identifier) and terminate sessions
@@ -220,8 +221,10 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 | Browse, diff, and restore configuration backups | Track and view rule hit counts |
 | ![Rule Hits Chart](public/img/Screenshots/Rule%20Hits%20Chart.png) | ![Notifications Admin](public/img/Screenshots/Notifications%20Admin.png) |
 | Visualize rule hit activity | Manage notification subscriptions |
-| ![Session Manager](public/img/Screenshots/Session%20Manager.png) | | ![Manage Access Links](public/img/Screenshots/Mailq%20Link%20Generator.png)
-| Manage active sessions | Manage Access Links to Mailq page per user | 
+| ![Session Manager](public/img/Screenshots/Session%20Manager.png) | ![Manage Access Links](public/img/Screenshots/Mailq%20Link%20Generator.png) |
+| Manage active sessions | Manage Access Links to Mailq page per user |
+| ![User Stats](public/img/Screenshots/User%20Stats.png) | ![Message Flow](public/img/Screenshots/Message%20Flow.png) |
+| Per-mailbox processing counts with table/chart views | Live email pipeline funnel visualization |
 
 It is recommended that you use PM2 or a similar tool to ensure that the server is always running.  
 Make sure to exclude logging directories and quarantine/deleted directories from any watch settings to avoid unnecessary restarts.
