@@ -32,6 +32,7 @@ router.get('/', async (req, res) => {
         return {
           sid: row.sid || 'unknown',
           ip: meta.ip || 'unknown',
+          deviceId: meta.deviceId || null,
           userAgent: meta.userAgent || 'unknown',
           loginTime: meta.loginTime || null,
           identifier: meta.identifier || null,

@@ -18,7 +18,7 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - **Automatic Purge** — configurable retention-based cleanup of old deleted emails, log files, SMTP logs, and configuration backups
 - **Browser Push Notifications** — subscribe to real-time notifications when emails are quarantined (Web Push / Service Worker)
 - **Configuration History** — automatic backups on save with a viewer/diff/restore interface and retention limits
-- **Session Management** — view and terminate active admin sessions with login metadata (IP, user agent, identifier)
+- **Session Management** — view and terminate active admin sessions with login metadata (IP, device ID, device name, user agent)
 - **Status Dashboard** — live server metrics (processed, whitelisted, blacklisted, quarantined, released, pending queue), service health (SpamAssassin, AI, AbuseIPDB), uptime, logged-in users, notification count, and auto-purge toggle
 - **Date Range Filtering** — filter log and deleted-mail pages by date range
 - **Outbound Email Skipping** — emails submitted by internal MailEnable users are automatically skipped
@@ -203,7 +203,7 @@ Then open `http://localhost:6245` in a browser. The web UI provides:
 - **Message Flow** (`/messageflow`) — live email pipeline funnel visualization showing inbound, filtered, scored, and released/quarantined counts streamed over SSE
 - **Manage Access Links** (`/manageLinks`) — generate, view, and delete shareable access links for the mail queue
 - **Notifications** (`/notificationsAdmin`) — view and manage browser push notification subscriptions
-- **Session Manager** (`/sessions`) — view active admin sessions with login metadata (IP, user agent, identifier) and terminate sessions
+- **Session Manager** (`/sessions`) — view active admin sessions with login metadata (IP, device ID, device name, user agent) and terminate sessions
 
 ### Screenshots
 
