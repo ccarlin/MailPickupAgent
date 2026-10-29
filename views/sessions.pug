@@ -75,7 +75,7 @@ block content
             var sessions = !{JSON.stringify(sessions).replace(/<\//g, '\\u003c/')};
             var allData = sessions.map(function(s) {
                 var loginDisplay = s.loginTime ? new Date(s.loginTime).toLocaleString() : 'unknown';
-                return [s.sid, s.ip, s.userAgent, s.identifier || '', loginDisplay, s.currentUser];
+                return [s.sid, s.deviceId || '', s.ip, s.userAgent, s.identifier || '', loginDisplay, s.currentUser];
             });
 
             var grid = null;
@@ -91,6 +91,15 @@ block content
                         columns: [
                             { name: 'sid', hidden: true },
                             {
+                                name: 'Device',
+                                width: '150px',
+                                sort: true,
+                                formatter: function(cell) {
+                                    if (!cell) return gridjs.html('<span class="user-agent-cell">unknown</span>');
+                                    return gridjs.html('<span class="user-agent-cell" title="' + escHtml(cell) + '" style="font-family:monospace;">' + escHtml(String(cell).slice(0, 8)) + '</span>');
+                                }
+                            },
+                            {
                                 name: 'IP Address',
                                 width: '170px',
                                 sort: true
@@ -104,7 +113,7 @@ block content
                                 }
                             },
                             {
-                                name: 'Identifier',
+                                name: 'Device Name',
                                 width: '160px',
                                 sort: true
                             },
@@ -119,7 +128,7 @@ block content
                                 sort: false,
                                 formatter: function(cell, row) {
                                     var sid = row.cells[0].data;
-                                    var isCurrent = row.cells[5].data;
+                                    var isCurrent = row.cells[6].data;
                                     var html = '<div class="action-cell">';
                                     if (isCurrent) {
                                         html += '<span class="badge-current">You</span>';
