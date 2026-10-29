@@ -50,6 +50,21 @@ router.get('/login', (req, res) => {
 router.post('/login', loginLimiter, (req, res) => {
   const { username, password, identifier } = req.body;
   const clientIp = (req.ip || req.socket.remoteAddress || '127.0.0.1').replace(/^\[|\]$/g, '').split(',')[0].trim() || '127.0.0.1';
+
+  // TEMP DIAGNOSTIC — remove once the client IP source is identified.
+  tools.logData(`[IP-DIAG] ${JSON.stringify({
+    remoteAddress: req.socket.remoteAddress,
+    localAddress: req.socket.localAddress,
+    reqIp: req.ip,
+    host: req.headers.host,
+    protocol: req.protocol,
+    xForwardedFor: req.headers['x-forwarded-for'],
+    xRealIp: req.headers['x-real-ip'],
+    forwarded: req.headers.forwarded,
+    cfConnectingIp: req.headers['cf-connecting-ip'],
+    trueClientIp: req.headers['true-client-ip']
+  })}`, 'INFO', clientIp);
+
   if (username === validUser && verifyPassword(password, validPassHash)) {
     return req.session.regenerate((err) => {
       if (err) {
