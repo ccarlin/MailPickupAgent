@@ -164,8 +164,7 @@ router.post('/api/config/save', (req, res) => {
       }
     });
 
-    const sentryRestartRequired = Object.prototype.hasOwnProperty.call(values, 'SENTRY_DSN')
-      && sentry.dsnChanged(config.SENTRY_DSN, values.SENTRY_DSN);
+    const sentryRestartRequired = sentry.requiresRestart(config, values);
 
     const env = process.env.NODE_ENV || 'production';
     const configPath = path.resolve(__dirname, '..', 'config', `${env}.json`);
@@ -194,7 +193,7 @@ router.post('/api/config/save', (req, res) => {
     config.reload();
 
     const message = sentryRestartRequired
-      ? 'Configuration saved. Restart the MailPickupAgent service for the Sentry DSN change to take effect.'
+      ? 'Configuration saved. Restart the MailPickupAgent service for the Sentry changes to take effect.'
       : 'Configuration saved and reloaded successfully';
     res.status(200).json({ message, sentryRestartRequired });
   } catch (error) {

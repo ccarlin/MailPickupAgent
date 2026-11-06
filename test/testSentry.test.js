@@ -83,6 +83,26 @@ test('dsnChanged treats equivalent or missing DSNs as unchanged', () => {
   assert.equal(sentry.dsnChanged(' https://key@example.com/1 ', 'https://key@example.com/1'), false);
 });
 
+test('isExpressEnabled defaults to true', () => {
+  assert.equal(sentry.isExpressEnabled({}), true);
+  assert.equal(sentry.isExpressEnabled({ SENTRY_EXPRESS_ENABLED: '' }), true);
+});
+
+test('isExpressEnabled parses booleans and strings', () => {
+  assert.equal(sentry.isExpressEnabled({ SENTRY_EXPRESS_ENABLED: false }), false);
+  assert.equal(sentry.isExpressEnabled({ SENTRY_EXPRESS_ENABLED: 'false' }), false);
+  assert.equal(sentry.isExpressEnabled({ SENTRY_EXPRESS_ENABLED: true }), true);
+  assert.equal(sentry.isExpressEnabled({ SENTRY_EXPRESS_ENABLED: 'true' }), true);
+});
+
+test('requiresRestart detects DSN and Express flag changes', () => {
+  assert.equal(sentry.requiresRestart({}, {}), false);
+  assert.equal(sentry.requiresRestart({ SENTRY_DSN: '', SENTRY_EXPRESS_ENABLED: true }, { SENTRY_DSN: '', SENTRY_EXPRESS_ENABLED: true }), false);
+  assert.equal(sentry.requiresRestart({ SENTRY_DSN: '' }, { SENTRY_DSN: 'https://key@example.com/1' }), true);
+  assert.equal(sentry.requiresRestart({ SENTRY_EXPRESS_ENABLED: true }, { SENTRY_EXPRESS_ENABLED: false }), true);
+  assert.equal(sentry.requiresRestart({ SENTRY_EXPRESS_ENABLED: false }, {}), false);
+});
+
 test('captureException is a no-op before initialization', () => {
   assert.doesNotThrow(() => sentry.captureException(new Error('not enabled')));
 });

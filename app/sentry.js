@@ -3,6 +3,7 @@
 let sentry = null;
 let enabled = false;
 let initialized = false;
+let expressEnabled = true;
 
 function toBoolean(value, fallback = false) {
   if (value === undefined || value === null || value === '') return fallback;
@@ -10,8 +11,20 @@ function toBoolean(value, fallback = false) {
   return String(value).trim().toLowerCase() === 'true';
 }
 
+function isExpressEnabled(values = {}) {
+  return toBoolean(values.SENTRY_EXPRESS_ENABLED, true);
+}
+
 function dsnChanged(previous, next) {
   return String(previous || '').trim() !== String(next || '').trim();
+}
+
+function requiresRestart(previous = {}, next = {}) {
+  if (Object.prototype.hasOwnProperty.call(next, 'SENTRY_DSN')
+    && dsnChanged(previous.SENTRY_DSN, next.SENTRY_DSN)) return true;
+  if (Object.prototype.hasOwnProperty.call(next, 'SENTRY_EXPRESS_ENABLED')
+    && isExpressEnabled(previous) !== isExpressEnabled(next)) return true;
+  return false;
 }
 
 function resolveOptions(values = {}) {
@@ -47,6 +60,11 @@ function init(values = {}) {
 
   try {
     sentry = require('@sentry/node');
+    expressEnabled = isExpressEnabled(values);
+    if (!expressEnabled && typeof sentry.getDefaultIntegrations === 'function') {
+      options.defaultIntegrations = sentry.getDefaultIntegrations()
+        .filter(integration => integration.name !== 'Express');
+    }
     sentry.init(options);
     enabled = true;
   } catch (err) {
@@ -89,7 +107,7 @@ function captureException(error, context) {
 }
 
 function setupExpressErrorHandler(app) {
-  if (!enabled || !sentry || typeof sentry.setupExpressErrorHandler !== 'function') return;
+  if (!enabled || !expressEnabled || !sentry || typeof sentry.setupExpressErrorHandler !== 'function') return;
 
   try {
     sentry.setupExpressErrorHandler(app);
@@ -111,6 +129,8 @@ async function flush(timeout = 2000) {
 module.exports = {
   resolveOptions,
   dsnChanged,
+  isExpressEnabled,
+  requiresRestart,
   init,
   isEnabled,
   captureException,
