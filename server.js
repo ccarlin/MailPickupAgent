@@ -9,9 +9,12 @@ const app = express();
 const { buildAllTestEmails, processEmail, wipeall, loadRules } = require('./index.js');
 const tools = require('./app/tools');
 const appConfig = require('./config');
+const sentry = require('./app/sentry');
 const { version } = require('./package.json');
 const PORT = appConfig.PORT || 6245;
 let server;
+
+sentry.init(appConfig);
 
 // View engine setup
 app.set('view engine', 'pug');
@@ -138,6 +141,8 @@ app.use('/notifications', require('./routes/notifications'));
 app.use('/notificationsAdmin', require('./routes/notificationsAdmin'));
 app.use('/configHistory', require('./routes/configHistory'));
 app.use('/currentLog', require('./routes/currentLog'));
+
+sentry.setupExpressErrorHandler(app);
 
 // Configuration loaded at startup
 let config = {
@@ -428,20 +433,24 @@ if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
 
 // Global uncaught exception and rejection handlers
 process.on('uncaughtException', (err) => {
-  tools.logError(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`);
+  tools.logError(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`, undefined, err);
   // Don't exit immediately — let existing connections drain
   gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 process.on('unhandledRejection', (reason) => {
-  tools.logError(`UNHANDLED REJECTION: ${reason instanceof Error ? reason.message : reason}\n${reason instanceof Error ? reason.stack : ''}`);
+  tools.logError(
+    `UNHANDLED REJECTION: ${reason instanceof Error ? reason.message : reason}\n${reason instanceof Error ? reason.stack : ''}`,
+    undefined,
+    reason instanceof Error ? reason : undefined
+  );
 });
 
 // Graceful shutdown — shared by SIGINT and SIGTERM
 function gracefulShutdown(signal) {
   tools.logData(`${signal} signal received: closing HTTP server`);
 
-  server.close(() => {
+  server.close(async () => {
     tools.logData('HTTP server closed');
 
     // Close the shared SQLite database connection
@@ -451,9 +460,10 @@ function gracefulShutdown(signal) {
         tools.logData('Closed database connection');
       }
     } catch (err) {
-      tools.logError(`Error closing database: ${err.message}`);
+      tools.logError(`Error closing database: ${err.message}`, undefined, err);
     }
 
+    await sentry.flush();
     process.exit(0);
   });
 

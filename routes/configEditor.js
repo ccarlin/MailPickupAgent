@@ -10,7 +10,7 @@ const { purgeOldBackups } = require('../index');
 
 const router = express.Router();
 
-const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW', 'ABUSEIPDB_KEY'];
+const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW', 'ABUSEIPDB_KEY', 'SENTRY_DSN'];
 
 function isDangerousTarget(host) {
   const h = host.replace(/^\[|\]$/g, '').toLowerCase();

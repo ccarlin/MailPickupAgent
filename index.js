@@ -16,6 +16,9 @@ const { check: checkAbuseIpdb } = require('./app/abuseipdb');
 const { extractOriginatingIp } = require('./app/shared');
 const { recordHit } = require('./app/ruleHits');
 const userStats = require('./app/userStats');
+const sentry = require('./app/sentry');
+
+sentry.init(config);
 
 const QUARANTINE_DIR = config.QUARANTINE_DIR;
 const DELETED_DIR = config.DELETED_DIR;
@@ -469,7 +472,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     }
     metrics.addTiming('process', performance.now() - processStartTime);
   } catch (error) {
-    tools.logError(`Error processing ${controlFilePath} and ${messagePath}: ${error}`);
+    tools.logError(`Error processing ${controlFilePath} and ${messagePath}: ${error}`, undefined, error);
   }
 }
 
@@ -743,16 +746,17 @@ if (require.main === module) {
           await tools.sleep(TEST_EMAIL_SLEEP_SECONDS * 1000);
         }
       }
+      await sentry.flush();
       process.exit(0);
     })();
   }
   else if (args.includes('--wipeall')) {
     wipeall();
-    process.exit(0);
+    sentry.flush().finally(() => process.exit(0));
   }
   else if (args.includes('--purge')) {
     purgeOldFiles();
-    process.exit(0);
+    sentry.flush().finally(() => process.exit(0));
   }
   else if (args.length !== 2 || ['-h', '--help'].includes(args[0])) {
     printUsage();
@@ -762,10 +766,12 @@ if (require.main === module) {
     const [messageFile, queueType] = args;
     try {
       const { messagePath, controlFilePath } = tools.buildFilePaths(messageFile, queueType);
-      processEmail(controlFilePath, messagePath, loadRules()).then(() => process.exit(0));
+      processEmail(controlFilePath, messagePath, loadRules())
+        .then(() => sentry.flush())
+        .finally(() => process.exit(0));
     } catch (err) {
-      tools.logError(err.message);
-      process.exit(1);
+      tools.logError(err.message, undefined, err);
+      sentry.flush().finally(() => process.exit(1));
     }
   }
 }

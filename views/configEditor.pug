@@ -38,7 +38,7 @@ block scripts
     script.
         let configData = null;
         const modelLists = {};
-        let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, abuseipdb: true, thresholds: true, purge: true, test: true };
+        let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, abuseipdb: true, sentry: true, thresholds: true, purge: true, test: true };
 
         function showToast(message, type, duration) {
             if (duration === undefined) duration = 2500;
@@ -111,6 +111,13 @@ block scripts
                     { key: 'ABUSEIPDB_TIMEOUT', label: 'Timeout', type: 'number', min: 1, max: 30, hint: 'Request timeout in seconds (1-30, default 5)' },
                     { key: 'ABUSEIPDB_BASE_SCORE', label: 'Base Score', type: 'number', step: '0.1', min: 0, max: 50, hint: 'Minimum score assigned when IP has abuse reports (default 5)' },
                     { key: 'ABUSEIPDB_MAX_SCORE', label: 'Max Score', type: 'number', step: '0.1', min: 0, max: 50, hint: 'Maximum score at 100% abuse confidence (default 15)' },
+                ]},
+                { key: 'sentry', title: 'Sentry Error Tracking', icon: '&#x1F41B;', description: 'Optional error reporting via <a href="https://sentry.io/" target="_blank">Sentry</a>. Error tracking runs when a DSN is set; changes take effect after a restart.', fields: [
+                    { key: 'SENTRY_DSN', label: 'DSN', type: 'password', hint: 'Sentry project DSN (leave blank to disable Sentry)' },
+                    { key: 'SENTRY_ENVIRONMENT', label: 'Environment', hint: 'Environment name; defaults to NODE_ENV when blank' },
+                    { key: 'SENTRY_RELEASE', label: 'Release', hint: 'Release name; defaults to the application version when blank' },
+                    { key: 'SENTRY_TRACES_SAMPLE_RATE', label: 'Traces Sample Rate', type: 'number', step: '0.01', min: 0, max: 1, hint: 'Performance trace sampling rate from 0 to 1 (default 0)' },
+                    { key: 'SENTRY_SEND_DEFAULT_PII', label: 'Send Default PII', type: 'checkbox', hint: 'Include personally identifiable information in events (default false; self-hosted Bugsink often recommends enabling)' },
                 ]},
                 { key: 'thresholds', title: 'Spam Thresholds', icon: '&#x2699;', description: 'Score boundaries for quarantine and delete actions', fields: [
                     { key: 'THRESHOLD_QUARANTINE', label: 'Quarantine Threshold', type: 'number', hint: 'Score at or above this value quarantines the email' },

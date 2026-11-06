@@ -58,6 +58,7 @@ function validateConfig() {
     'TEST_EMAIL_SLEEP_SECONDS', 'OLLAMA_TIMEOUT',
     'ABUSEIPDB_TIMEOUT', 'AI_SPAM_POINTS', 'AI_HAM_POINTS',
     'ABUSEIPDB_BASE_SCORE', 'ABUSEIPDB_MAX_SCORE',
+    'SENTRY_TRACES_SAMPLE_RATE',
   ];
   for (const name of numericKeys) {
     const val = config[name];
@@ -68,6 +69,14 @@ function validateConfig() {
     const num = Number(val);
     if (isNaN(num)) {
       errors.push(`${name} must be a numeric value (got: ${JSON.stringify(val)})`);
+    }
+  }
+
+  const sentrySampleRate = config.SENTRY_TRACES_SAMPLE_RATE;
+  if (sentrySampleRate !== undefined && sentrySampleRate !== null && sentrySampleRate !== '') {
+    const rate = Number(sentrySampleRate);
+    if (!isNaN(rate) && (rate < 0 || rate > 1)) {
+      warnings.push(`SENTRY_TRACES_SAMPLE_RATE should be between 0 and 1 (got: ${JSON.stringify(sentrySampleRate)})`);
     }
   }
 

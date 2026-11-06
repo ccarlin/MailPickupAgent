@@ -3,6 +3,7 @@ const path = require("path");
 const crypto = require("crypto");
 const PostalMime = require('postal-mime');
 const config = require('../config');
+const sentry = require('./sentry');
 
 module.exports = {
     getSortedFiles: function(imageDir, fileType, sortType, callback) {        
@@ -66,8 +67,9 @@ module.exports = {
       let newText = text.charAt(0).toUpperCase() + text.slice(1);
       return newText;
     },
-    logError: function(data, ipAddress) {
+    logError: function(data, ipAddress, error) {
         this.logData(data, "ERROR", ipAddress);
+        sentry.captureException(error instanceof Error ? error : data);
     },
     logWarn: function(data, ipAddress) {
       this.logData(data, "WARN", ipAddress);
