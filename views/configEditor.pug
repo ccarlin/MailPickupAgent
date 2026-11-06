@@ -381,8 +381,11 @@ block scripts
                     const errData = await resp.json();
                     throw new Error(errData.message || 'Save failed');
                 }
+                const data = await resp.json().catch(() => ({}));
                 document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
-                if (values.CERT_PATH && values.CERT_PATH.trim() !== '' && window.location.protocol !== 'https:') {
+                if (data.sentryRestartRequired) {
+                    showToast('Sentry DSN changed \u2014 restart the MailPickupAgent service for Sentry to take effect.', 'error', 10000);
+                } else if (values.CERT_PATH && values.CERT_PATH.trim() !== '' && window.location.protocol !== 'https:') {
                     showToast('Certificate configured \u2014 restart the service to run in secure mode (HTTPS). Remote access will require login.', 'info', 5000);
                 } else {
                     showToast('Configuration saved and reloaded!', 'success');

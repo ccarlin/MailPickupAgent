@@ -4,6 +4,7 @@ const path = require('path');
 const net = require('net');
 const axios = require('axios');
 const config = require('../config');
+const sentry = require('../app/sentry');
 const tools = require('../app/tools');
 const { hashPassword, verifyPassword } = require('../middleware/hash');
 const { purgeOldBackups } = require('../index');
@@ -163,6 +164,9 @@ router.post('/api/config/save', (req, res) => {
       }
     });
 
+    const sentryRestartRequired = Object.prototype.hasOwnProperty.call(values, 'SENTRY_DSN')
+      && sentry.dsnChanged(config.SENTRY_DSN, values.SENTRY_DSN);
+
     const env = process.env.NODE_ENV || 'production';
     const configPath = path.resolve(__dirname, '..', 'config', `${env}.json`);
 
@@ -189,7 +193,10 @@ router.post('/api/config/save', (req, res) => {
     // Hot-reload config in memory
     config.reload();
 
-    res.status(200).json({ message: 'Configuration saved and reloaded successfully' });
+    const message = sentryRestartRequired
+      ? 'Configuration saved. Restart the MailPickupAgent service for the Sentry DSN change to take effect.'
+      : 'Configuration saved and reloaded successfully';
+    res.status(200).json({ message, sentryRestartRequired });
   } catch (error) {
     tools.logError('Error saving config: ' + error.message);
     res.status(500).json({ message: 'Failed to save configuration' });

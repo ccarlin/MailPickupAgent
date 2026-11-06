@@ -10,6 +10,10 @@ function toBoolean(value, fallback = false) {
   return String(value).trim().toLowerCase() === 'true';
 }
 
+function dsnChanged(previous, next) {
+  return String(previous || '').trim() !== String(next || '').trim();
+}
+
 function resolveOptions(values = {}) {
   const dsn = String(values.SENTRY_DSN || '').trim();
   if (!dsn) return null;
@@ -106,6 +110,7 @@ async function flush(timeout = 2000) {
 
 module.exports = {
   resolveOptions,
+  dsnChanged,
   init,
   isEnabled,
   captureException,

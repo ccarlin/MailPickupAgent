@@ -68,6 +68,21 @@ test('resolveOptions parses sendDefaultPii from booleans and strings', () => {
   assert.equal(disabled.sendDefaultPii, false);
 });
 
+test('dsnChanged detects added and removed DSNs', () => {
+  assert.equal(sentry.dsnChanged('', 'https://key@example.com/1'), true);
+  assert.equal(sentry.dsnChanged('https://key@example.com/1', ''), true);
+});
+
+test('dsnChanged detects a different DSN', () => {
+  assert.equal(sentry.dsnChanged('https://old@example.com/1', 'https://new@example.com/1'), true);
+});
+
+test('dsnChanged treats equivalent or missing DSNs as unchanged', () => {
+  assert.equal(sentry.dsnChanged('', ''), false);
+  assert.equal(sentry.dsnChanged(undefined, null), false);
+  assert.equal(sentry.dsnChanged(' https://key@example.com/1 ', 'https://key@example.com/1'), false);
+});
+
 test('captureException is a no-op before initialization', () => {
   assert.doesNotThrow(() => sentry.captureException(new Error('not enabled')));
 });
