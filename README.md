@@ -12,6 +12,7 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - **SpamAssassin Integration** — optional spamd scoring with configurable enable/disable
 - **AI Classification** — Ollama- or llama.cpp-powered spam classification with configurable backend, model, server, timeout, and scoring points
 - **AbuseIPDB Integration** — optional IP reputation checking via AbuseIPDB API with configurable base/max scoring (runs automatically when API key is set)
+- **Sentry / Sentry-Compatible Monitoring** — optional reporting of errors, messages, structured logs, and metrics to Sentry or a Sentry-compatible service, with a status-page card to send test data on demand
 - **AI Keyword Filter Generation** — generate keyword filter rules from a natural-language description via Ollama or llama.cpp
 - **Geolocation Filtering** — GeoIP country lookup for origin-based rules (private IPs are skipped)
 - **Quarantine & Recovery** — suspicious emails held for review, deleted emails recoverable via web UI
@@ -19,7 +20,7 @@ A Node.js email filtering agent that integrates with MailEnable's pickup event t
 - **Browser Push Notifications** — subscribe to real-time notifications when emails are quarantined (Web Push / Service Worker)
 - **Configuration History** — automatic backups on save with a viewer/diff/restore interface and retention limits
 - **Session Management** — view and terminate active admin sessions with login metadata (IP, device ID, device name, user agent)
-- **Status Dashboard** — live server metrics (processed, whitelisted, blacklisted, quarantined, released, pending queue), service health (SpamAssassin, AI, AbuseIPDB), uptime, logged-in users, notification count, and auto-purge toggle
+- **Status Dashboard** — live server metrics (processed, whitelisted, blacklisted, quarantined, released, pending queue), service health (SpamAssassin, AI, AbuseIPDB, Sentry), uptime, logged-in users, notification count, and auto-purge toggle
 - **Date Range Filtering** — filter log and deleted-mail pages by date range
 - **Outbound Email Skipping** — emails submitted by internal MailEnable users are automatically skipped
 - **X-MPA Headers** — emails are tagged with X-MPA-Scan, X-MPA-Msgid, X-MPA-SpamReason, X-MPA-SpamScore, X-MPA-SpamDetail, and X-MPA-Country headers
@@ -149,6 +150,12 @@ Configuration changes are automatically backed up to timestamped `.bak` files in
 | `ABUSEIPDB_TIMEOUT` | `5` | AbuseIPDB request timeout in seconds |
 | `ABUSEIPDB_BASE_SCORE` | `5` | Minimum score assigned when IP has abuse reports |
 | `ABUSEIPDB_MAX_SCORE` | `15` | Maximum score at 100% abuse confidence |
+| `SENTRY_DSN` | *(empty)* | Sentry (or Sentry-compatible) DSN; integration is disabled when empty |
+| `SENTRY_ENVIRONMENT` | *(empty)* | Sentry environment; defaults to `NODE_ENV` (or `production`) |
+| `SENTRY_RELEASE` | *(empty)* | Sentry release name; defaults to the package version |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0` | Trace sample rate from `0` to `1` |
+| `SENTRY_SEND_DEFAULT_PII` | `false` | Include default personally identifiable information in events |
+| `SENTRY_EXPRESS_ENABLED` | `false` | Attach the Sentry Express error handler (requires a restart to change) |
 | `PURGE_EMAIL_AFTER_DAYS` | `30` | Retention for deleted emails (`npm run purge`) |
 | `PURGE_LOG_AFTER_DAYS` | `30` | Retention for log files |
 | `PURGE_INCLUDE_SMTP_LOGS` | `false` | Also purge MailEnable SMTP log files |
@@ -189,7 +196,7 @@ node server.js
 
 Then open `http://localhost:6245` in a browser. The web UI provides:
 
-- **Status Dashboard** (`/status` or `/`) — server dashboard showing total processed, whitelisted, blacklisted, quarantined, released, pending queue count, service health (SpamAssassin, AI, AbuseIPDB), uptime, logged-in users, notification subscriptions, and auto-purge controls. This is the default landing page. Clickable cards navigate to related pages.
+- **Status Dashboard** (`/status` or `/`) — server dashboard showing total processed, whitelisted, blacklisted, quarantined, released, pending queue count, service health (SpamAssassin, AI, AbuseIPDB, Sentry), uptime, logged-in users, notification subscriptions, and auto-purge controls. This is the default landing page. Clickable cards navigate to related pages; when Sentry is active, clicking its card sends a test payload.
 - **Configuration Editor** (`/configEditor`) — view and edit all settings with auto-backup on save
 - **Configuration History** (`/configHistory`) — browse, diff, restore, and delete automatic configuration backups
 - **Quarantine Manager** (`/mailq`) — review, release, or delete quarantined emails
@@ -244,6 +251,8 @@ Make sure to exclude logging directories and quarantine/deleted directories from
 | `npm run aiTest:dev` | Test the AI classifier using `config/development.json` (Windows) |
 | `npm run abuseipdbTest` | Test AbuseIPDB API connection and IP reputation checking |
 | `npm run abuseipdbTest:dev` | Test AbuseIPDB using `config/development.json` (Windows) |
+| `npm run test:sentry` | Run unit tests for the Sentry configuration helpers |
+| `npm run test:sentry:send` | Send test error, message, log, and metric data to Sentry (optional DSN argument) |
 | `npm run lint` | Run ESLint on all source files |
 | `npm run lint:fix` | Run ESLint with auto-fix |
 
@@ -322,6 +331,64 @@ npm run wipeall
 
 Use with caution — wiped emails cannot be recovered.
 
+## Sentry Monitoring
+
+Mail Pickup Agent can report errors, messages, structured logs, and metrics to [Sentry](https://sentry.io/) or any Sentry-compatible service (for example, a self-hosted Sentry instance or GlitchTip). Monitoring is opt-in: set `SENTRY_DSN` in your configuration to enable it, and leave it empty to disable it.
+
+### Configuration
+
+Set the following values in `config/default.json` or your environment-specific file:
+
+```json
+{
+  "SENTRY_DSN": "https://key@sentry.example.com/1",
+  "SENTRY_ENVIRONMENT": "production",
+  "SENTRY_RELEASE": "mailpickupagent@3.6.2",
+  "SENTRY_TRACES_SAMPLE_RATE": 0.1,
+  "SENTRY_SEND_DEFAULT_PII": false,
+  "SENTRY_EXPRESS_ENABLED": true
+}
+```
+
+- `SENTRY_DSN` — DSN for Sentry or a Sentry-compatible service. Any service that accepts the Sentry envelope protocol can be used.
+- `SENTRY_ENVIRONMENT` — environment label sent with events. Defaults to `NODE_ENV`, then `production`.
+- `SENTRY_RELEASE` — release label sent with events. Defaults to the version in `package.json`.
+- `SENTRY_TRACES_SAMPLE_RATE` — fraction of transactions to trace, from `0` to `1`. Defaults to `0` (disabled); out-of-range values are treated as `0`.
+- `SENTRY_SEND_DEFAULT_PII` — when `true`, Sentry includes default PII such as IP addresses and user context. Defaults to `false`.
+- `SENTRY_EXPRESS_ENABLED` — when `true`, attaches the Sentry Express error handler so unhandled request errors are captured automatically. Defaults to `false` in the shipped configuration.
+
+Changes to `SENTRY_DSN` or `SENTRY_EXPRESS_ENABLED` require a server restart. The Configuration Editor warns when a restart is needed after saving.
+
+### Sending Test Data
+
+When Sentry is active, the status page shows a **Sentry** card with the active environment, release, and trace sample rate. Clicking the card sends a test payload to Sentry and displays the result:
+
+- an error event
+- a message event
+- a structured log entry
+- `count`, `gauge`, and `distribution` metrics
+- a final flush of the buffered data
+
+The same test can be run from the command line:
+
+```bash
+npm run test:sentry:send
+```
+
+Pass a DSN explicitly to test without changing the configuration:
+
+```bash
+npm run test:sentry:send -- https://key@sentry.example.com/1
+```
+
+The DSN is resolved in this order: command-line argument, `SENTRY_DSN` environment variable, then the configured `SENTRY_DSN`.
+
+The test reports `PASS`/`FAIL` for each signal and exits with a non-zero code if any step fails. To run only the Sentry configuration unit tests:
+
+```bash
+npm run test:sentry
+```
+
 ## Integration with MailEnable
 
 MailEnable's Pickup Event fires for each incoming email, passing the message ID and queue type as arguments. There are two integration approaches:
@@ -367,6 +434,7 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 | `POST` | `/status/api/ai-test` | Trigger an asynchronous/direct AI classification and connection test |
 | `POST` | `/status/api/sa-test` | Trigger a connection and scan test for the SpamAssassin service |
 | `POST` | `/status/api/abuseipdb-test` | Trigger a reputation API connection test with AbuseIPDB |
+| `POST` | `/status/api/sentry-test` | Send test error, message, log, and metric data to Sentry |
 | `GET` | `/status/events` | Server-Sent Events (SSE) stream for real-time dashboard status updates |
 | `GET` | `/notifications/public-key` | Get VAPID public key for push subscriptions |
 | `POST` | `/notifications/subscribe` | Subscribe to quarantine push notifications |
@@ -399,6 +467,7 @@ Replace the existing `GeoLite2-Country.mmdb` file in the project root with the d
 
 ## Dependencies
 
+- **@sentry/node** — Sentry (and Sentry-compatible) error, log, and metric reporting
 - **axios** — HTTP client for Ollama and llama.cpp APIs
 - **better-sqlite3** — SQLite database for sessions and notification subscriptions
 - **better-sqlite3-session-store** — Express session store backed by SQLite
