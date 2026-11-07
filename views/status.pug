@@ -130,6 +130,8 @@ block css
     .status-card.abuseipdb.not-configured .icon { color: #94a3b8; }
     .status-card.abuseipdb.configured .count { color: #16a34a; font-size: 1rem; }
     .status-card.abuseipdb.not-configured .count { color: #94a3b8; font-size: 1rem; }
+    .status-card.sentry .icon { color: #362d59; }
+    .status-card.sentry .count { color: #16a34a; font-size: 1rem; }
     .status-card.process-time .icon { color: #0ea5e9; }
     .status-card.hidden { display: none; }
 
@@ -258,7 +260,8 @@ block css
 
     #ai-test-modal,
     #sa-test-modal,
-    #abuseipdb-test-modal {
+    #abuseipdb-test-modal,
+    #sentry-test-modal {
       display: none;
       position: fixed;
       top: 0; left: 0;
@@ -270,10 +273,12 @@ block css
     }
     #ai-test-modal.show,
     #sa-test-modal.show,
-    #abuseipdb-test-modal.show { display: flex; }
+    #abuseipdb-test-modal.show,
+    #sentry-test-modal.show { display: flex; }
     #ai-test-modal .modal-box,
     #sa-test-modal .modal-box,
-    #abuseipdb-test-modal .modal-box {
+    #abuseipdb-test-modal .modal-box,
+    #sentry-test-modal .modal-box {
       background: #fff;
       border-radius: 12px;
       padding: 1.5rem;
@@ -286,7 +291,8 @@ block css
     }
     #ai-test-modal .modal-box h2,
     #sa-test-modal .modal-box h2,
-    #abuseipdb-test-modal .modal-box h2 {
+    #abuseipdb-test-modal .modal-box h2,
+    #sentry-test-modal .modal-box h2 {
       margin: 0 0 1rem 0;
       font-size: 1.25rem;
       display: flex;
@@ -295,7 +301,8 @@ block css
     }
     #ai-test-modal .modal-box pre,
     #sa-test-modal .modal-box pre,
-    #abuseipdb-test-modal .modal-box pre {
+    #abuseipdb-test-modal .modal-box pre,
+    #sentry-test-modal .modal-box pre {
       flex: 1;
       overflow: auto;
       background: #1e293b;
@@ -309,14 +316,16 @@ block css
     }
     #ai-test-modal .modal-box .modal-footer,
     #sa-test-modal .modal-box .modal-footer,
-    #abuseipdb-test-modal .modal-box .modal-footer {
+    #abuseipdb-test-modal .modal-box .modal-footer,
+    #sentry-test-modal .modal-box .modal-footer {
       display: flex;
       justify-content: flex-end;
       margin-top: 1rem;
     }
     #ai-test-modal .modal-box .modal-footer button,
     #sa-test-modal .modal-box .modal-footer button,
-    #abuseipdb-test-modal .modal-box .modal-footer button {
+    #abuseipdb-test-modal .modal-box .modal-footer button,
+    #sentry-test-modal .modal-box .modal-footer button {
       background: #3b82f6;
       color: #fff;
       border: none;
@@ -327,7 +336,8 @@ block css
     }
     #ai-test-modal .modal-box .modal-footer button:hover,
     #sa-test-modal .modal-box .modal-footer button:hover,
-    #abuseipdb-test-modal .modal-box .modal-footer button:hover {
+    #abuseipdb-test-modal .modal-box .modal-footer button:hover,
+    #sentry-test-modal .modal-box .modal-footer button:hover {
       background: #2563eb;
     }
 
@@ -435,6 +445,19 @@ block content
         .test-badge
           i.fas.fa-play
           |  Clicking card runs test
+      if sentryDetails
+        .status-card.sentry.clickable#card-sentry
+          .icon
+            img(src="/img/sentry.png" alt="Sentry")
+          .count
+            i.fas.fa-check-circle
+            |  Active
+          .label Sentry
+          .sub-label Env: #{sentryDetails.environment} / Release: #{sentryDetails.release}
+          .sub-label Sample rate: #{sentryDetails.tracesSampleRate}
+          .test-badge
+            i.fas.fa-play
+            |  Clicking card sends test data
       .status-card.uptime
         .icon
           i.fas.fa-clock
@@ -490,6 +513,15 @@ block content
       pre#abuseipdb-test-output Running AbuseIPDB test...
       .modal-footer
         button(onclick="$('#abuseipdb-test-modal').removeClass('show')") Close
+
+  #sentry-test-modal
+    .modal-box
+      h2
+        i.fas.fa-bug
+        | Sentry Test
+      pre#sentry-test-output Sending test data to Sentry...
+      .modal-footer
+        button(onclick="$('#sentry-test-modal').removeClass('show')") Close
 
 block scripts
   script(src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js")
@@ -837,6 +869,15 @@ block scripts
           $('#abuseipdb-test-output').text(data.output || 'No output returned.');
         }).fail(function() {
           $('#abuseipdb-test-output').text('Failed to run AbuseIPDB test. Is the API key configured?');
+        });
+      });
+      $('#card-sentry').on('click', function() {
+        $('#sentry-test-modal').addClass('show');
+        $('#sentry-test-output').text('Sending test data to Sentry...');
+        $.post('/status/api/sentry-test').done(function(data) {
+          $('#sentry-test-output').text(data.output || 'No output returned.');
+        }).fail(function() {
+          $('#sentry-test-output').text('Failed to run Sentry test. Is the server reachable?');
         });
       });
       $('#btn-reset-stats').on('click', function() {

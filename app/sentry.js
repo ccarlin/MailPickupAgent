@@ -4,6 +4,7 @@ let sentry = null;
 let enabled = false;
 let initialized = false;
 let expressEnabled = true;
+let activeOptions = null;
 
 function toBoolean(value, fallback = false) {
   if (value === undefined || value === null || value === '') return fallback;
@@ -60,6 +61,7 @@ function init(values = {}) {
 
   try {
     sentry = require('@sentry/node');
+    activeOptions = options;
     expressEnabled = isExpressEnabled(values);
     if (!expressEnabled && typeof sentry.getDefaultIntegrations === 'function') {
       options.defaultIntegrations = sentry.getDefaultIntegrations()
@@ -77,6 +79,16 @@ function init(values = {}) {
 
 function isEnabled() {
   return enabled;
+}
+
+function getDetails() {
+  if (!enabled || !activeOptions) return null;
+
+  return {
+    environment: activeOptions.environment,
+    release: activeOptions.release,
+    tracesSampleRate: activeOptions.tracesSampleRate,
+  };
 }
 
 function captureException(error, context) {
@@ -133,6 +145,7 @@ module.exports = {
   requiresRestart,
   init,
   isEnabled,
+  getDetails,
   captureException,
   setupExpressErrorHandler,
   flush,

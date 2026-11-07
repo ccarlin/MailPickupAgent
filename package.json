@@ -14,6 +14,7 @@
     "lint:fix": "eslint . --fix",
     "test": "node index.js --test",
     "test:sentry": "node --test test/testSentry.test.js",
+    "test:sentry:send": "node test/testSentrySend.js",
     "wipeall": "node index.js --wipeall",
     "purge": "node index.js --purge",
     "spamTest": "node test/testSpamAssassin.js",
