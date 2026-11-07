@@ -84,26 +84,33 @@ block css
     .status-card.metrics-combined {
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 0.9rem;
-      text-align: left;
+      align-items: center;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .status-card.metrics-combined > .icon {
+      color: #8b5cf6;
+    }
+    .status-card.metrics-combined .metric-split {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      width: 100%;
     }
     .status-card.metrics-combined .metric-row {
+      flex: 1 1 0;
       display: flex;
+      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      gap: 0.65rem;
+      min-width: 0;
+      padding: 0 0.5rem;
     }
-    .status-card.metrics-combined .metric-row .icon {
-      font-size: 1.35rem;
-      min-height: auto;
-      margin-bottom: 0;
-      width: 1.6rem;
-      flex: none;
+    .status-card.metrics-combined .metric-row + .metric-row {
+      border-left: 1px solid #e2e8f0;
     }
-    .status-card.metrics-combined .metric-row.uptime-metric .icon { color: #8b5cf6; }
-    .status-card.metrics-combined .metric-row.process-metric .icon { color: #0ea5e9; }
     .status-card.metrics-combined .metric-row .count {
-      font-size: 1.15rem;
+      font-size: 1.25rem;
       line-height: 1.1;
     }
     .status-card.metrics-combined .metric-row .label {
@@ -111,7 +118,7 @@ block css
       margin-top: 0;
     }
     .status-card.metrics-combined .metric-row .sub-label {
-      font-size: 0.65rem;
+      font-size: 0.62rem;
     }
 
     .status-card.clickable {
@@ -395,20 +402,19 @@ block content
         .label Total Processed
         .sub-label (since last restart)
       .status-card.metrics-combined#card-uptime-process
-        .metric-row.uptime-metric
-          .icon
-            i.fas.fa-clock
-          .metric-body
-            .count#count-uptime 0
-            .label Uptime
-            .sub-label (since last restart)
-        .metric-row.process-metric
-          .icon
-            i.fas.fa-tachometer-alt
-          .metric-body
-            .count#count-process-time N/A
-            .label Avg Process Time
-            .sub-label#sub-process-time (0 checks)
+        .icon
+          i.fas.fa-clock
+        .metric-split
+          .metric-row.uptime-metric
+            .metric-body
+              .count#count-uptime 0
+              .label Uptime
+              .sub-label (since last restart)
+          .metric-row.process-metric
+            .metric-body
+              .count#count-process-time N/A
+              .label Avg Process Time
+              .sub-label#sub-process-time (0 checks)
       .status-card.pending.clickable#card-pending
         .icon
           .icon-wrap
