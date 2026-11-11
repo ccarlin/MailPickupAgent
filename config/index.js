@@ -80,6 +80,14 @@ function validateConfig() {
     }
   }
 
+  const sentryLifecycle = config.SENTRY_TRACE_LIFECYCLE;
+  if (sentryLifecycle !== undefined && sentryLifecycle !== null && sentryLifecycle !== '') {
+    const lifecycle = String(sentryLifecycle).trim().toLowerCase();
+    if (lifecycle !== 'static' && lifecycle !== 'stream') {
+      warnings.push(`SENTRY_TRACE_LIFECYCLE should be "static" or "stream" (got: ${JSON.stringify(sentryLifecycle)})`);
+    }
+  }
+
   // --- AI_SYSTEM validation ---
   if (aiSystem !== 'OLLAMA' && aiSystem !== 'LLAMACPP') {
     errors.push(`AI_SYSTEM must be "OLLAMA" or "LLAMACPP" (got: ${JSON.stringify(config.AI_SYSTEM)})`);

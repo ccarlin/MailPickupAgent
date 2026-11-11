@@ -154,6 +154,7 @@ Configuration changes are automatically backed up to timestamped `.bak` files in
 | `SENTRY_ENVIRONMENT` | *(empty)* | Sentry environment; defaults to `NODE_ENV` (or `production`) |
 | `SENTRY_RELEASE` | *(empty)* | Sentry release name; defaults to the package version |
 | `SENTRY_TRACES_SAMPLE_RATE` | `0` | Trace sample rate from `0` to `1` |
+| `SENTRY_TRACE_LIFECYCLE` | `static` | Trace mode: `static` (transaction envelopes) or `stream` (Sentry span streaming); requires a restart to change |
 | `SENTRY_SEND_DEFAULT_PII` | `false` | Include default personally identifiable information in events |
 | `SENTRY_EXPRESS_ENABLED` | `false` | Attach the Sentry Express error handler (requires a restart to change) |
 | `PURGE_EMAIL_AFTER_DAYS` | `30` | Retention for deleted emails (`npm run purge`) |
@@ -345,6 +346,7 @@ Set the following values in `config/default.json` or your environment-specific f
   "SENTRY_ENVIRONMENT": "production",
   "SENTRY_RELEASE": "mailpickupagent@3.6.2",
   "SENTRY_TRACES_SAMPLE_RATE": 0.1,
+  "SENTRY_TRACE_LIFECYCLE": "static",
   "SENTRY_SEND_DEFAULT_PII": false,
   "SENTRY_EXPRESS_ENABLED": true
 }
@@ -354,14 +356,15 @@ Set the following values in `config/default.json` or your environment-specific f
 - `SENTRY_ENVIRONMENT` — environment label sent with events. Defaults to `NODE_ENV`, then `production`.
 - `SENTRY_RELEASE` — release label sent with events. Defaults to the version in `package.json`.
 - `SENTRY_TRACES_SAMPLE_RATE` — fraction of transactions to trace, from `0` to `1`. Defaults to `0` (disabled); out-of-range values are treated as `0`.
+- `SENTRY_TRACE_LIFECYCLE` — `static` sends performance traces as transaction envelopes, which works with Sentry and Sentry-compatible services such as GlitchTip. `stream` uses Sentry's span streaming protocol, which is only ingested by Sentry (GlitchTip ignores span items). Defaults to `static`; invalid values fall back to `static`.
 - `SENTRY_SEND_DEFAULT_PII` — when `true`, Sentry includes default PII such as IP addresses and user context. Defaults to `false`.
 - `SENTRY_EXPRESS_ENABLED` — when `true`, attaches the Sentry Express error handler so unhandled request errors are captured automatically. Defaults to `false` in the shipped configuration.
 
-Changes to `SENTRY_DSN` or `SENTRY_EXPRESS_ENABLED` require a server restart. The Configuration Editor warns when a restart is needed after saving.
+Changes to `SENTRY_DSN`, `SENTRY_EXPRESS_ENABLED`, or `SENTRY_TRACE_LIFECYCLE` require a server restart. The Configuration Editor warns when a restart is needed after saving.
 
 ### Sending Test Data
 
-When Sentry is active, the status page shows a **Sentry** card with the active environment, release, and trace sample rate. Clicking the card sends a test payload to Sentry and displays the result:
+When Sentry is active, the status page shows a **Sentry** card with the active environment, release, trace sample rate, and trace lifecycle. Clicking the card sends a test payload to Sentry and displays the result:
 
 - an error event
 - a message event

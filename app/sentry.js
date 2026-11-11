@@ -20,11 +20,17 @@ function dsnChanged(previous, next) {
   return String(previous || '').trim() !== String(next || '').trim();
 }
 
+function resolveTraceLifecycle(value) {
+  return String(value || '').trim().toLowerCase() === 'stream' ? 'stream' : 'static';
+}
+
 function requiresRestart(previous = {}, next = {}) {
   if (Object.prototype.hasOwnProperty.call(next, 'SENTRY_DSN')
     && dsnChanged(previous.SENTRY_DSN, next.SENTRY_DSN)) return true;
   if (Object.prototype.hasOwnProperty.call(next, 'SENTRY_EXPRESS_ENABLED')
     && isExpressEnabled(previous) !== isExpressEnabled(next)) return true;
+  if (Object.prototype.hasOwnProperty.call(next, 'SENTRY_TRACE_LIFECYCLE')
+    && resolveTraceLifecycle(previous.SENTRY_TRACE_LIFECYCLE) !== resolveTraceLifecycle(next.SENTRY_TRACE_LIFECYCLE)) return true;
   return false;
 }
 
@@ -49,7 +55,14 @@ function resolveOptions(values = {}) {
     tracesSampleRate = 0;
   }
 
-  return { dsn, environment, release, tracesSampleRate, sendDefaultPii: toBoolean(values.SENTRY_SEND_DEFAULT_PII) };
+  return {
+    dsn,
+    environment,
+    release,
+    tracesSampleRate,
+    sendDefaultPii: toBoolean(values.SENTRY_SEND_DEFAULT_PII),
+    traceLifecycle: resolveTraceLifecycle(values.SENTRY_TRACE_LIFECYCLE),
+  };
 }
 
 function init(values = {}) {
@@ -88,6 +101,7 @@ function getDetails() {
     environment: activeOptions.environment,
     release: activeOptions.release,
     tracesSampleRate: activeOptions.tracesSampleRate,
+    traceLifecycle: activeOptions.traceLifecycle,
   };
 }
 

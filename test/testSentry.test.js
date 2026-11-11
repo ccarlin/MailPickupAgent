@@ -48,6 +48,35 @@ test('resolveOptions parses a valid traces sample rate', () => {
   assert.equal(options.tracesSampleRate, 0.25);
 });
 
+test('resolveOptions defaults to transaction mode so GlitchTip can ingest traces', () => {
+  const options = sentry.resolveOptions({ SENTRY_DSN: 'https://key@example.com/1' });
+
+  assert.equal(options.traceLifecycle, 'static');
+});
+
+test('resolveOptions parses the trace lifecycle case-insensitively', () => {
+  const stream = sentry.resolveOptions({
+    SENTRY_DSN: 'https://key@example.com/1',
+    SENTRY_TRACE_LIFECYCLE: 'STREAM',
+  });
+  const staticMode = sentry.resolveOptions({
+    SENTRY_DSN: 'https://key@example.com/1',
+    SENTRY_TRACE_LIFECYCLE: 'Static',
+  });
+
+  assert.equal(stream.traceLifecycle, 'stream');
+  assert.equal(staticMode.traceLifecycle, 'static');
+});
+
+test('resolveOptions falls back to static for an invalid trace lifecycle', () => {
+  const options = sentry.resolveOptions({
+    SENTRY_DSN: 'https://key@example.com/1',
+    SENTRY_TRACE_LIFECYCLE: 'span',
+  });
+
+  assert.equal(options.traceLifecycle, 'static');
+});
+
 test('resolveOptions defaults sendDefaultPii to false', () => {
   const options = sentry.resolveOptions({ SENTRY_DSN: 'https://key@example.com/1' });
 
@@ -101,6 +130,12 @@ test('requiresRestart detects DSN and Express flag changes', () => {
   assert.equal(sentry.requiresRestart({ SENTRY_DSN: '' }, { SENTRY_DSN: 'https://key@example.com/1' }), true);
   assert.equal(sentry.requiresRestart({ SENTRY_EXPRESS_ENABLED: true }, { SENTRY_EXPRESS_ENABLED: false }), true);
   assert.equal(sentry.requiresRestart({ SENTRY_EXPRESS_ENABLED: false }, {}), false);
+});
+
+test('requiresRestart detects trace lifecycle changes', () => {
+  assert.equal(sentry.requiresRestart({ SENTRY_TRACE_LIFECYCLE: 'static' }, { SENTRY_TRACE_LIFECYCLE: 'stream' }), true);
+  assert.equal(sentry.requiresRestart({ SENTRY_TRACE_LIFECYCLE: 'static' }, { SENTRY_TRACE_LIFECYCLE: 'STATIC' }), false);
+  assert.equal(sentry.requiresRestart({}, {}), false);
 });
 
 test('captureException is a no-op before initialization', () => {
