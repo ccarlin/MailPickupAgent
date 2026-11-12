@@ -97,6 +97,20 @@ test('resolveOptions parses sendDefaultPii from booleans and strings', () => {
   assert.equal(disabled.sendDefaultPii, false);
 });
 
+test('resolveOptions excludes long-lived SSE endpoint spans from performance tracking', () => {
+  const options = sentry.resolveOptions({ SENTRY_DSN: 'https://key@example.com/1' });
+
+  const matches = name => options.ignoreSpans.some(pattern => {
+    const matcher = typeof pattern === 'string' || pattern instanceof RegExp ? pattern : pattern.name;
+    return matcher ? new RegExp(matcher).test(name) : false;
+  });
+
+  assert.equal(matches('GET /status/events'), true);
+  assert.equal(matches('GET /mailq/events'), true);
+  assert.equal(matches('GET /status'), false);
+  assert.equal(matches('GET /mailq'), false);
+});
+
 test('dsnChanged detects added and removed DSNs', () => {
   assert.equal(sentry.dsnChanged('', 'https://key@example.com/1'), true);
   assert.equal(sentry.dsnChanged('https://key@example.com/1', ''), true);

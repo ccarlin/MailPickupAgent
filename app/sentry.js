@@ -6,6 +6,13 @@ let initialized = false;
 let expressEnabled = true;
 let activeOptions = null;
 
+// Long-lived Server-Sent Events streams stay open for the client's lifetime,
+// so they must not be recorded as performance spans.
+const IGNORED_SPAN_PATTERNS = [
+  { name: /\/status\/events/ },
+  { name: /\/mailq\/events/ },
+];
+
 function toBoolean(value, fallback = false) {
   if (value === undefined || value === null || value === '') return fallback;
   if (typeof value === 'boolean') return value;
@@ -62,6 +69,7 @@ function resolveOptions(values = {}) {
     tracesSampleRate,
     sendDefaultPii: toBoolean(values.SENTRY_SEND_DEFAULT_PII),
     traceLifecycle: resolveTraceLifecycle(values.SENTRY_TRACE_LIFECYCLE),
+    ignoreSpans: IGNORED_SPAN_PATTERNS,
   };
 }
 
