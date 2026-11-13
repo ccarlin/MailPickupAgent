@@ -13,6 +13,25 @@ const IGNORED_SPAN_PATTERNS = [
   { name: /\/mailq\/events/ },
 ];
 
+const HTTP_METHOD_PREFIX = /^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|TRACE|CONNECT)\s+/i;
+
+function stripHttpMethodFromSpanDescription(span) {
+  if (span && typeof span.description === 'string') {
+    span.description = span.description.replace(HTTP_METHOD_PREFIX, '');
+  }
+  return span;
+}
+
+function buildBeforeSendSpan(traceLifecycle) {
+  const callback = span => stripHttpMethodFromSpanDescription(span);
+  if (traceLifecycle !== 'static') return callback;
+  try {
+    return require('@sentry/node').withStaticSpan(callback);
+  } catch {
+    return callback;
+  }
+}
+
 function toBoolean(value, fallback = false) {
   if (value === undefined || value === null || value === '') return fallback;
   if (typeof value === 'boolean') return value;
@@ -62,13 +81,16 @@ function resolveOptions(values = {}) {
     tracesSampleRate = 0;
   }
 
+  const traceLifecycle = resolveTraceLifecycle(values.SENTRY_TRACE_LIFECYCLE);
+
   return {
     dsn,
     environment,
     release,
     tracesSampleRate,
     sendDefaultPii: toBoolean(values.SENTRY_SEND_DEFAULT_PII),
-    traceLifecycle: resolveTraceLifecycle(values.SENTRY_TRACE_LIFECYCLE),
+    traceLifecycle,
+    beforeSendSpan: buildBeforeSendSpan(traceLifecycle),
     ignoreSpans: IGNORED_SPAN_PATTERNS,
   };
 }

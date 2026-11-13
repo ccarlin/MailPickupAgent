@@ -111,6 +111,35 @@ test('resolveOptions excludes long-lived SSE endpoint spans from performance tra
   assert.equal(matches('GET /mailq'), false);
 });
 
+test('resolveOptions strips the HTTP method from static span descriptions', () => {
+  const options = sentry.resolveOptions({ SENTRY_DSN: 'https://key@example.com/1' });
+
+  for (const method of ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']) {
+    const span = { description: `${method} /mailq` };
+    assert.equal(options.beforeSendSpan(span).description, '/mailq');
+  }
+});
+
+test('resolveOptions leaves span descriptions without an HTTP method intact', () => {
+  const options = sentry.resolveOptions({ SENTRY_DSN: 'https://key@example.com/1' });
+  const span = { description: 'SELECT * FROM users' };
+
+  assert.equal(options.beforeSendSpan(span).description, 'SELECT * FROM users');
+});
+
+test('resolveOptions does not tag stream callbacks as static after a static resolve', () => {
+  sentry.resolveOptions({
+    SENTRY_DSN: 'https://key@example.com/1',
+    SENTRY_TRACE_LIFECYCLE: 'static',
+  });
+  const options = sentry.resolveOptions({
+    SENTRY_DSN: 'https://key@example.com/1',
+    SENTRY_TRACE_LIFECYCLE: 'stream',
+  });
+
+  assert.equal(options.beforeSendSpan._static, undefined);
+});
+
 test('dsnChanged detects added and removed DSNs', () => {
   assert.equal(sentry.dsnChanged('', 'https://key@example.com/1'), true);
   assert.equal(sentry.dsnChanged('https://key@example.com/1', ''), true);
