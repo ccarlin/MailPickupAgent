@@ -462,11 +462,35 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 
 ## GeoIP Database
 
-This project includes a `GeoLite2-Country.mmdb` file for IP-to-country lookups used by country-based filtering rules. The database may become outdated over time. For the most up-to-date IP geolocation data, download a free copy from MaxMind:
+This project includes a `GeoLite2-Country.mmdb` file for IP-to-country lookups
+used by country-based filtering rules. The web server can keep it current
+automatically.
+
+### Automatic updates
+
+Set both `MAXMIND_ACCOUNT_ID` and `MAXMIND_KEY` (your MaxMind license key) in the
+active config file. When both are present, the server:
+
+- Checks MaxMind about 5 seconds after startup and then every
+  `MAXMIND_UPDATE_INTERVAL_HOURS` (default `168`, weekly).
+- Uses a `HEAD` request to compare the remote build date with the local
+  database's embedded build date, and only downloads when a newer build exists.
+- Downloads the tar.gz archive, validates the new `.mmdb`, atomically replaces
+  `GeoLite2-Country.mmdb`, and reloads the in-memory reader without restarting.
+
+If either credential is missing, auto-update is disabled with a warning and the
+bundled database continues to be used. You can still replace
+`GeoLite2-Country.mmdb` manually at any time.
+
+`MAXMIND_EDITION_ID` defaults to `GeoLite2-Country` and should normally not be
+changed.
+
+For a manual download, visit:
 
 [https://www.maxmind.com/en/geolite-free-ip-geolocation-data](https://www.maxmind.com/en/geolite-free-ip-geolocation-data)
 
-Replace the existing `GeoLite2-Country.mmdb` file in the project root with the downloaded version.
+When running in Docker, `docker-compose.yml` bind-mounts
+`GeoLite2-Country.mmdb` so updates persist on the host.
 
 ## Dependencies
 
