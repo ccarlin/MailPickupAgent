@@ -10,6 +10,7 @@ const { buildAllTestEmails, processEmail, wipeall, loadRules } = require('./inde
 const tools = require('./app/tools');
 const appConfig = require('./config');
 const sentry = require('./app/sentry');
+const geoip = require('./app/geoip');
 const { version } = require('./package.json');
 const PORT = appConfig.PORT || 6245;
 let server;
@@ -431,6 +432,9 @@ if (appConfig.CERT_PATH && appConfig.CERT_KEY_PATH) {
   });
 }
 
+// Start periodic GeoIP checks (no-op without MaxMind credentials)
+geoip.startAutoUpdate();
+
 // Global uncaught exception and rejection handlers
 process.on('uncaughtException', (err) => {
   tools.logError(`UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}`, undefined, err);
@@ -449,6 +453,8 @@ process.on('unhandledRejection', (reason) => {
 // Graceful shutdown — shared by SIGINT and SIGTERM
 function gracefulShutdown(signal) {
   tools.logData(`${signal} signal received: closing HTTP server`);
+
+  geoip.stopAutoUpdate();
 
   server.close(async () => {
     tools.logData('HTTP server closed');

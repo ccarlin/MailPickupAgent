@@ -72,6 +72,25 @@ function validateConfig() {
     }
   }
 
+  // --- MaxMind update settings (warnings only) ---
+  const maxmindInterval = config.MAXMIND_UPDATE_INTERVAL_HOURS;
+  if (maxmindInterval !== undefined && maxmindInterval !== null && maxmindInterval !== '') {
+    const hours = Number(maxmindInterval);
+    if (!Number.isFinite(hours) || hours <= 0) {
+      warnings.push(
+        `MAXMIND_UPDATE_INTERVAL_HOURS should be a positive number of hours (got: ${JSON.stringify(maxmindInterval)}) - defaulting to 168`
+      );
+    }
+  }
+
+  const hasMaxMindAccountId = !!(config.MAXMIND_ACCOUNT_ID && String(config.MAXMIND_ACCOUNT_ID).trim());
+  const hasMaxMindKey = !!(config.MAXMIND_KEY && String(config.MAXMIND_KEY).trim());
+  if (hasMaxMindAccountId !== hasMaxMindKey) {
+    warnings.push(
+      'MAXMIND_ACCOUNT_ID and MAXMIND_KEY must both be set for GeoIP auto-update - auto-update is disabled'
+    );
+  }
+
   const sentrySampleRate = config.SENTRY_TRACES_SAMPLE_RATE;
   if (sentrySampleRate !== undefined && sentrySampleRate !== null && sentrySampleRate !== '') {
     const rate = Number(sentrySampleRate);
