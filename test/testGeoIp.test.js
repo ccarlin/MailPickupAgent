@@ -86,3 +86,171 @@ test('isRemoteNewer compares UTC days and treats missing values as newer', () =>
   assert.equal(isRemoteNewer(null, Date.UTC(2026, 10, 10)), true);
   assert.equal(isRemoteNewer(Date.UTC(2026, 10, 10), null), true);
 });
+
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const tar = require('tar');
+
+const { createGeoIpService } = require('../app/geoip');
+
+const BUNDLED_DB = path.join(__dirname, '..', 'GeoLite2-Country.mmdb');
+
+function makeLogger() {
+  const lines = [];
+  return {
+    lines,
+    logData: message => lines.push(message),
+    logWarn: message => lines.push(message),
+    logError: message => lines.push(message),
+  };
+}
+
+async function makeArchive(tempDir, buildDate = '20261110') {
+  const sourceDir = path.join(tempDir, 'source');
+  const folder = `GeoLite2-Country_${buildDate}`;
+  const folderPath = path.join(sourceDir, folder);
+  await fs.promises.mkdir(folderPath, { recursive: true });
+  await fs.promises.copyFile(BUNDLED_DB, path.join(folderPath, 'GeoLite2-Country.mmdb'));
+  const archivePath = path.join(tempDir, 'database.tar.gz');
+  await tar.c({ gzip: true, file: archivePath, cwd: sourceDir }, [folder]);
+  return fs.readFileSync(archivePath);
+}
+
+test('checkForUpdate is disabled without credentials', async () => {
+  const geoip = createGeoIpService({
+    dbPath: BUNDLED_DB,
+    http: {},
+    logger: makeLogger(),
+    cfg: {},
+  });
+
+  const result = await geoip.checkForUpdate();
+
+  assert.equal(result.updated, false);
+  assert.equal(result.reason, 'disabled');
+});
+
+test('checkForUpdate downloads, validates, replaces, and hot-swaps the database', async () => {
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mpa-geoip-test-'));
+  try {
+    const dbPath = path.join(tempDir, 'GeoLite2-Country.mmdb');
+    await fs.promises.writeFile(dbPath, 'not a database');
+    const archive = await makeArchive(tempDir);
+    const calls = [];
+    const http = {
+      head: async (url, options) => {
+        calls.push({ method: 'head', url, options });
+        return {
+          headers: {
+            'content-disposition': 'attachment; filename=GeoLite2-Country_20261110.tar.gz',
+          },
+        };
+      },
+      get: async (url, options) => {
+        calls.push({ method: 'get', url, options });
+        return { data: archive };
+      },
+    };
+    const logger = makeLogger();
+    const geoip = createGeoIpService({
+      dbPath,
+      http,
+      logger,
+      cfg: { MAXMIND_ACCOUNT_ID: '123', MAXMIND_KEY: 'license' },
+    });
+
+    const result = await geoip.checkForUpdate();
+
+    assert.equal(result.updated, true);
+    assert.equal(result.reason, 'updated');
+    assert.deepEqual(calls.map(call => call.method), ['head', 'get']);
+    assert.equal(
+      calls[0].url,
+      'https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz'
+    );
+    assert.deepEqual(calls[0].options.auth, { username: '123', password: 'license' });
+    assert.ok(geoip.getBuildDate() instanceof Date);
+    const lookup = geoip.lookup('8.8.8.8');
+    assert.ok(lookup && lookup.country && lookup.country.iso_code);
+    assert.equal(
+      fs.readdirSync(tempDir).some(name => name.startsWith('GeoLite2-Country.mmdb.tmp-')),
+      false
+    );
+    assert.equal(logger.lines.some(line => line.includes('GeoIP database updated')), true);
+  } finally {
+    await fs.promises.rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('checkForUpdate skips the download when the remote build date is not newer', async () => {
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mpa-geoip-test-'));
+  try {
+    const dbPath = path.join(tempDir, 'GeoLite2-Country.mmdb');
+    await fs.promises.copyFile(BUNDLED_DB, dbPath);
+    const logger = makeLogger();
+    const cfg = { MAXMIND_ACCOUNT_ID: '123', MAXMIND_KEY: 'license' };
+
+    const dateService = createGeoIpService({ dbPath, http: {}, logger, cfg });
+    const local = dateService.getBuildDate();
+    const stamp = local.toISOString().slice(0, 10).replace(/-/g, '');
+
+    let getCalled = false;
+    const geoip = createGeoIpService({
+      dbPath,
+      logger,
+      cfg,
+      http: {
+        head: async () => ({
+          headers: {
+            'content-disposition': `attachment; filename=GeoLite2-Country_${stamp}.tar.gz`,
+          },
+        }),
+        get: async () => {
+          getCalled = true;
+          return { data: Buffer.alloc(0) };
+        },
+      },
+    });
+
+    const result = await geoip.checkForUpdate();
+
+    assert.equal(result.updated, false);
+    assert.equal(result.reason, 'up-to-date');
+    assert.equal(getCalled, false);
+    assert.equal(logger.lines.some(line => line.includes('up to date')), true);
+  } finally {
+    await fs.promises.rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('checkForUpdate keeps the existing database and reader when the download is invalid', async () => {
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mpa-geoip-test-'));
+  try {
+    const dbPath = path.join(tempDir, 'GeoLite2-Country.mmdb');
+    await fs.promises.copyFile(BUNDLED_DB, dbPath);
+    const before = fs.readFileSync(dbPath);
+    const geoip = createGeoIpService({
+      dbPath,
+      logger: makeLogger(),
+      cfg: { MAXMIND_ACCOUNT_ID: '123', MAXMIND_KEY: 'license' },
+      http: {
+        head: async () => ({
+          headers: {
+            'content-disposition': 'attachment; filename=GeoLite2-Country_20990101.tar.gz',
+          },
+        }),
+        get: async () => ({ data: Buffer.from('not a tar archive') }),
+      },
+    });
+
+    const result = await geoip.checkForUpdate();
+
+    assert.equal(result.updated, false);
+    assert.equal(result.reason, 'error');
+    assert.deepEqual(fs.readFileSync(dbPath), before);
+    assert.ok(geoip.lookup('8.8.8.8'));
+  } finally {
+    await fs.promises.rm(tempDir, { recursive: true, force: true });
+  }
+});
