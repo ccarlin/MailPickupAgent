@@ -285,3 +285,12 @@ test('startAutoUpdate schedules and stopAutoUpdate clears the timer', () => {
   assert.doesNotThrow(() => geoip.stopAutoUpdate());
   assert.doesNotThrow(() => geoip.stopAutoUpdate());
 });
+
+test('matchCountry uses the shared GeoIP reader', () => {
+  const { matchCountry } = require('../app/blacklist');
+
+  const result = matchCountry('8.8.8.8', ['US']);
+
+  assert.equal(result.matched, true);
+  assert.equal(result.country, 'US');
+});

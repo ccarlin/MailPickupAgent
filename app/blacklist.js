@@ -1,9 +1,6 @@
-const path = require('path');
-const MMDBReader = require('mmdb-reader');
 const tools = require('./tools');
+const geoip = require('./geoip');
 const { findMatchingSender, findMatchingIpRange, extractTLD, checkCombos } = require('./shared');
-
-const mmdb = new MMDBReader(path.join(__dirname, '..', 'GeoLite2-Country.mmdb'));
 
 function matchCountry(originatingIp, countries) {
   if (originatingIp) {
@@ -12,7 +9,7 @@ function matchCountry(originatingIp, countries) {
     }
     tools.logData(`Checking originating country for IP: ${originatingIp}`);
     try {
-      const lookup = mmdb.lookup(originatingIp);
+      const lookup = geoip.lookup(originatingIp);
       if (lookup && lookup.country && lookup.country.iso_code) {
         const code = lookup.country.iso_code.toUpperCase();
         tools.logData(`Originating country code: ${code}`);
