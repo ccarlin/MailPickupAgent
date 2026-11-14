@@ -122,9 +122,12 @@ function createGeoIpService(options = {}) {
   const http = options.http || axios;
   const logger = options.logger || tools;
   const cfg = options.cfg || config;
+  const initialDelayMs = options.initialDelayMs ?? 5000;
 
   let reader = loadReader();
   let checking = false;
+  let timer = null;
+  let initialTimer = null;
 
   function loadReader() {
     try {
@@ -240,7 +243,49 @@ function createGeoIpService(options = {}) {
     }
   }
 
-  return { lookup, getBuildDate, checkForUpdate };
+  function startAutoUpdate() {
+    const opts = resolveUpdateOptions(cfg);
+    if (!opts) {
+      logger.logWarn(
+        'GeoIP auto-update disabled: MAXMIND_ACCOUNT_ID and MAXMIND_KEY must both be set.'
+      );
+      return false;
+    }
+    if (timer) return true;
+
+    logger.logData(
+      `GeoIP auto-update enabled: checking every ${opts.intervalHours} hour(s).`
+    );
+
+    initialTimer = setTimeout(() => {
+      void checkForUpdate();
+    }, initialDelayMs);
+    if (typeof initialTimer.unref === 'function') {
+      initialTimer.unref();
+    }
+
+    timer = setInterval(() => {
+      void checkForUpdate();
+    }, opts.intervalHours * 60 * 60 * 1000);
+    if (typeof timer.unref === 'function') {
+      timer.unref();
+    }
+
+    return true;
+  }
+
+  function stopAutoUpdate() {
+    if (initialTimer) {
+      clearTimeout(initialTimer);
+      initialTimer = null;
+    }
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  return { lookup, getBuildDate, checkForUpdate, startAutoUpdate, stopAutoUpdate };
 }
 
 const singleton = createGeoIpService();

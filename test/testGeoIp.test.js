@@ -254,3 +254,34 @@ test('checkForUpdate keeps the existing database and reader when the download is
     await fs.promises.rm(tempDir, { recursive: true, force: true });
   }
 });
+
+test('startAutoUpdate returns false and warns when credentials are missing', () => {
+  const logger = makeLogger();
+  const geoip = createGeoIpService({
+    dbPath: BUNDLED_DB,
+    http: {},
+    logger,
+    cfg: {},
+  });
+
+  assert.equal(geoip.startAutoUpdate(), false);
+  assert.equal(
+    logger.lines.some(line => line.includes('GeoIP auto-update disabled')),
+    true
+  );
+});
+
+test('startAutoUpdate schedules and stopAutoUpdate clears the timer', () => {
+  const geoip = createGeoIpService({
+    dbPath: BUNDLED_DB,
+    http: {},
+    logger: makeLogger(),
+    cfg: { MAXMIND_ACCOUNT_ID: '123', MAXMIND_KEY: 'license' },
+    initialDelayMs: 60_000,
+  });
+
+  assert.equal(geoip.startAutoUpdate(), true);
+  assert.equal(geoip.startAutoUpdate(), true);
+  assert.doesNotThrow(() => geoip.stopAutoUpdate());
+  assert.doesNotThrow(() => geoip.stopAutoUpdate());
+});
