@@ -18,3 +18,4 @@ ecosystem.config.js
 config/*.bak
 SECURITY-AUDIT.md
 .superpowers/
+docs/
