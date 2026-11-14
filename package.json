@@ -14,6 +14,7 @@
     "lint:fix": "eslint . --fix",
     "test": "node index.js --test",
     "test:sentry": "node --test test/testSentry.test.js",
+    "test:geoip": "node --test test/testGeoIp.test.js",
     "test:sentry:send": "node test/testSentrySend.js",
     "wipeall": "node index.js --wipeall",
     "purge": "node index.js --purge",
@@ -52,6 +53,7 @@
     "postal-mime": "^4.0.0",
     "pug": "^3.0.4",
     "spamassassin-client": "^1.3.0",
+    "tar": "^7.5.23",
     "web-push": "^4.0.0",
     "xss": "^1.0.15"
   },
