@@ -474,9 +474,11 @@ active config file. When both are present, the server:
 - Checks MaxMind about 5 seconds after startup and then every
   `MAXMIND_UPDATE_INTERVAL_HOURS` (default `168`, weekly).
 - Uses a `HEAD` request to compare the remote build date with the local
-  database's embedded build date, and only downloads when a newer build exists.
-- Downloads the tar.gz archive, validates the new `.mmdb`, atomically replaces
-  `GeoLite2-Country.mmdb`, and reloads the in-memory reader without restarting.
+  database's embedded build date, and only downloads when a newer build appears
+  to exist (or when the build date cannot be determined).
+- Downloads the tar.gz archive, validates the new `.mmdb`, replaces
+  `GeoLite2-Country.mmdb` (atomically where the filesystem allows, or in place
+  for bind-mounted files), and reloads the in-memory reader without restarting.
 
 If either credential is missing, auto-update is disabled with a warning and the
 bundled database continues to be used. You can still replace
@@ -490,7 +492,9 @@ For a manual download, visit:
 [https://www.maxmind.com/en/geolite-free-ip-geolocation-data](https://www.maxmind.com/en/geolite-free-ip-geolocation-data)
 
 When running in Docker, `docker-compose.yml` bind-mounts
-`GeoLite2-Country.mmdb` so updates persist on the host.
+`GeoLite2-Country.mmdb` so updates persist on the host. Because a bind-mounted
+file cannot be atomically renamed, the updater writes the validated database in
+place there.
 
 ## Dependencies
 
@@ -506,6 +510,7 @@ When running in Docker, `docker-compose.yml` bind-mounts
 - **postal-mime** — Email parsing
 - **pug** — Template engine for admin UI
 - **spamassassin-client** — SpamAssassin SPAMC protocol client
+- **tar** — Extract the MaxMind tar.gz archive
 - **web-push** — Web push notification sending (VAPID)
 - **xss** — Input sanitization to prevent XSS attacks
 

@@ -294,3 +294,52 @@ test('matchCountry uses the shared GeoIP reader', () => {
   assert.equal(result.matched, true);
   assert.equal(result.country, 'US');
 });
+
+test('checkForUpdate falls back to in-place replacement when rename is busy', async () => {
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mpa-geoip-test-'));
+  try {
+    const dbPath = path.join(tempDir, 'GeoLite2-Country.mmdb');
+    await fs.promises.writeFile(dbPath, 'not a database');
+    const archive = await makeArchive(tempDir);
+    let renameAttempts = 0;
+    const busyFs = {
+      promises: new Proxy(fs.promises, {
+        get(target, prop) {
+          if (prop === 'rename') {
+            return async () => {
+              renameAttempts += 1;
+              const err = new Error('EBUSY: resource busy or locked');
+              err.code = 'EBUSY';
+              throw err;
+            };
+          }
+          return target[prop];
+        },
+      }),
+    };
+    const geoip = createGeoIpService({
+      dbPath,
+      fs: busyFs,
+      replaceRetryDelayMs: 1,
+      logger: makeLogger(),
+      cfg: { MAXMIND_ACCOUNT_ID: '123', MAXMIND_KEY: 'license' },
+      http: {
+        head: async () => ({
+          headers: {
+            'content-disposition': 'attachment; filename=GeoLite2-Country_20990101.tar.gz',
+          },
+        }),
+        get: async () => ({ data: archive }),
+      },
+    });
+
+    const result = await geoip.checkForUpdate();
+
+    assert.equal(result.updated, true);
+    assert.equal(result.reason, 'updated');
+    assert.equal(renameAttempts, 3);
+    assert.ok(geoip.lookup('8.8.8.8'));
+  } finally {
+    await fs.promises.rm(tempDir, { recursive: true, force: true });
+  }
+});

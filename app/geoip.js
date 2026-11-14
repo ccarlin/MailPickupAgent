@@ -102,19 +102,30 @@ async function findDatabaseFile(dir) {
   return null;
 }
 
-async function replaceFile(source, target) {
+async function replaceFile(fileSystem, source, target, retryDelayMs = 500) {
   let lastError;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      await fs.promises.rename(source, target);
+      await fileSystem.promises.rename(source, target);
       return;
     } catch (err) {
       lastError = err;
       if (!['EPERM', 'EBUSY', 'EACCES'].includes(err.code)) throw err;
-      await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      await new Promise(resolve => setTimeout(resolve, retryDelayMs * (attempt + 1)));
     }
   }
-  throw lastError;
+
+  try {
+    const data = await fileSystem.promises.readFile(source);
+    await fileSystem.promises.writeFile(target, data);
+    await fileSystem.promises.rm(source, { force: true });
+  } catch (fallbackError) {
+    const reason = lastError.code || lastError.message;
+    throw new Error(
+      `rename failed (${reason}) and in-place fallback failed: ${fallbackError.message}`,
+      { cause: fallbackError }
+    );
+  }
 }
 
 function createGeoIpService(options = {}) {
@@ -123,6 +134,8 @@ function createGeoIpService(options = {}) {
   const logger = options.logger || tools;
   const cfg = options.cfg || config;
   const initialDelayMs = options.initialDelayMs ?? 5000;
+  const fileSystem = options.fs || fs;
+  const replaceRetryDelayMs = options.replaceRetryDelayMs ?? 500;
 
   let reader = loadReader();
   let checking = false;
@@ -224,7 +237,7 @@ function createGeoIpService(options = {}) {
           throw new Error('downloaded database has invalid metadata');
         }
 
-        await replaceFile(tempTarget, dbPath);
+        await replaceFile(fileSystem, tempTarget, dbPath, replaceRetryDelayMs);
         reader = new MMDBReader(dbPath);
 
         const installedDay = localBuildDay(reader);
