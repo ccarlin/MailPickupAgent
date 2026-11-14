@@ -1,5 +1,10 @@
 'use strict';
 
+const axios = require('axios');
+
+const PROVIDER_FALLBACK = 'Sentry-compatible';
+const PROVIDER_PROBE_TIMEOUT_MS = 2500;
+
 let sentry = null;
 let enabled = false;
 let initialized = false;
@@ -48,6 +53,78 @@ function dsnChanged(previous, next) {
 
 function resolveTraceLifecycle(value) {
   return String(value || '').trim().toLowerCase() === 'stream' ? 'stream' : 'static';
+}
+
+function getDsnBaseUrl(dsn) {
+  try {
+    const url = new URL(String(dsn || '').trim());
+    if (!url.protocol || !url.host) return null;
+
+    const path = url.pathname.replace(/\/+$/, '');
+    const separator = path.lastIndexOf('/');
+    const prefix = separator > 0 ? path.slice(0, separator) : '';
+    return `${url.protocol}//${url.host}${prefix}`;
+  } catch {
+    return null;
+  }
+}
+
+function isObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isBugsinkSchema(response) {
+  return response.status === 200 && isObject(response.data) && typeof response.data.openapi === 'string';
+}
+
+function isGlitchTipHealth(response) {
+  return response.status === 200
+    && isObject(response.data)
+    && isObject(response.data.healthy)
+    && Array.isArray(response.data.problems);
+}
+
+function isSentryRoot(response) {
+  return response.status === 200
+    && isObject(response.data)
+    && 'version' in response.data
+    && 'auth' in response.data
+    && 'user' in response.data;
+}
+
+async function requestUrl(url, { timeout }) {
+  return axios.get(url, {
+    timeout,
+    validateStatus: () => true,
+    maxRedirects: 3,
+  });
+}
+
+async function detectProvider(dsn, options = {}) {
+  const request = options.request || requestUrl;
+  const timeout = Number(options.timeout) > 0 ? Number(options.timeout) : PROVIDER_PROBE_TIMEOUT_MS;
+  const baseUrl = getDsnBaseUrl(dsn);
+  if (!baseUrl) return PROVIDER_FALLBACK;
+
+  async function probe(path, matches) {
+    try {
+      const response = await request(`${baseUrl}${path}`, { timeout });
+      return Boolean(response && matches(response));
+    } catch {
+      return false;
+    }
+  }
+
+  const [bugsink, glitchtip, sentryRoot] = await Promise.all([
+    probe('/api/canonical/0/schema/', isBugsinkSchema),
+    probe('/api/0/internal/health/', isGlitchTipHealth),
+    probe('/api/0/', isSentryRoot),
+  ]);
+
+  if (bugsink) return 'Bugsink';
+  if (glitchtip) return 'GlitchTip';
+  if (sentryRoot) return 'Sentry';
+  return PROVIDER_FALLBACK;
 }
 
 function requiresRestart(previous = {}, next = {}) {
@@ -105,6 +182,7 @@ function init(values = {}) {
   try {
     sentry = require('@sentry/node');
     activeOptions = options;
+    activeOptions.provider = PROVIDER_FALLBACK;
     expressEnabled = isExpressEnabled(values);
     if (!expressEnabled && typeof sentry.getDefaultIntegrations === 'function') {
       options.defaultIntegrations = sentry.getDefaultIntegrations()
@@ -112,6 +190,12 @@ function init(values = {}) {
     }
     sentry.init(options);
     enabled = true;
+
+    detectProvider(options.dsn).then(provider => {
+      if (activeOptions && activeOptions.dsn === options.dsn) {
+        activeOptions.provider = provider;
+      }
+    }).catch(() => {});
   } catch (err) {
     enabled = false;
     console.error(`[sentry] Failed to initialize: ${err.message}`);
@@ -128,6 +212,7 @@ function getDetails() {
   if (!enabled || !activeOptions) return null;
 
   return {
+    provider: activeOptions.provider || PROVIDER_FALLBACK,
     environment: activeOptions.environment,
     release: activeOptions.release,
     tracesSampleRate: activeOptions.tracesSampleRate,
@@ -184,6 +269,7 @@ async function flush(timeout = 2000) {
 
 module.exports = {
   resolveOptions,
+  detectProvider,
   dsnChanged,
   isExpressEnabled,
   requiresRestart,

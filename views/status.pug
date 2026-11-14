@@ -487,14 +487,15 @@ block content
           i.fas.fa-play
           |  Clicking card runs test
       if sentryDetails
+        - var providerLogos = { GlitchTip: '/img/glitchtip.svg', Bugsink: '/img/bugsink.png' }
+        - var providerLogo = providerLogos[sentryDetails.provider] || '/img/sentry.png'
         .status-card.sentry.clickable#card-sentry
           .icon
-            img(src="/img/sentry.png" alt="Sentry")
+            img(src=providerLogo alt=sentryDetails.provider)
           .count
             i.fas.fa-check-circle
             |  Active
-          .label Sentry
-          .sub-label Env: #{sentryDetails.environment} / Release: #{sentryDetails.release}
+          .label #{sentryDetails.provider}
           .sub-label Sample rate: #{sentryDetails.tracesSampleRate}
           .sub-label Trace lifecycle: #{sentryDetails.traceLifecycle}
           .test-badge

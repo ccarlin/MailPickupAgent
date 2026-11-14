@@ -181,6 +181,60 @@ test('requiresRestart detects trace lifecycle changes', () => {
   assert.equal(sentry.requiresRestart({}, {}), false);
 });
 
+test('detectProvider recognizes Bugsink from its canonical schema endpoint', async () => {
+  const provider = await sentry.detectProvider('https://key@bugsink.example.com/1', {
+    request: async url => url === 'https://bugsink.example.com/api/canonical/0/schema/'
+      ? { status: 200, data: { openapi: '3.1.0', info: { title: 'Bugsink API' } } }
+      : { status: 404, data: {} },
+  });
+
+  assert.equal(provider, 'Bugsink');
+});
+
+test('detectProvider recognizes GlitchTip from its internal health endpoint', async () => {
+  const provider = await sentry.detectProvider('https://key@glitchtip.example.com/1', {
+    request: async url => url === 'https://glitchtip.example.com/api/0/internal/health/'
+      ? { status: 200, data: { healthy: {}, problems: [] } }
+      : { status: 404, data: {} },
+  });
+
+  assert.equal(provider, 'GlitchTip');
+});
+
+test('detectProvider recognizes Sentry from its API root', async () => {
+  const provider = await sentry.detectProvider('https://key@sentry.example.com/1', {
+    request: async url => url === 'https://sentry.example.com/api/0/'
+      ? { status: 200, data: { version: '0', auth: null, user: null } }
+      : { status: 404, data: {} },
+  });
+
+  assert.equal(provider, 'Sentry');
+});
+
+test('detectProvider falls back to Sentry-compatible when no probe matches', async () => {
+  const provider = await sentry.detectProvider('https://key@unknown.example.com/1', {
+    request: async () => ({ status: 404, data: {} }),
+  });
+
+  assert.equal(provider, 'Sentry-compatible');
+});
+
+test('detectProvider preserves a DSN path prefix when probing', async () => {
+  const urls = [];
+  await sentry.detectProvider('https://key@example.com/sentry/42', {
+    request: async url => {
+      urls.push(url);
+      return { status: 404, data: {} };
+    },
+  });
+
+  assert.deepEqual(urls.sort(), [
+    'https://example.com/sentry/api/0/',
+    'https://example.com/sentry/api/0/internal/health/',
+    'https://example.com/sentry/api/canonical/0/schema/',
+  ].sort());
+});
+
 test('captureException is a no-op before initialization', () => {
   assert.doesNotThrow(() => sentry.captureException(new Error('not enabled')));
 });
