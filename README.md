@@ -453,7 +453,7 @@ The `run-mailpickup.bat` script runs `node index.js` directly with the provided 
 | `POST` | `/rulesEditor/api/rules/save` | Save updated rules to `rules.json` with automatic backup |
 | `GET` | `/rulesEditor/api/rule-hits` | Get simple object mapping rules to hit counts |
 | `POST` | `/rulesEditor/api/rules/generate-keyword-filter` | Generate a keyword filter via AI (Ollama or llama.cpp) |
-| `GET` | `/ruleHits/api/rule-hits` | Get detailed list of rule hits with resolved display labels and scores |
+| `GET` | `/ruleHits/api/rule-hits` | Get rule hits aggregated by rule name and type with summed hits, all distinct scores, and underlying entries |
 | `DELETE` | `/ruleHits/api/rule-hits/clear` | Clear all recorded rule hits from database |
 | `DELETE` | `/ruleHits/api/rule-hits/:ruleType/:ruleValue` | Delete a specific rule hit count from database |
 | `GET` | `/userStats/api/stats` | Get per-mailbox processing counts (processed, whitelisted, blacklisted, quarantined, released, deleted) |

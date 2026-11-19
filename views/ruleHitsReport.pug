@@ -504,18 +504,17 @@ block content
                                 width: '70px',
                                 sort: false,
                                 formatter: function(cell, row) {
-                                    var ruleType = row.cells[5].data || row.cells[0].data;
-                                    var ruleValue = row.cells[6].data || '';
+                                    var key = row.cells[6].data;
                                     return gridjs.html(
-                                        '<button class="btn-delete-row" onclick="deleteEntry(\'' +
-                                        encodeURIComponent(ruleType) + '\',\'' +
-                                        encodeURIComponent(ruleValue) + '\')" title="Delete entry">' +
+                                        '<button class="btn-delete-row" onclick="deleteGroup(\'' +
+                                        key + '\')" title="Delete all stored entries for this rule">' +
                                         '<i class="fas fa-trash-alt"></i></button>'
                                     );
                                 }
                             },
                             { name: '_raw_type', hidden: true },
-                            { name: '_raw_value', hidden: true }
+                            { name: '_group_key', hidden: true },
+                            { name: '_entries', hidden: true }
                         ],
                         data: filteredData,
                         pagination: { limit: 14, summary: true },
@@ -806,43 +805,47 @@ block content
                     });
             });
 
-            window.deleteEntry = function(encodedType, encodedValue) {
-                var ruleType = decodeURIComponent(encodedType);
-                var ruleValue = decodeURIComponent(encodedValue);
-                if (!confirm('Delete this rule hit entry?\n\n' + ruleType + '\n' + ruleValue)) return;
-                fetch('/ruleHits/api/rule-hits/' + encodedType + '/' + encodedValue, { method: 'DELETE' })
-                    .then(function(r) { return r.json(); })
-                    .then(function(res) {
-                        if (res.success) {
-                            allData = allData.filter(function(row) {
-                                return !(row[0] === ruleType && row[6] === ruleValue);
-                            });
-                            filteredData = filteredData.filter(function(row) {
-                                return !(row[0] === ruleType && row[6] === ruleValue);
-                            });
-                            buildSummaryCards();
-                            if (grid) grid.updateConfig({ data: filteredData }).forceRender();
-                            if (viewMode === 'chart') renderChart();
+            window.deleteGroup = function(key) {
+                var row = null;
+                allData.forEach(function(r) { if (r[6] === key) row = r; });
+                if (!row) return;
+                var entries = row[7] || [];
+                if (!entries.length) return;
+                if (!confirm('Delete all ' + entries.length + ' stored ' + (entries.length === 1 ? 'entry' : 'entries') + ' for this rule?\n\n' + getTypeLabel(row[0]) + '\n' + row[1])) return;
+                var requests = entries.map(function(entry) {
+                    return fetch('/ruleHits/api/rule-hits/' + encodeURIComponent(entry.rule_type) + '/' + encodeURIComponent(entry.rule_value), { method: 'DELETE' })
+                        .then(function(r) { return r.json(); });
+                });
+                Promise.all(requests)
+                    .then(function(results) {
+                        if (!results.every(function(res) { return res.success; })) {
+                            throw new Error('One or more deletes failed');
                         }
+                        allData = allData.filter(function(r) { return r[6] !== key; });
+                        filteredData = filteredData.filter(function(r) { return r[6] !== key; });
+                        buildSummaryCards();
+                        if (grid) grid.updateConfig({ data: filteredData }).forceRender();
+                        if (viewMode === 'chart') renderChart();
                     })
                     .catch(function(err) {
-                        console.error('Failed to delete rule hit:', err);
-                        alert('Failed to delete rule hit.');
+                        console.error('Failed to delete rule hits:', err);
+                        alert('Failed to delete rule hits.');
                     });
             };
 
             fetch('/ruleHits/api/rule-hits')
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    allData = data.map(function(row) {
+                    allData = data.map(function(row, index) {
                         return [
                             row.rule_type,
                             row.display_label,
-                            row.score,
+                            (row.scores || []).join(', '),
                             row.hit_count,
                             row.updated_at,
                             row.rule_type,
-                            row.rule_value
+                            String(index),
+                            row.entries || []
                         ];
                     });
                     filteredData = allData.slice();
