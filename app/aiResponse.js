@@ -8,6 +8,21 @@ function normalizeResponse(aiResponse) {
     .replace(/[\r\n]+/g, ' ');
 }
 
+function isStringTerminator(text, quoteIndex, container, valueComplete) {
+  let next = quoteIndex + 1;
+  while (next < text.length && /\s/.test(text[next])) next++;
+  const ch = text[next];
+  if (ch === undefined || ch === '"' || ch === '}' || ch === ']') return true;
+  if (ch === ',') {
+    let after = next + 1;
+    while (after < text.length && /\s/.test(text[after])) after++;
+    const following = text[after];
+    return following === undefined || following === '"' || following === '}' || following === ']';
+  }
+  if (ch === ':') return container === '{' && !valueComplete;
+  return false;
+}
+
 function repairJson(text) {
   const out = [];
   const stack = [];
@@ -21,6 +36,10 @@ function repairJson(text) {
     const ch = text[i];
 
     if (inString) {
+      if (!escaped && ch === '"' && !isStringTerminator(text, i, top(), valueComplete)) {
+        out.push('\\"');
+        continue;
+      }
       out.push(ch);
       if (escaped) {
         escaped = false;

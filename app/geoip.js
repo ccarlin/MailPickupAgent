@@ -11,8 +11,17 @@ const tools = require('./tools');
 
 const DOWNLOAD_BASE_URL = 'https://download.maxmind.com';
 const DEFAULT_INTERVAL_HOURS = 168;
+const DEFAULT_DB_PATH = 'GeoLite2-Country.mmdb';
 
-const DB_PATH = path.join(__dirname, '..', 'GeoLite2-Country.mmdb');
+const RESTART_KEYS = [
+  'MAXMIND_UPDATE_ENABLED',
+  'MAXMIND_ACCOUNT_ID',
+  'MAXMIND_KEY',
+  'MAXMIND_EDITION_ID',
+  'MAXMIND_UPDATE_INTERVAL_HOURS',
+  'MAXMIND_DB_PATH',
+];
+
 const UPDATE_TIMEOUT_MS = 30_000;
 const DOWNLOAD_TIMEOUT_MS = 60_000;
 const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
@@ -22,7 +31,27 @@ function buildDownloadUrl(editionId = 'GeoLite2-Country', baseUrl = DOWNLOAD_BAS
   return `${baseUrl}/geoip/databases/${encodeURIComponent(edition)}/download?suffix=tar.gz`;
 }
 
+function resolveDbPath(value) {
+  const configured = String(value ?? '').trim() || DEFAULT_DB_PATH;
+  return path.isAbsolute(configured) ? configured : path.resolve(__dirname, '..', configured);
+}
+
+function isUpdateEnabled(value) {
+  if (value === undefined || value === null || value === '') return true;
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value).trim().toLowerCase();
+  return normalized !== 'false' && normalized !== '0' && normalized !== 'no';
+}
+
+function requiresRestart(previous = {}, next = {}) {
+  return RESTART_KEYS.some(key =>
+    Object.prototype.hasOwnProperty.call(next, key)
+    && String(next[key] ?? '') !== String(previous[key] ?? '')
+  );
+}
+
 function resolveUpdateOptions(cfg = {}) {
+  if (!isUpdateEnabled(cfg.MAXMIND_UPDATE_ENABLED)) return null;
   const accountId = String(cfg.MAXMIND_ACCOUNT_ID ?? '').trim();
   const licenseKey = String(cfg.MAXMIND_KEY ?? '').trim();
   if (!accountId || !licenseKey) return null;
@@ -129,10 +158,10 @@ async function replaceFile(fileSystem, source, target, retryDelayMs = 500) {
 }
 
 function createGeoIpService(options = {}) {
-  const dbPath = options.dbPath || DB_PATH;
+  const cfg = options.cfg || config;
+  const dbPath = options.dbPath || resolveDbPath(cfg.MAXMIND_DB_PATH);
   const http = options.http || axios;
   const logger = options.logger || tools;
-  const cfg = options.cfg || config;
   const initialDelayMs = options.initialDelayMs ?? 5000;
   const fileSystem = options.fs || fs;
   const replaceRetryDelayMs = options.replaceRetryDelayMs ?? 500;
@@ -259,9 +288,9 @@ function createGeoIpService(options = {}) {
   function startAutoUpdate() {
     const opts = resolveUpdateOptions(cfg);
     if (!opts) {
-      logger.logWarn(
-        'GeoIP auto-update disabled: MAXMIND_ACCOUNT_ID and MAXMIND_KEY must both be set.'
-      );
+    logger.logWarn(
+      'GeoIP auto-update disabled: enable MAXMIND_UPDATE_ENABLED and set both MAXMIND_ACCOUNT_ID and MAXMIND_KEY.'
+    );
       return false;
     }
     if (timer) return true;
@@ -308,6 +337,8 @@ module.exports = {
   createGeoIpService,
   buildDownloadUrl,
   resolveUpdateOptions,
+  resolveDbPath,
+  requiresRestart,
   parseRemoteBuildDate,
   isRemoteNewer,
 };

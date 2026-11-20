@@ -38,7 +38,7 @@ block scripts
     script.
         let configData = null;
         const modelLists = {};
-        let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, abuseipdb: true, sentry: true, thresholds: true, purge: true, test: true };
+        let collapsedSections = { server: true, security: true, paths: true, smtp: true, ai: true, spamassassin: true, abuseipdb: true, geoip: true, sentry: true, thresholds: true, purge: true, test: true };
 
         function showToast(message, type, duration) {
             if (duration === undefined) duration = 2500;
@@ -111,6 +111,14 @@ block scripts
                     { key: 'ABUSEIPDB_TIMEOUT', label: 'Timeout', type: 'number', min: 1, max: 30, hint: 'Request timeout in seconds (1-30, default 5)' },
                     { key: 'ABUSEIPDB_BASE_SCORE', label: 'Base Score', type: 'number', step: '0.1', min: 0, max: 50, hint: 'Minimum score assigned when IP has abuse reports (default 5)' },
                     { key: 'ABUSEIPDB_MAX_SCORE', label: 'Max Score', type: 'number', step: '0.1', min: 0, max: 50, hint: 'Maximum score at 100% abuse confidence (default 15)' },
+                ]},
+                { key: 'geoip', title: 'GeoIP Database Updates', icon: '&#x1F30D;', description: 'Automatic updates of the MaxMind GeoLite2 country database. Updates run when enabled and both credentials are set; changes require a restart.', fields: [
+                    { key: 'MAXMIND_UPDATE_ENABLED', label: 'Auto-Update Enabled', type: 'checkbox', hint: 'Enable automatic database updates (default on; also requires both credentials below)' },
+                    { key: 'MAXMIND_ACCOUNT_ID', label: 'Account ID', hint: 'MaxMind account ID used for the download' },
+                    { key: 'MAXMIND_KEY', label: 'License Key', type: 'password', hint: 'MaxMind license key (leave unchanged to keep the stored value)' },
+                    { key: 'MAXMIND_EDITION_ID', label: 'Edition ID', hint: 'Database edition to download (default GeoLite2-Country; do not change unless needed)' },
+                    { key: 'MAXMIND_UPDATE_INTERVAL_HOURS', label: 'Check Interval (hours)', type: 'number', min: 1, hint: 'Hours between update checks (default 168 = weekly; must be positive)' },
+                    { key: 'MAXMIND_DB_PATH', label: 'Database File', hint: 'MMDB file to load and update; relative paths resolve from the app root (default GeoLite2-Country.mmdb)' },
                 ]},
                 { key: 'sentry', title: 'Sentry-Compatible Error Tracking', icon: '&#x1F41B;', description: 'Optional error reporting via <a href="https://sentry.io/" target="_blank">Sentry</a>, <a href="https://glitchtip.com/" target="_blank">GlitchTip</a>, <a href="https://bugsink.com/" target="_blank">Bugsink</a>, or another Sentry-compatible service. Error tracking runs when a DSN is set; changes take effect after a restart.', fields: [
                     { key: 'SENTRY_DSN', label: 'DSN', type: 'password', hint: 'Project DSN from Sentry, GlitchTip, Bugsink, or another Sentry-compatible service (leave blank to disable)' },
@@ -385,8 +393,12 @@ block scripts
                 }
                 const data = await resp.json().catch(() => ({}));
                 document.getElementById('lastSaved').textContent = 'Saved at ' + new Date().toLocaleTimeString();
-                if (data.sentryRestartRequired) {
+                if (data.sentryRestartRequired && data.geoipRestartRequired) {
+                    showToast('Sentry and GeoIP settings changed \u2014 restart the MailPickupAgent service for both to take effect.', 'error', 10000);
+                } else if (data.sentryRestartRequired) {
                     showToast('Sentry DSN changed \u2014 restart the MailPickupAgent service for Sentry to take effect.', 'error', 10000);
+                } else if (data.geoipRestartRequired) {
+                    showToast('GeoIP update settings changed \u2014 restart the MailPickupAgent service for them to take effect.', 'error', 10000);
                 } else if (values.CERT_PATH && values.CERT_PATH.trim() !== '' && window.location.protocol !== 'https:') {
                     showToast('Certificate configured \u2014 restart the service to run in secure mode (HTTPS). Remote access will require login.', 'info', 5000);
                 } else {

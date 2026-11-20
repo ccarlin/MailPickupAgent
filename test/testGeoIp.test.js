@@ -2,10 +2,13 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('path');
 
 const {
   buildDownloadUrl,
   resolveUpdateOptions,
+  resolveDbPath,
+  requiresRestart,
   parseRemoteBuildDate,
   isRemoteNewer,
 } = require('../app/geoip');
@@ -28,6 +31,44 @@ test('resolveUpdateOptions is disabled without both credentials', () => {
   assert.equal(resolveUpdateOptions({ MAXMIND_ACCOUNT_ID: '123' }), null);
   assert.equal(resolveUpdateOptions({ MAXMIND_KEY: 'license' }), null);
   assert.equal(resolveUpdateOptions({}), null);
+});
+
+test('resolveUpdateOptions is disabled by the enable flag even with credentials', () => {
+  const credentials = { MAXMIND_ACCOUNT_ID: '123', MAXMIND_KEY: 'license' };
+
+  assert.equal(resolveUpdateOptions({ ...credentials, MAXMIND_UPDATE_ENABLED: false }), null);
+  assert.equal(resolveUpdateOptions({ ...credentials, MAXMIND_UPDATE_ENABLED: 'false' }), null);
+});
+
+test('resolveUpdateOptions stays enabled when the flag is true or absent', () => {
+  const credentials = { MAXMIND_ACCOUNT_ID: '123', MAXMIND_KEY: 'license' };
+
+  assert.ok(resolveUpdateOptions({ ...credentials, MAXMIND_UPDATE_ENABLED: true }));
+  assert.ok(resolveUpdateOptions(credentials));
+});
+
+test('resolveDbPath defaults to the bundled database and resolves relative paths', () => {
+  const root = path.resolve(__dirname, '..');
+
+  assert.equal(resolveDbPath(undefined), path.join(root, 'GeoLite2-Country.mmdb'));
+  assert.equal(resolveDbPath(''), path.join(root, 'GeoLite2-Country.mmdb'));
+  assert.equal(resolveDbPath('data/custom.mmdb'), path.join(root, 'data', 'custom.mmdb'));
+});
+
+test('resolveDbPath honors an absolute database path', () => {
+  const absolute = path.resolve('absolute-geoip-db.mmdb');
+
+  assert.equal(resolveDbPath(absolute), absolute);
+});
+
+test('requiresRestart detects changed GeoIP settings and ignores unchanged ones', () => {
+  assert.equal(requiresRestart({ MAXMIND_UPDATE_ENABLED: true }, { MAXMIND_UPDATE_ENABLED: false }), true);
+  assert.equal(requiresRestart({ MAXMIND_DB_PATH: 'a.mmdb' }, { MAXMIND_DB_PATH: 'b.mmdb' }), true);
+  assert.equal(requiresRestart({ MAXMIND_UPDATE_INTERVAL_HOURS: 168 }, { MAXMIND_UPDATE_INTERVAL_HOURS: '24' }), true);
+  assert.equal(requiresRestart({ MAXMIND_EDITION_ID: 'GeoLite2-Country' }, { MAXMIND_EDITION_ID: 'GeoLite2-Country' }), false);
+  assert.equal(requiresRestart({ MAXMIND_UPDATE_INTERVAL_HOURS: 168 }, { MAXMIND_UPDATE_INTERVAL_HOURS: '168' }), false);
+  assert.equal(requiresRestart({ MAXMIND_KEY: 'secret' }, {}), false);
+  assert.equal(requiresRestart({}, { UNRELATED_SETTING: 'changed' }), false);
 });
 
 test('resolveUpdateOptions defaults the interval to 168 hours', () => {
@@ -89,7 +130,6 @@ test('isRemoteNewer compares UTC days and treats missing values as newer', () =>
 
 const fs = require('fs');
 const os = require('os');
-const path = require('path');
 const tar = require('tar');
 
 const { createGeoIpService } = require('../app/geoip');

@@ -150,6 +150,12 @@ Configuration changes are automatically backed up to timestamped `.bak` files in
 | `ABUSEIPDB_TIMEOUT` | `5` | AbuseIPDB request timeout in seconds |
 | `ABUSEIPDB_BASE_SCORE` | `5` | Minimum score assigned when IP has abuse reports |
 | `ABUSEIPDB_MAX_SCORE` | `15` | Maximum score at 100% abuse confidence |
+| `MAXMIND_UPDATE_ENABLED` | `true` | Enable automatic GeoIP database updates (requires `MAXMIND_ACCOUNT_ID` and `MAXMIND_KEY`) |
+| `MAXMIND_ACCOUNT_ID` | *(empty)* | MaxMind account ID used for database downloads |
+| `MAXMIND_KEY` | *(empty)* | MaxMind license key used for database downloads |
+| `MAXMIND_EDITION_ID` | `GeoLite2-Country` | MaxMind database edition to download |
+| `MAXMIND_UPDATE_INTERVAL_HOURS` | `168` | Hours between update checks |
+| `MAXMIND_DB_PATH` | `GeoLite2-Country.mmdb` | MMDB file to load and update; relative paths resolve from the app root |
 | `SENTRY_DSN` | *(empty)* | Sentry (or Sentry-compatible) DSN; integration is disabled when empty |
 | `SENTRY_ENVIRONMENT` | *(empty)* | Sentry environment; defaults to `NODE_ENV` (or `production`) |
 | `SENTRY_RELEASE` | *(empty)* | Sentry release name; defaults to the package version |
@@ -468,24 +474,34 @@ automatically.
 
 ### Automatic updates
 
-Set both `MAXMIND_ACCOUNT_ID` and `MAXMIND_KEY` (your MaxMind license key) in the
-active config file. When both are present, the server:
+Keep `MAXMIND_UPDATE_ENABLED` set to `true` and set both `MAXMIND_ACCOUNT_ID` and
+`MAXMIND_KEY` (your MaxMind license key), either in the active config file or in
+the **GeoIP Database Updates** section of `/configEditor`. When enabled and both
+credentials are present, the server:
 
 - Checks MaxMind about 5 seconds after startup and then every
   `MAXMIND_UPDATE_INTERVAL_HOURS` (default `168`, weekly).
 - Uses a `HEAD` request to compare the remote build date with the local
   database's embedded build date, and only downloads when a newer build appears
   to exist (or when the build date cannot be determined).
-- Downloads the tar.gz archive, validates the new `.mmdb`, replaces
-  `GeoLite2-Country.mmdb` (atomically where the filesystem allows, or in place
-  for bind-mounted files), and reloads the in-memory reader without restarting.
+- Downloads the tar.gz archive, validates the new `.mmdb`, replaces the file
+  configured by `MAXMIND_DB_PATH` (atomically where the filesystem allows, or in
+  place for bind-mounted files), and reloads the in-memory reader without
+  restarting.
 
-If either credential is missing, auto-update is disabled with a warning and the
-bundled database continues to be used. You can still replace
-`GeoLite2-Country.mmdb` manually at any time.
+If the enable flag is off or either credential is missing, auto-update is
+disabled with a warning and the bundled database continues to be used. You can
+still replace the MMDB file manually at any time.
+
+`MAXMIND_DB_PATH` defaults to `GeoLite2-Country.mmdb` in the app root; relative
+paths resolve from the app root and absolute paths are used as-is. Docker users
+should keep the bind-mounted path so updates persist on the host.
 
 `MAXMIND_EDITION_ID` defaults to `GeoLite2-Country` and should normally not be
 changed.
+
+Changing any `MAXMIND_*` setting in the Configuration Editor requires restarting
+the MailPickupAgent service; the editor warns you after saving.
 
 For a manual download, visit:
 
