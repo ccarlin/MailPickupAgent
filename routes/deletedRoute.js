@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const config = require('../config');
 const tools = require('../app/tools');
+const { getLocalRecipient } = require('../app/deletedRecipient');
 const PostalMime = require('postal-mime');
 const { recentlyReleased } = require('../index.js');
 const FILEPATH_PATTERN = /^[A-Fa-f0-9]+$/i;
@@ -74,9 +75,8 @@ router.post('/', function(req, res) {
     res.redirect(safeRedirect(req, '/'));
 });
 
-function getDeletedEmails(callback) {
+function getDeletedEmails(callback, deletedPath = config.DELETED_DIR) {
     var emailList = [];
-    var deletedPath = config.DELETED_DIR;
 
     if (!fs.existsSync(deletedPath)) {
         callback(null, emailList);
@@ -109,13 +109,14 @@ function getDeletedEmails(callback) {
                             }
                         }
 
+                        let toAddresses = [];
+
                         // Parse .MAI with postal-mime for sender, recipients, subject
                         if (fs.existsSync(emailFilePath)) {
                             let mailMessage = await fs.promises.readFile(emailFilePath);
                             let parsed = await PostalMime.parse(mailMessage);
                             emailInfo.sender = parsed.from?.address || 'unknown';
-                            let toAddresses = (parsed.to || []).map(v => (v.address || '').split('@')[0].toLowerCase()).filter(Boolean);
-                            emailInfo.recipients = toAddresses.join(', ');
+                            toAddresses = (parsed.to || []).map(v => v.address || '').filter(Boolean);
                             emailInfo.subject = parsed.subject || '';
 
                             // Read X-MPA headers from raw email
@@ -137,6 +138,8 @@ function getDeletedEmails(callback) {
                                 }
                             }
                         }
+
+                        emailInfo.recipients = getLocalRecipient(headerContents, toAddresses);
 
                         emailList.push(emailInfo);
                     } catch(err) {
@@ -186,3 +189,4 @@ function RecoverMessages(emails) {
 }
 
 module.exports = router;
+module.exports.getDeletedEmails = getDeletedEmails;
