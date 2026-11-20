@@ -63,6 +63,7 @@ block scripts
                 { key: 'server', title: 'Server', icon: '&#x1F5A5;', description: 'General web server settings', fields: [
                     { key: 'PORT', label: 'HTTP Port', type: 'number', hint: 'Port for the web server' },
                     { key: 'HOSTNAME', label: 'Hostname', hint: 'Hostname for logging' },
+                    { key: 'LOG_LEVEL', label: 'Log Level', type: 'select', options: ['ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'], hint: 'Minimum severity written to the log; TRACE also logs the parsed email content sent to the AI.' },
                 ]},
                 { key: 'security', title: 'Security', icon: '&#x1F512;', description: 'HTTPS certificate and authentication settings', fields: [
                     { key: 'CERT_KEY_PATH', label: 'SSL Private Key Path', hint: 'Path to the private key file (.key). Set this + CERT_PATH to enable HTTPS' },

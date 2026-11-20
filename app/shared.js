@@ -97,7 +97,26 @@ function findMatchingCombo(parsed, combos, recipients, originatingIp) {
   }) || null;
 }
 
+const LOG_LEVELS = ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR'];
+
+function normalizeLogLevel(value) {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+function resolveLogLevel(value) {
+  const name = normalizeLogLevel(value);
+  return LOG_LEVELS.includes(name) ? name : 'INFO';
+}
+
+function shouldLogLevel(level, configuredLevel) {
+  const name = normalizeLogLevel(level);
+  const rank = LOG_LEVELS.includes(name) ? LOG_LEVELS.indexOf(name) : LOG_LEVELS.indexOf('INFO');
+  return rank >= LOG_LEVELS.indexOf(resolveLogLevel(configuredLevel));
+}
+
 module.exports = {
+  resolveLogLevel,
+  shouldLogLevel,
   matchSubject,
   ipInRange,
   extractOriginatingIp,

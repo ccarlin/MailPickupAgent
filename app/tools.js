@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const PostalMime = require('postal-mime');
 const config = require('../config');
 const sentry = require('./sentry');
+const { shouldLogLevel } = require('./shared');
 
 module.exports = {
     getSortedFiles: function(imageDir, fileType, sortType, callback) {        
@@ -80,6 +81,8 @@ module.exports = {
       if (!level)
         level = "INFO";
 
+      if (!shouldLogLevel(level, config.LOG_LEVEL)) return;
+
       if (data == null)
         data = "";
 
@@ -96,12 +99,12 @@ module.exports = {
       let timestamp = new Date().toLocaleString();
       message = `${timestamp}\t[${level}]\tPID: ${process.pid}, IP: ${normalizedIp}\t${data}`;
 
-      //Don't log debug messages unless debugging..
       if (level == "ERROR") {
         console.error(message);
       }
-      else if ((config.NODE_ENV == "development") || (level != "DEBUG"))
-        console.info(message);      
+      else {
+        console.info(message);
+      }
     },    
     // Async: parse email file and return HTML/text as HTML.
     // Returns a Promise<string>. Callers should await this function.

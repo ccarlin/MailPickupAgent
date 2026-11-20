@@ -14,6 +14,7 @@ const { checkAiSpam } = require('./app/ai');
 const { checkSpamAssassin } = require('./app/spamassassin');
 const { check: checkAbuseIpdb } = require('./app/abuseipdb');
 const { extractOriginatingIp } = require('./app/shared');
+const { buildAiEmailContent } = require('./app/emailPreprocess');
 const { recordHit } = require('./app/ruleHits');
 const userStats = require('./app/userStats');
 const sentry = require('./app/sentry');
@@ -227,6 +228,7 @@ async function processEmail(controlFilePath, messagePath, rules) {
     const fromAddr = parsed.from?.address || 'unknown';
     const subjectText = parsed.subject || '(no subject)';
 
+    tools.logData(`Parsed email content:\n${buildAiEmailContent(parsed, { from: fromAddr, subject: subjectText })}`, 'TRACE');
     tools.logData(`Processing email: ${subjectText} from ${fromAddr}`);
 
     const destMessageName = path.basename(messagePath);
