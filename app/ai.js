@@ -3,7 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const tools = require('./tools');
 const config = require('../config');
-const { parseAiResponse, filterAiReasons, getFilteredOutReasons } = require('./aiResponse');
+const { parseAiResponse } = require('./aiResponse');
 const { buildAiEmailContent } = require('./emailPreprocess');
 
 const OLLAMA_HOST = config.OLLAMA_SERVER;
@@ -83,12 +83,7 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
     const parsedJson = parseAiResponse(aiResponse);
     const classification = (parsedJson.classification || '').toUpperCase();
     const confidence = parseFloat(parsedJson.confidence_score) || 0;
-    const rawReasons = parsedJson.reasons || [];
-    const reasons = filterAiReasons(rawReasons, fromAddr, parsed);
-    const filteredOutReasons = getFilteredOutReasons(rawReasons, reasons);
-    if (filteredOutReasons.length > 0) {
-      tools.logWarn(`AI reasons filtered for ${fromAddr} (${subjectText}): ${filteredOutReasons.join(' | ')}`);
-    }
+    const reasons = parsedJson.reasons || [];
     aiClassification = classification || 'UNKNOWN';
     aiCheckSucceeded = true;
     if (classification === 'SPAM') {
