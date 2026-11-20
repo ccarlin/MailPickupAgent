@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseAiResponse } = require('../app/aiResponse');
+const { parseAiResponse, filterAiReasons, getFilteredOutReasons } = require('../app/aiResponse');
 
 test('parses valid JSON unchanged', () => {
   const parsed = parseAiResponse('{"classification":"HAM","confidence_score":0.9,"reasons":["a","b"]}');
@@ -107,4 +107,84 @@ test('escapes an inner quote followed by a comma inside a string', () => {
   const parsed = parseAiResponse(broken);
 
   assert.deepEqual(parsed.reasons, ['He said "hi", then left', 'Second reason']);
+});
+
+test('drops a freemail claim when the sender uses a corporate domain', () => {
+  const reasons = [
+    'Sender uses a free webmail provider (@doordash.com) while posing as a legitimate corporate entity.',
+    'Urgency and generic lures are present in the email.',
+  ];
+
+  const result = filterAiReasons(reasons, 'no-reply@doordash.com', { headers: [] });
+
+  assert.deepEqual(result, ['Urgency and generic lures are present in the email.']);
+});
+
+test('keeps a freemail claim when the From header is a freemail domain', () => {
+  const reasons = ['Freemail sender (outlook.com) impersonating transactional order correspondence.'];
+
+  const result = filterAiReasons(reasons, 'rand.user99@outlook.com', { headers: [] });
+
+  assert.deepEqual(result, reasons);
+});
+
+test('keeps a freemail claim when Return-Path is a freemail domain', () => {
+  const reasons = ['Freemail sender (gmail.com) impersonating transactional order correspondence.'];
+  const parsed = { headers: [{ key: 'Return-Path', value: '<rand.user99@gmail.com>' }] };
+
+  const result = filterAiReasons(reasons, 'no-reply@doordash.com', parsed);
+
+  assert.deepEqual(result, reasons);
+});
+
+test('drops a reason citing a freemail domain absent from the sender headers', () => {
+  const reasons = [
+    'Sender is using outlook.com while claiming to be DoorDash.',
+    'Promotional sweepstakes language creates artificial urgency.',
+  ];
+
+  const result = filterAiReasons(reasons, 'no-reply@doordash.com', { headers: [] });
+
+  assert.deepEqual(result, ['Promotional sweepstakes language creates artificial urgency.']);
+});
+
+test('keeps reasons that make no freemail claim', () => {
+  const reasons = ['Urgency and generic lures are present.', 'Message relies entirely on images.'];
+
+  const result = filterAiReasons(reasons, 'no-reply@doordash.com', { headers: [] });
+
+  assert.deepEqual(result, reasons);
+});
+
+test('uses a neutral reason when every reason is an unsubstantiated freemail claim', () => {
+  const reasons = ['Freemail sender (outlook.com) impersonating transactional correspondence.'];
+
+  const result = filterAiReasons(reasons, 'no-reply@doordash.com', { headers: [] });
+
+  assert.deepEqual(result, ['AI classification could not be substantiated from the email headers.']);
+});
+
+test('reports the reason removed by filtering', () => {
+  const raw = [
+    'Freemail sender (outlook.com) impersonating transactional correspondence.',
+    'Urgency and generic lures are present in the email.',
+  ];
+
+  const result = getFilteredOutReasons(raw, [raw[1]]);
+
+  assert.deepEqual(result, [raw[0]]);
+});
+
+test('reports a replaced reason when every reason was filtered', () => {
+  const raw = ['Freemail sender (outlook.com) impersonating transactional correspondence.'];
+
+  const result = getFilteredOutReasons(raw, ['AI classification could not be substantiated from the email headers.']);
+
+  assert.deepEqual(result, raw);
+});
+
+test('reports nothing when no reasons were removed', () => {
+  const reasons = ['Urgency and generic lures are present.', 'Message relies entirely on images.'];
+
+  assert.deepEqual(getFilteredOutReasons(reasons, reasons), []);
 });

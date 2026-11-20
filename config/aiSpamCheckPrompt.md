@@ -64,7 +64,8 @@ Output:
   ]
 }
 
-### ACTUAL EMAIL TO ANALYZE ###
+### INPUT FORMAT ###
 The email below is pre-processed. Only key headers are included. "Visible Body Text (N words)" contains the extracted readable text after base64 payloads are removed; if N is 0, the message relies entirely on images. "Inline Media" summarizes the removed image payloads with filename, alt text, type, and size.
+Before classifying, check the `From:` header in the email below. Every domain you cite must appear literally there or in the body.
 
-Before classifying, re-read the `From:` header below. Every domain you cite must appear literally there or in the body.
+### ACTUAL EMAIL TO ANALYZE ###
