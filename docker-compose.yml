@@ -14,6 +14,8 @@ services:
       # Quarantined and deleted email storage folders
       - ./mail/quarantine:/usr/src/app/mail/quarantine
       - ./mail/deleted:/usr/src/app/mail/deleted
+      # Persist GeoIP database updates on the host
+      - ./GeoLite2-Country.mmdb:/usr/src/app/GeoLite2-Country.mmdb
       # MailEnable queues and logs mounted from the default paths in default.json
       - "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound/Messages:/mailenable/queues/SMTP/Inbound/Messages"
       - "C:/Program Files (x86)/Mail Enable/Queues/SMTP/Inbound:/mailenable/queues/SMTP/Inbound"

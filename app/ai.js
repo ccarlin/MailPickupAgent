@@ -3,6 +3,8 @@ const path = require('path');
 const axios = require('axios');
 const tools = require('./tools');
 const config = require('../config');
+const { parseAiResponse } = require('./aiResponse');
+const { buildAiEmailContent } = require('./emailPreprocess');
 
 const OLLAMA_HOST = config.OLLAMA_SERVER;
 const OLLAMA_PORT = config.OLLAMA_PORT;
@@ -73,28 +75,12 @@ async function checkAiSpam(fromAddr, subjectText, parsed) {
   try {
     const promptPath = path.resolve(__dirname, '..', config.AI_SPAM_CHECK_PROMPT_PATH || 'config/aiSpamCheckPrompt.md');
     let promptTemplate = fs.readFileSync(promptPath, 'utf8');
-    const emailContent = `From: ${fromAddr}\nSubject: ${subjectText}\nBody: ${(parsed.text || '').slice(0, 2000)}`;
+    const emailContent = buildAiEmailContent(parsed, { from: fromAddr, subject: subjectText });
     const aiPrompt = promptTemplate + emailContent;
     aiResponse = await queryAi(aiPrompt);
     aiResponse = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     aiResponse = aiResponse.replace(/[\r\n]+/g, ' ');
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(aiResponse);
-    } catch {
-      const openB = (aiResponse.match(/\{/g) || []).length;
-      const closeB = (aiResponse.match(/\}/g) || []).length;
-      const openBr = (aiResponse.match(/\[/g) || []).length;
-      const closeBr = (aiResponse.match(/\]/g) || []).length;
-      let fixed = aiResponse;
-      for (let i = openBr - closeBr; i > 0; i--) fixed += ']';
-      for (let i = openB - closeB; i > 0; i--) fixed += '}';
-      try {
-        parsedJson = JSON.parse(fixed);
-      } catch {
-        throw new SyntaxError(`Unable to parse AI response as JSON: ${aiResponse.substring(0, 100)}`);
-      }
-    }
+    const parsedJson = parseAiResponse(aiResponse);
     const classification = (parsedJson.classification || '').toUpperCase();
     const confidence = parseFloat(parsedJson.confidence_score) || 0;
     const reasons = parsedJson.reasons || [];

@@ -4,13 +4,15 @@ const path = require('path');
 const net = require('net');
 const axios = require('axios');
 const config = require('../config');
+const sentry = require('../app/sentry');
+const geoip = require('../app/geoip');
 const tools = require('../app/tools');
 const { hashPassword, verifyPassword } = require('../middleware/hash');
 const { purgeOldBackups } = require('../index');
 
 const router = express.Router();
 
-const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW', 'ABUSEIPDB_KEY'];
+const SENSITIVE_KEYS = ['SMTP_PASS', 'AUTH_PASSWORD_HASH', 'AUTH_SECRET', 'AUTH_PASSWORD_NEW', 'ABUSEIPDB_KEY', 'SENTRY_DSN', 'MAXMIND_KEY'];
 
 function isDangerousTarget(host) {
   const h = host.replace(/^\[|\]$/g, '').toLowerCase();
@@ -163,6 +165,9 @@ router.post('/api/config/save', (req, res) => {
       }
     });
 
+    const sentryRestartRequired = sentry.requiresRestart(config, values);
+    const geoipRestartRequired = geoip.requiresRestart(config, values);
+
     const env = process.env.NODE_ENV || 'production';
     const configPath = path.resolve(__dirname, '..', 'config', `${env}.json`);
 
@@ -189,7 +194,15 @@ router.post('/api/config/save', (req, res) => {
     // Hot-reload config in memory
     config.reload();
 
-    res.status(200).json({ message: 'Configuration saved and reloaded successfully' });
+    let message = 'Configuration saved and reloaded successfully';
+    if (sentryRestartRequired && geoipRestartRequired) {
+      message = 'Configuration saved. Restart the MailPickupAgent service for the Sentry and GeoIP changes to take effect.';
+    } else if (sentryRestartRequired) {
+      message = 'Configuration saved. Restart the MailPickupAgent service for the Sentry changes to take effect.';
+    } else if (geoipRestartRequired) {
+      message = 'Configuration saved. Restart the MailPickupAgent service for the GeoIP changes to take effect.';
+    }
+    res.status(200).json({ message, sentryRestartRequired, geoipRestartRequired });
   } catch (error) {
     tools.logError('Error saving config: ' + error.message);
     res.status(500).json({ message: 'Failed to save configuration' });

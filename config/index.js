@@ -58,6 +58,7 @@ function validateConfig() {
     'TEST_EMAIL_SLEEP_SECONDS', 'OLLAMA_TIMEOUT',
     'ABUSEIPDB_TIMEOUT', 'AI_SPAM_POINTS', 'AI_HAM_POINTS',
     'ABUSEIPDB_BASE_SCORE', 'ABUSEIPDB_MAX_SCORE',
+    'SENTRY_TRACES_SAMPLE_RATE',
   ];
   for (const name of numericKeys) {
     const val = config[name];
@@ -68,6 +69,41 @@ function validateConfig() {
     const num = Number(val);
     if (isNaN(num)) {
       errors.push(`${name} must be a numeric value (got: ${JSON.stringify(val)})`);
+    }
+  }
+
+  // --- MaxMind update settings (warnings only) ---
+  const maxmindInterval = config.MAXMIND_UPDATE_INTERVAL_HOURS;
+  if (maxmindInterval !== undefined && maxmindInterval !== null && maxmindInterval !== '') {
+    const hours = Number(maxmindInterval);
+    if (!Number.isFinite(hours) || hours <= 0) {
+      warnings.push(
+        `MAXMIND_UPDATE_INTERVAL_HOURS should be a positive number of hours (got: ${JSON.stringify(maxmindInterval)}) - defaulting to 168`
+      );
+    }
+  }
+
+  const hasMaxMindAccountId = !!(config.MAXMIND_ACCOUNT_ID && String(config.MAXMIND_ACCOUNT_ID).trim());
+  const hasMaxMindKey = !!(config.MAXMIND_KEY && String(config.MAXMIND_KEY).trim());
+  if (hasMaxMindAccountId !== hasMaxMindKey) {
+    warnings.push(
+      'MAXMIND_ACCOUNT_ID and MAXMIND_KEY must both be set for GeoIP auto-update - auto-update is disabled'
+    );
+  }
+
+  const sentrySampleRate = config.SENTRY_TRACES_SAMPLE_RATE;
+  if (sentrySampleRate !== undefined && sentrySampleRate !== null && sentrySampleRate !== '') {
+    const rate = Number(sentrySampleRate);
+    if (!isNaN(rate) && (rate < 0 || rate > 1)) {
+      warnings.push(`SENTRY_TRACES_SAMPLE_RATE should be between 0 and 1 (got: ${JSON.stringify(sentrySampleRate)})`);
+    }
+  }
+
+  const sentryLifecycle = config.SENTRY_TRACE_LIFECYCLE;
+  if (sentryLifecycle !== undefined && sentryLifecycle !== null && sentryLifecycle !== '') {
+    const lifecycle = String(sentryLifecycle).trim().toLowerCase();
+    if (lifecycle !== 'static' && lifecycle !== 'stream') {
+      warnings.push(`SENTRY_TRACE_LIFECYCLE should be "static" or "stream" (got: ${JSON.stringify(sentryLifecycle)})`);
     }
   }
 

@@ -6,11 +6,13 @@ const net = require('net');
 const tools = require('../app/tools');
 const metrics = require('../app/metrics');
 const config = require('../config');
+const sentry = require('../app/sentry');
 const notifications = require('../app/notifications');
 const { purgeOldFiles, getLiveCaptureState, toggleLiveCapture } = require('../index');
 const { testAiCheck } = require('../test/testAI');
 const { testSpamAssassin } = require('../test/testSpamAssassin');
 const { testAbuseIPDB } = require('../test/testAbuseIPDB');
+const { sendSentryTest } = require('../test/testSentrySend');
 const { version } = require('../package.json');
 const { isLocalhost } = require('../middleware/auth');
 
@@ -27,7 +29,12 @@ function checkTcpPort(host, port, timeout = 3000) {
 
 router.get('/', function(req, res) {
   const aiSystem = String(config.AI_SYSTEM || 'OLLAMA').toUpperCase();
-  res.render('status', { title: 'Server Status (Live)', aiSystem, version });
+  res.render('status', {
+    title: 'Server Status (Live)',
+    aiSystem,
+    version,
+    sentryDetails: sentry.getDetails(),
+  });
 });
 
 function countActiveUsers(sessionStore) {
@@ -342,6 +349,21 @@ router.post('/api/abuseipdb-test', async function(req, res) {
   } finally {
     console.log = origLog;
     console.error = origError;
+  }
+});
+
+router.post('/api/sentry-test', async function(req, res) {
+  try {
+    const result = await sendSentryTest();
+    tools.logData(
+      `Sentry test triggered from status page: ${result.success ? 'success' : 'failure'}`,
+      'INFO',
+      req.ip || req.socket.remoteAddress || '127.0.0.1'
+    );
+    res.json({ success: result.success, output: result.output.join('\n') });
+  } catch (err) {
+    tools.logError(`Sentry test failed: ${err.message}`, req.ip || req.socket.remoteAddress || '127.0.0.1');
+    res.status(500).json({ success: false, output: `Sentry test failed: ${err.message}` });
   }
 });
 

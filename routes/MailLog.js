@@ -1,11 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const path = require('path');
 const tools = require("../app/tools");
 const fs = require("fs");
 const xss = require("xss");
-const MMDBReader = require('mmdb-reader');
-const mmdb = new MMDBReader(path.join(__dirname, '../GeoLite2-Country.mmdb'));
+const geoip = require('../app/geoip');
 const config = require('../config');
 
 /* Display Main page */
@@ -48,7 +46,7 @@ router.get('/', function(req, res) {
                         obj.messageId = lineParts[1];                 
                         obj.ipAddress = ipAddress;   
                         obj.dateTime = dateTime;                    
-                        let ipLookup = mmdb.lookup(ipAddress);                           
+                        let ipLookup = geoip.lookup(ipAddress);                           
                         if (ipLookup != null && ipLookup.country != null)
                             obj.Country = ipLookup.country.iso_code;
                         else
